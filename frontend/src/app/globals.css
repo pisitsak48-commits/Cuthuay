@@ -1,0 +1,333 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  :root {
+    --color-surface: #0a0f1e;
+    --color-surface-50: #0d1428;
+    --color-accent: #3b82f6;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #0a0f1e;
+    color: #f1f5f9;
+    font-feature-settings: 'kern', 'liga', 'calt';
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  /* ─── Force Inconsolata on all mono/numeric elements ─────────────────── */
+  code, kbd, pre,
+  .font-mono,
+  [class~="font-mono"],
+  input[type="number"],
+  input[type="text"].tabular,
+  td, th {
+    font-family: 'Roboto Mono', monospace !important;
+  }
+
+  /* ─── Light theme ─────────────────────────────────────────────────────── */
+  html.light body {
+    background-color: #f8fafc;
+    color: #0f172a;
+  }
+  html.light .bg-surface        { background-color: #f8fafc !important; }
+  html.light .bg-surface-50     { background-color: #f1f5f9 !important; }
+  html.light .bg-surface-100\/70,
+  html.light .bg-surface-100\/80 { background-color: rgba(255,255,255,0.9) !important; }
+  html.light .bg-surface-200    { background-color: #e2e8f0 !important; }
+  html.light .bg-surface-200\/40,
+  html.light .bg-surface-200\/50,
+  html.light .bg-surface-200\/60 { background-color: rgba(226,232,240,0.6) !important; }
+  html.light .bg-surface-300    { background-color: #f8fafc !important; }
+  html.light .bg-surface-400    { background-color: #e2e8f0 !important; }
+  html.light .bg-slate-800      { background-color: #f1f5f9 !important; }
+  html.light .bg-slate-800\/50  { background-color: rgba(241,245,249,0.5) !important; }
+  html.light .bg-slate-900      { background-color: #f8fafc !important; }
+  html.light .bg-slate-800\/80  { background-color: rgba(241,245,249,0.9) !important; }
+  html.light .bg-slate-700      { background-color: #e2e8f0 !important; }
+  html.light .bg-slate-700\/20  { background-color: rgba(226,232,240,0.3) !important; }
+  html.light .bg-indigo-900\/30 { background-color: rgba(199,210,254,0.4) !important; }
+
+  html.light .border-border      { border-color: #cbd5e1 !important; }
+  html.light .border-slate-700   { border-color: #cbd5e1 !important; }
+  html.light .border-slate-600   { border-color: #94a3b8 !important; }
+
+  html.light .text-slate-100 { color: #0f172a !important; }
+  html.light .text-slate-200 { color: #1e293b !important; }
+  html.light .text-slate-300 { color: #334155 !important; }
+  html.light .text-slate-400 { color: #475569 !important; }
+  html.light .text-slate-500 { color: #64748b !important; }
+  html.light .text-slate-600 { color: #94a3b8 !important; }
+  html.light .text-slate-700 { color: #cbd5e1 !important; }
+
+  html.light .shadow-card       { box-shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06) !important; }
+  html.light .backdrop-blur-sm  { backdrop-filter: blur(4px); }
+
+  /* ─── Light theme: Sidebar ─────────────────────────────────────────────── */
+  html.light aside {
+    background-color: #ffffff !important;
+    border-color: #e2e8f0 !important;
+  }
+  html.light aside [class*="border-border"] { border-color: #e2e8f0 !important; }
+  html.light aside [class*="bg-surface-200"] { background-color: #f1f5f9 !important; }
+  html.light aside [class*="hover\\:bg-surface-200"] { --tw-bg-opacity:1; }
+  html.light aside .text-slate-100 { color: #0f172a !important; }
+  html.light aside .text-slate-200 { color: #1e293b !important; }
+  html.light aside .text-slate-400 { color: #64748b !important; }
+  html.light aside .text-slate-500 { color: #94a3b8 !important; }
+  html.light aside a span,
+  html.light aside button { color: inherit; }
+  html.light aside .text-accent { color: #2563eb !important; }
+  html.light aside [class*="bg-accent\\/15"] { background-color: rgba(37,99,235,0.12) !important; }
+  html.light aside [class*="bg-accent\\/10"] { background-color: rgba(37,99,235,0.08) !important; }
+  html.light aside [class*="bg-accent\\/20"] { background-color: rgba(37,99,235,0.15) !important; }
+  html.light aside [class*="border-accent"] { border-color: rgba(37,99,235,0.4) !important; }
+  html.light aside [class*="bg-surface-50"] { background-color: #f8fafc !important; }
+  html.light aside [class*="bg-surface-300"] { background-color: #f1f5f9 !important; }
+  /* Hover states in sidebar */
+  html.light aside a span:hover,
+  html.light aside button:hover { color: #0f172a; }
+
+  /* ─── Light theme: Header ──────────────────────────────────────────────── */
+  html.light header {
+    background-color: rgba(255,255,255,0.85) !important;
+    border-color: #e2e8f0 !important;
+  }
+  html.light header .text-slate-100 { color: #0f172a !important; }
+  html.light header .text-slate-200 { color: #1e293b !important; }
+  html.light header .text-slate-400 { color: #64748b !important; }
+  html.light header .text-slate-500 { color: #94a3b8 !important; }
+  html.light header [class*="border-border"] { border-color: #cbd5e1 !important; }
+  html.light header [class*="hover\\:border-accent"] { border-color: rgba(37,99,235,0.5) !important; }
+
+  /* ─── Light theme: Card ────────────────────────────────────────────────── */
+  html.light [class*="rounded-xl"],
+  html.light [class*="rounded-2xl"] { border-color: #e2e8f0 !important; }
+
+  /* ─── Light theme: Select / Input ─────────────────────────────────────── */
+  html.light select,
+  html.light input[type="text"],
+  html.light input[type="date"],
+  html.light input[type="number"],
+  html.light textarea {
+    background-color: #f8fafc !important;
+    color: #1e293b !important;
+    border-color: #cbd5e1 !important;
+  }
+  html.light select option { background-color: #ffffff; color: #1e293b; }
+
+  /* ─── Light theme: Table ───────────────────────────────────────────────── */
+  html.light table { color: #1e293b; }
+  html.light thead tr { background-color: #f1f5f9 !important; border-color: #e2e8f0 !important; }
+  html.light tbody tr { border-color: #e2e8f0 !important; }
+  html.light tbody tr:hover { background-color: #f8fafc; }
+  html.light .font-mono { color: inherit; }
+
+  /* ─── Scrollbar (dark) ─────────────────────────────────────────────────── */
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: #0a0f1e; }
+  ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: #334155; }
+
+  html.light ::-webkit-scrollbar-track { background: #f1f5f9; }
+  html.light ::-webkit-scrollbar-thumb { background: #cbd5e1; }
+  html.light ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+  /* ─── Light theme: bets-page specific ─────────────────────────────────── */
+  /* Main layout backgrounds */
+  html.light .bg-slate-900\/40  { background-color: rgba(248,250,252,0.4) !important; }
+  html.light .bg-slate-800\/40  { background-color: rgba(241,245,249,0.5) !important; }
+  html.light .bg-slate-700\/30  { background-color: rgba(226,232,240,0.3) !important; }
+  html.light .bg-slate-700\/20  { background-color: rgba(226,232,240,0.2) !important; }
+  html.light .hover\:bg-slate-700\/30:hover { background-color: rgba(226,232,240,0.5) !important; }
+  html.light .hover\:bg-slate-700\/20:hover { background-color: rgba(226,232,240,0.4) !important; }
+  html.light .bg-slate-900\/60  { background-color: rgba(248,250,252,0.7) !important; }
+
+  /* Search highlight in bets table */
+  html.light .bg-amber-900\/40  { background-color: rgba(254,243,199,0.9) !important; }
+  html.light .hover\:bg-amber-800\/30:hover { background-color: rgba(253,230,138,0.5) !important; }
+
+  /* Warning banner */
+  html.light .bg-amber-900\/40  { background-color: rgba(254,243,199,0.8) !important; }
+  html.light .border-amber-700\/50 { border-color: rgba(217,119,6,0.3) !important; }
+  html.light .text-amber-300    { color: #b45309 !important; }
+  html.light .text-amber-400    { color: #d97706 !important; }
+
+  /* Selected rows */
+  html.light .bg-indigo-900\/30  { background-color: rgba(199,210,254,0.5) !important; }
+
+  /* Status bar / bottom bar */
+  html.light .bg-slate-900.border-t { background-color: #f1f5f9 !important; }
+
+  /* Error/parse text */
+  html.light .text-red-400   { color: #dc2626 !important; }
+
+  /* Mode badges */
+  html.light .bg-violet-500\/20  { background-color: rgba(139,92,246,0.12) !important; }
+  html.light .text-violet-300    { color: #7c3aed !important; }
+  html.light .border-violet-500\/30 { border-color: rgba(139,92,246,0.3) !important; }
+  html.light .bg-sky-500\/20     { background-color: rgba(14,165,233,0.12) !important; }
+  html.light .text-sky-300       { color: #0284c7 !important; }
+  html.light .border-sky-500\/30 { border-color: rgba(14,165,233,0.3) !important; }
+  html.light .bg-emerald-500\/20 { background-color: rgba(16,185,129,0.12) !important; }
+  html.light .text-emerald-300   { color: #059669 !important; }
+  html.light .border-emerald-500\/30 { border-color: rgba(16,185,129,0.3) !important; }
+  html.light .bg-amber-500\/20   { background-color: rgba(245,158,11,0.12) !important; }
+  html.light .border-amber-500\/30 { border-color: rgba(245,158,11,0.3) !important; }
+  html.light .bg-fuchsia-500\/20 { background-color: rgba(217,70,239,0.12) !important; }
+  html.light .text-fuchsia-400   { color: #a21caf !important; }
+  html.light .border-fuchsia-500\/30 { border-color: rgba(217,70,239,0.3) !important; }
+  html.light .bg-purple-500\/20  { background-color: rgba(168,85,247,0.12) !important; }
+  html.light .text-purple-400    { color: #7e22ce !important; }
+  html.light .border-purple-500\/30 { border-color: rgba(168,85,247,0.3) !important; }
+
+  /* Buttons: emerald/sky/red/amber action buttons */
+  html.light .bg-emerald-700    { background-color: #059669 !important; }
+  html.light .hover\:bg-emerald-600:hover { background-color: #047857 !important; }
+  html.light .bg-sky-700        { background-color: #0284c7 !important; }
+  html.light .hover\:bg-sky-600:hover { background-color: #0369a1 !important; }
+  html.light .bg-red-700        { background-color: #dc2626 !important; }
+  html.light .hover\:bg-red-600:hover  { background-color: #b91c1c !important; }
+  html.light .bg-amber-700      { background-color: #d97706 !important; }
+  html.light .hover\:bg-amber-600:hover { background-color: #b45309 !important; }
+  html.light .bg-indigo-600     { background-color: #4f46e5 !important; }
+  html.light .hover\:bg-indigo-500:hover { background-color: #4338ca !important; }
+
+  /* Bets page: text colors that need flip */
+  html.light .text-emerald-400  { color: #059669 !important; }
+  html.light .text-blue-400     { color: #2563eb !important; }
+  html.light .text-indigo-400   { color: #4f46e5 !important; }
+  html.light .text-indigo-300   { color: #3730a3 !important; }
+  html.light .caret-indigo-400  { caret-color: #4f46e5 !important; }
+
+  /* Divider / drag handle */
+  html.light .bg-slate-700      { background-color: #e2e8f0 !important; }
+  html.light .hover\:bg-indigo-500:hover { background-color: rgba(79,70,229,0.8) !important; }
+  html.light .active\:bg-indigo-400:active { background-color: rgba(79,70,229,0.6) !important; }
+
+  /* Cut page: rose/emerald/amber analytics cards */
+  html.light .bg-rose-900\/20   { background-color: rgba(254,226,226,0.7) !important; }
+  html.light .border-rose-500\/30 { border-color: rgba(239,68,68,0.3) !important; }
+  html.light .text-rose-400     { color: #dc2626 !important; }
+  html.light .text-rose-300     { color: #ef4444 !important; }
+  html.light .bg-emerald-900\/25 { background-color: rgba(209,250,229,0.6) !important; }
+  html.light .border-emerald-600\/20 { border-color: rgba(5,150,105,0.2) !important; }
+  html.light .text-emerald-400  { color: #059669 !important; }
+
+  /* Tabular numbers for all font-mono */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.01em;
+  }
+
+  /* Number inputs */
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-surface-100/80 backdrop-blur-sm border border-border rounded-xl;
+  }
+
+  .stat-number {
+    @apply font-mono text-2xl font-semibold tracking-tight;
+  }
+
+  .risk-low      { @apply text-risk-low; }
+  .risk-medium   { @apply text-risk-medium; }
+  .risk-high     { @apply text-risk-high; }
+  .risk-critical { @apply text-risk-critical; }
+
+  .table-row-hover {
+    @apply transition-colors duration-100 hover:bg-surface-200/50;
+  }
+}
+
+@layer utilities {
+  .text-gradient-blue {
+    @apply bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-profit {
+    @apply bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-loss {
+    @apply bg-gradient-to-r from-rose-400 to-red-300 bg-clip-text text-transparent;
+  }
+
+  .border-glow {
+    box-shadow: inset 0 0 0 1px rgba(59,130,246,0.3);
+  }
+}
+
+
+@layer components {
+  .glass-card {
+    @apply bg-surface-100/80 backdrop-blur-sm border border-border rounded-xl;
+  }
+
+  .stat-number {
+    @apply font-mono text-2xl font-semibold tracking-tight;
+  }
+
+  .risk-low      { @apply text-risk-low; }
+  .risk-medium   { @apply text-risk-medium; }
+  .risk-high     { @apply text-risk-high; }
+  .risk-critical { @apply text-risk-critical; }
+
+  .table-row-hover {
+    @apply transition-colors duration-100 hover:bg-surface-200/50;
+  }
+}
+
+@layer utilities {
+  .text-gradient-blue {
+    @apply bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-profit {
+    @apply bg-gradient-to-r from-emerald-400 to-green-300 bg-clip-text text-transparent;
+  }
+
+  .text-gradient-loss {
+    @apply bg-gradient-to-r from-rose-400 to-red-300 bg-clip-text text-transparent;
+  }
+
+  .border-glow {
+    box-shadow: inset 0 0 0 1px rgba(59,130,246,0.3);
+  }
+}
+
+/* ─── Print: show only #bet-receipt ────────────────────────────────────────── */
+@media print {
+  body > * { visibility: hidden !important; }
+  #bet-receipt, #bet-receipt * { visibility: visible !important; }
+  #bet-receipt {
+    position: fixed !important;
+    inset: 0;
+    background: white !important;
+    color: black !important;
+    font-family: 'TH Sarabun New', 'Sarabun', 'Angsana New', sans-serif;
+    font-size: 11pt;
+    padding: 8mm;
+  }
+  #bet-receipt table { width: 100%; border-collapse: collapse; }
+  #bet-receipt th, #bet-receipt td { border: 1px solid #555; padding: 2px 5px; font-size: 10pt; }
+  #bet-receipt .receipt-header { margin-bottom: 6px; }
+  #bet-receipt .receipt-title  { font-size: 16pt; font-weight: bold; text-align: center; }
+  #bet-receipt .receipt-meta   { font-size: 9pt; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  #bet-receipt .receipt-footer { margin-top: 6px; font-size: 9pt; display: flex; justify-content: space-between; }
+}

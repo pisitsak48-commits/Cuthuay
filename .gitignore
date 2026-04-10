@@ -1,0 +1,30 @@
+# ── Dependencies ──────────────────────────────────────────
+node_modules/
+
+# ── Build outputs ─────────────────────────────────────────
+backend/dist/
+frontend/.next/
+frontend/out/
+
+# ── Environment & secrets ─────────────────────────────────
+.env
+.env.local
+.env.*.local
+backend/.env
+frontend/.env
+frontend/.env.local
+
+# ── Logs ──────────────────────────────────────────────────
+*.log
+logs/
+/tmp/
+
+# ── OS files ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Reports output ────────────────────────────────────────
+reports/
+
+# ── IDE ───────────────────────────────────────────────────
+.vscode/settings.json
