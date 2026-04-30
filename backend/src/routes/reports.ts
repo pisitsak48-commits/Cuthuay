@@ -12,6 +12,28 @@ import { env } from '../config/env';
 const router = Router();
 router.use(authenticate);
 
+/** อัตราคอมที่ตั้งในลูกค้า (หลายช่อง) → สตริงแสดงบนการ์ดสรุป เช่น "20%" หรือ "20% · 5%" */
+type CustomerPctRow = {
+  pct_3top: string; pct_3tote: string; pct_3back: string;
+  pct_2top: string; pct_2bottom: string; pct_1top: string; pct_1bottom: string;
+};
+
+function formatCustomerCommissionDisplay(c: CustomerPctRow | undefined): string {
+  if (!c) return '—';
+  const keys = ['pct_3top', 'pct_3tote', 'pct_3back', 'pct_2top', 'pct_2bottom', 'pct_1top', 'pct_1bottom'] as const;
+  const set = new Set<string>();
+  for (const k of keys) {
+    const v = parseFloat(c[k] ?? '0');
+    if (Number.isNaN(v)) continue;
+    const r = Math.round(v * 100) / 100;
+    set.add(String(r));
+  }
+  const nums = Array.from(set).map(Number).sort((a, b) => a - b);
+  if (nums.length === 0 || (nums.length === 1 && nums[0] === 0)) return '0%';
+  if (nums.length === 1) return `${nums[0]}%`;
+  return nums.map((n) => `${n}%`).join(' · ');
+}
+
 // GET /api/reports/dashboard — overall stats
 router.get('/dashboard', async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -306,10 +328,13 @@ router.get('/:roundId/profit-summary', async (req: Request, res: Response, next:
     // Per-customer aggregation
     interface CustSummary {
       customer_id: string; name: string;
+      commission_display: string;
       sold: number; pct_sold: number; remaining_sold: number;
       payout: number; net: number;
       by_type: Record<string, { sold: number; pct: number; payout: number }>;
       by_sheet: Record<number, { sold: number; pct: number; payout: number }>;
+      /** แยกยอดตามแผ่น × ประเภท (คีย์แผ่นเป็น string จาก JSON) */
+      by_sheet_by_type: Record<string, Record<string, { sold: number; pct: number; payout: number }>>;
     }
     const custSummaryMap = new Map<string, CustSummary>();
 
@@ -325,8 +350,9 @@ router.get('/:roundId/profit-summary', async (req: Request, res: Response, next:
         BET_TYPES.forEach(t => { by_type[t] = { sold: 0, pct: 0, payout: 0 }; });
         custSummaryMap.set(cid, {
           customer_id: cid, name,
+          commission_display: formatCustomerCommissionDisplay(c as CustomerPctRow | undefined),
           sold: 0, pct_sold: 0, remaining_sold: 0, payout: 0, net: 0,
-          by_type, by_sheet: {},
+          by_type, by_sheet: {}, by_sheet_by_type: {},
         });
       }
       const cs = custSummaryMap.get(cid)!;
@@ -353,25 +379,41 @@ router.get('/:roundId/profit-summary', async (req: Request, res: Response, next:
       cs.by_sheet[sn].sold   += amt;
       cs.by_sheet[sn].pct    += pctAmt;
       cs.by_sheet[sn].payout += payoutAmt;
+
+      const snKey = String(sn);
+      if (!cs.by_sheet_by_type[snKey]) {
+        const empty: Record<string, { sold: number; pct: number; payout: number }> = {};
+        BET_TYPES.forEach(t => { empty[t] = { sold: 0, pct: 0, payout: 0 }; });
+        cs.by_sheet_by_type[snKey] = empty;
+      }
+      const sbt = cs.by_sheet_by_type[snKey];
+      if (sbt[bet.bet_type]) {
+        sbt[bet.bet_type].sold += amt;
+        sbt[bet.bet_type].pct += pctAmt;
+        sbt[bet.bet_type].payout += payoutAmt;
+      }
     }
 
-    const customers = Array.from(custSummaryMap.values()).map(cs => {
+    // All summaries (including null-customer bets) for correct totals
+    const allCustSummaries = Array.from(custSummaryMap.values()).map(cs => {
       cs.remaining_sold = cs.sold - cs.pct_sold;
       cs.net = cs.remaining_sold - cs.payout;
       return cs;
-    }).filter(cs => cs.customer_id !== '__none__');
+    });
+    // Only linked customers shown in per-customer list
+    const customers = allCustSummaries.filter(cs => cs.customer_id !== '__none__');
 
-    // Totals — selling side
-    const totalSold       = customers.reduce((s, c) => s + c.sold, 0);
-    const totalPctSold    = customers.reduce((s, c) => s + c.pct_sold, 0);
+    // Totals — selling side (includes unlinked bets)
+    const totalSold       = allCustSummaries.reduce((s, c) => s + c.sold, 0);
+    const totalPctSold    = allCustSummaries.reduce((s, c) => s + c.pct_sold, 0);
     const totalRemSold    = totalSold - totalPctSold;
-    const totalPayoutSold = customers.reduce((s, c) => s + c.payout, 0);
+    const totalPayoutSold = allCustSummaries.reduce((s, c) => s + c.payout, 0);
     const totalNetSold    = totalRemSold - totalPayoutSold;
 
-    // Per-type totals (selling side)
+    // Per-type totals (selling side, includes unlinked bets)
     const byTypeSell: Record<string, { sold: number; pct: number; payout: number; net: number }> = {};
     BET_TYPES.forEach(t => { byTypeSell[t] = { sold: 0, pct: 0, payout: 0, net: 0 }; });
-    for (const cs of customers) {
+    for (const cs of allCustSummaries) {
       for (const t of BET_TYPES) {
         byTypeSell[t].sold   += cs.by_type[t]?.sold   ?? 0;
         byTypeSell[t].pct    += cs.by_type[t]?.pct    ?? 0;
@@ -486,10 +528,12 @@ router.get('/:roundId/profit-summary', async (req: Request, res: Response, next:
           const items = (typeof batch.items === 'string'
             ? JSON.parse(batch.items) : batch.items) as Array<{ number: string; amount: number }>;
           for (const item of items) {
-            const sentAmt = item.amount ?? 0;
-            const pctAmt  = sentAmt * (pctMap[batch.bet_type] ?? 0) / 100;
-            const won     = isWin(batch.bet_type, item.number);
-            const payAmt  = won ? sentAmt * (rateMap[batch.bet_type] ?? 0) : 0;
+            const sentAmt    = item.amount ?? 0;
+            const pctAmt     = sentAmt * (pctMap[batch.bet_type] ?? 0) / 100;
+            const won        = isWin(batch.bet_type, item.number);
+            const baseRate   = rateMap[batch.bet_type] ?? 0;
+            const effRate    = getEffectiveRateWithLimits(null, batch.bet_type, item.number, baseRate);
+            const payAmt     = won ? sentAmt * effRate : 0;
 
             if (by_type[batch.bet_type]) {
               by_type[batch.bet_type].sent   += sentAmt;
@@ -556,10 +600,12 @@ router.get('/:roundId/profit-summary', async (req: Request, res: Response, next:
           c.dealer_id === did || (!c.dealer_id && (did === round.dealer_id || did === 'unknown')));
 
         for (const cut of cutsForDealer) {
-          const sentAmt = cut.cut_amount ?? 0;
-          const pctAmt  = sentAmt * (pctMap[cut.bet_type] ?? 0) / 100;
-          const won     = isWin(cut.bet_type, cut.number);
-          const payAmt  = won ? sentAmt * (rateMap[cut.bet_type] ?? 0) : 0;
+          const sentAmt  = cut.cut_amount ?? 0;
+          const pctAmt   = sentAmt * (pctMap[cut.bet_type] ?? 0) / 100;
+          const won      = isWin(cut.bet_type, cut.number);
+          const baseRate = rateMap[cut.bet_type] ?? 0;
+          const effRate  = getEffectiveRateWithLimits(null, cut.bet_type, cut.number, baseRate);
+          const payAmt   = won ? sentAmt * effRate : 0;
 
           if (by_type[cut.bet_type]) {
             by_type[cut.bet_type].sent   += sentAmt;
@@ -592,6 +638,32 @@ router.get('/:roundId/profit-summary', async (req: Request, res: Response, next:
 
     const profit = totalNetSold + totalNetSent;
 
+    // ── Number-level stats ─────────────────────────────────────────────────
+    const TOTAL_NUMS_BY_TYPE: Record<string, number> = {
+      '3digit_top': 1000, '3digit_tote': 1000, '3digit_back': 1000,
+      '2digit_top': 100,  '2digit_bottom': 100,
+      '1digit_top': 10,   '1digit_bottom': 10,
+    };
+    const soldByType = new Map<string, Set<string>>();
+    const perNumberAmt = new Map<string, number>();
+    for (const bet of bets) {
+      if (!soldByType.has(bet.bet_type)) soldByType.set(bet.bet_type, new Set());
+      soldByType.get(bet.bet_type)!.add(bet.number);
+      const k = `${bet.number}||${bet.bet_type}`;
+      perNumberAmt.set(k, (perNumberAmt.get(k) ?? 0) + parseFloat(bet.amount));
+    }
+    // นับเฉพาะ bet_type ที่มีการแทงจริงในงวดนี้
+    const unsold_by_type: Record<string, number> = {};
+    let unsold_count = 0;
+    for (const bt of [...soldByType.keys()]) {
+      const u = (TOTAL_NUMS_BY_TYPE[bt] ?? 0) - (soldByType.get(bt)?.size ?? 0);
+      unsold_by_type[bt] = u;
+      unsold_count += u;
+    }
+    const numAmounts = [...perNumberAmt.values()];
+    const min_bet_per_number = numAmounts.length > 0 ? Math.min(...numAmounts) : 0;
+    const max_bet_per_number = numAmounts.length > 0 ? Math.max(...numAmounts) : 0;
+
     res.json({
       round: { id: round.id, name: round.name, draw_date: round.draw_date, result_data: rd },
       profit,
@@ -603,9 +675,14 @@ router.get('/:roundId/profit-summary', async (req: Request, res: Response, next:
         total: totalSent, pct: totalPctSent, remaining: totalRemSent,
         payout: totalPaySent, net: totalNetSent,
       },
+      unsold_count,
+      unsold_by_type,
+      min_bet_per_number,
+      max_bet_per_number,
       customers,
       dealers: dealerSummaries,
       by_type_sell: byTypeSell,
+      limits: limitsRes.rows,
     });
   } catch (err) {
     next(err);
@@ -644,6 +721,32 @@ router.get('/:roundId/dealer-wins', async (req: Request, res: Response, next: Ne
       '1digit_bottom': new Set(str(rd.prize_1bottom)),
     };
     const isWin = (betType: string, number: string) => winSets[betType]?.has(number) ?? false;
+
+    // Fetch number limits for this round (to apply payout overrides for dealer)
+    const dealerLimitsRes = await query<{
+      number: string; bet_type: string; entity_type: string; entity_id: string | null;
+      custom_payout: string | null; payout_pct: string; is_blocked: boolean;
+    }>(
+      `SELECT number, bet_type, entity_type, entity_id, custom_payout, payout_pct, is_blocked
+       FROM number_limits WHERE round_id = $1`, [roundId],
+    );
+    const dealerLimitsMap = new Map<string, typeof dealerLimitsRes.rows>();
+    for (const lim of dealerLimitsRes.rows) {
+      const k = `${lim.number}||${lim.bet_type}`;
+      if (!dealerLimitsMap.has(k)) dealerLimitsMap.set(k, []);
+      dealerLimitsMap.get(k)!.push(lim);
+    }
+    const applyDealerLimit = (betType: string, number: string, baseRate: number): number => {
+      const lims = dealerLimitsMap.get(`${number}||${betType}`);
+      if (!lims?.length) return baseRate;
+      const global = lims.find(l => l.entity_type === 'all');
+      if (!global) return baseRate;
+      if (global.is_blocked) return 0;
+      if (global.custom_payout) return parseFloat(global.custom_payout);
+      const pct = parseFloat(global.payout_pct);
+      if (pct > 0 && pct !== 100) return baseRate * pct / 100;
+      return baseRate;
+    };
 
     // Fetch send_batches; fallback to cut_plans
     const [batchRes, planRes] = await Promise.all([
@@ -715,9 +818,10 @@ router.get('/:roundId/dealer-wins', async (req: Request, res: Response, next: Ne
         const items = (typeof batch.items === 'string' ? JSON.parse(batch.items) : batch.items) as Array<{ number: string; amount: number }>;
         for (const item of items) {
           if (!isWin(batch.bet_type, item.number)) continue;
-          const amt = item.amount ?? 0;
-          const rate = rateMap[batch.bet_type] ?? 0;
-          const pay = amt * rate;
+          const amt      = item.amount ?? 0;
+          const baseRate = rateMap[batch.bet_type] ?? 0;
+          const rate     = applyDealerLimit(batch.bet_type, item.number, baseRate);
+          const pay      = amt * rate;
           const ds = buildDealer(did, dname);
           ds.winning_items.push({ bet_type: batch.bet_type, number: item.number, amount: amt, payout: pay });
           ds.total_amount += amt;
@@ -747,8 +851,9 @@ router.get('/:roundId/dealer-wins', async (req: Request, res: Response, next: Ne
           '2digit_bottom': dr?.rate_2bottom ?? 0, '1digit_top': dr?.rate_1top ?? 0,
           '1digit_bottom': dr?.rate_1bottom ?? 0,
         };
-        const amt = cut.cut_amount ?? 0;
-        const pay = amt * (rateMap[cut.bet_type] ?? 0);
+        const amt      = cut.cut_amount ?? 0;
+        const baseRate = rateMap[cut.bet_type] ?? 0;
+        const pay      = amt * applyDealerLimit(cut.bet_type, cut.number, baseRate);
         const ds = buildDealer(did, dname);
         ds.winning_items.push({ bet_type: cut.bet_type, number: cut.number, amount: amt, payout: pay });
         ds.total_amount += amt;

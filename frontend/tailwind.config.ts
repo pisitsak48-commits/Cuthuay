@@ -1,7 +1,6 @@
 import type { Config } from 'tailwindcss';
 
 const config: Config = {
-  darkMode: 'class',
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -10,69 +9,91 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        // Dark canvas — Japanese industrial meets Apple precision
         surface: {
-          DEFAULT: '#0a0f1e',
-          50:  '#0d1428',
-          100: '#111827',
-          200: '#1a2236',
-          300: '#1e2d3d',
-          400: '#243447',
+          DEFAULT: 'rgb(var(--tw-surface-default) / <alpha-value>)',
+          50: 'rgb(var(--tw-surface-50) / <alpha-value>)',
+          100: 'rgb(var(--tw-surface-100) / <alpha-value>)',
+          200: 'rgb(var(--tw-surface-200) / <alpha-value>)',
+          300: 'rgb(var(--tw-surface-300) / <alpha-value>)',
+          400: 'rgb(var(--tw-surface-400) / <alpha-value>)',
         },
         border: {
-          DEFAULT: '#1e293b',
-          muted: '#0f172a',
-          bright: '#334155',
+          DEFAULT: 'rgb(var(--tw-border-default) / <alpha-value>)',
+          muted: 'rgb(var(--tw-border-muted) / <alpha-value>)',
+          bright: 'rgb(var(--tw-border-bright) / <alpha-value>)',
         },
         accent: {
-          DEFAULT: '#3b82f6',
-          hover: '#60a5fa',
-          glow: 'rgba(59,130,246,0.15)',
+          DEFAULT: 'rgb(var(--tw-accent) / <alpha-value>)',
+          hover: 'rgb(var(--tw-accent-hover) / <alpha-value>)',
+          glow: 'rgb(var(--tw-accent-glow) / <alpha-value>)',
+        },
+        theme: {
+          bg: 'var(--color-bg-primary)',
+          'bg-secondary': 'var(--color-bg-secondary)',
+          card: 'var(--color-card-bg)',
+          'card-border': 'var(--color-card-border)',
+          'text-primary': 'var(--color-text-primary)',
+          'text-secondary': 'var(--color-text-secondary)',
+          'text-muted': 'var(--color-text-muted)',
+          border: 'var(--color-border)',
+          accent: 'var(--color-accent)',
+          'accent-hover': 'var(--color-accent-hover)',
+          'header-bg': 'var(--color-header-bg)',
+          'header-border': 'var(--color-header-border)',
+          'btn-primary-fg': 'var(--color-btn-primary-fg)',
         },
         risk: {
-          low:    '#22c55e',
-          medium: '#f59e0b',
-          high:   '#ef4444',
-          critical: '#dc2626',
+          low: 'rgb(var(--color-risk-low) / <alpha-value>)',
+          medium: 'rgb(var(--color-risk-medium) / <alpha-value>)',
+          high: 'rgb(var(--color-risk-high) / <alpha-value>)',
+          critical: 'rgb(var(--color-risk-critical) / <alpha-value>)',
         },
-        profit: '#22c55e',
-        loss:   '#ef4444',
-        neutral: '#94a3b8',
+        profit: 'rgb(var(--color-profit) / <alpha-value>)',
+        loss: 'rgb(var(--color-loss) / <alpha-value>)',
+        neutral: 'rgb(var(--color-neutral) / <alpha-value>)',
+        /** Solid primary CTA — was gradient via backgroundImage; keep name for existing classNames */
+        'btn-primary': 'var(--color-accent)',
       },
       fontFamily: {
-        sans: ['Kanit', 'system-ui', 'sans-serif'],
-        mono: ['Roboto Mono', 'monospace'],
+        sans: ['Inter', 'Prompt', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       },
       backgroundImage: {
         'grid-pattern':
-          "linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px)",
-        'glow-radial':
-          'radial-gradient(ellipse at 50% 0%, rgba(59,130,246,0.12) 0%, transparent 70%)',
+          'linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)',
       },
       backgroundSize: {
         'grid-40': '40px 40px',
       },
       animation: {
         'pulse-slow': 'pulse 3s ease-in-out infinite',
-        'shimmer': 'shimmer 2s linear infinite',
-        'glow-pulse': 'glowPulse 2s ease-in-out infinite',
+        shimmer: 'shimmer 2s linear infinite',
       },
       keyframes: {
         shimmer: {
-          '0%':   { backgroundPosition: '-200% 0' },
-          '100%': { backgroundPosition:  '200% 0' },
-        },
-        glowPulse: {
-          '0%, 100%': { boxShadow: '0 0 4px 0 rgba(59,130,246,0.3)' },
-          '50%':      { boxShadow: '0 0 20px 4px rgba(59,130,246,0.6)' },
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
         },
       },
       boxShadow: {
-        'card': '0 1px 3px 0 rgba(0,0,0,0.4), 0 1px 2px -1px rgba(0,0,0,0.4)',
-        'card-hover': '0 4px 20px -4px rgba(59,130,246,0.2), 0 1px 3px rgba(0,0,0,0.4)',
-        'glow-blue': '0 0 15px 2px rgba(59,130,246,0.35)',
-        'glow-red':  '0 0 15px 2px rgba(239,68,68,0.35)',
-        'glow-green':'0 0 15px 2px rgba(34,197,94,0.35)',
+        card: 'var(--color-card-shadow)',
+        'card-hover': 'var(--shadow-hover)',
+        'glow-blue': 'var(--shadow-soft)',
+        'glow-cyan': 'var(--shadow-soft)',
+        'glow-purple': 'var(--shadow-soft)',
+        'glow-red': 'var(--shadow-soft)',
+        'glow-green': 'var(--shadow-soft)',
+        'btn-primary': 'var(--shadow-btn-primary)',
+        'btn-primary-hover': 'var(--shadow-btn-primary-hover)',
+        'btn-danger': 'var(--shadow-btn-danger)',
+      },
+      borderRadius: {
+        card: 'var(--radius-card)',
+        /* ให้ rounded-xl เท่ามุมปุ่มหลัก (กรอบแผง/การ์ดที่ใช้ xl ทั้งแอป) */
+        xl: '1rem',
+      },
+      transitionDuration: {
+        theme: '200ms',
       },
     },
   },

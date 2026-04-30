@@ -1,19 +1,26 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { useAuthStore } from '@/store/useStore';
+import { APP_BRAND_NAME } from '@/lib/brand';
+import { useAuthStore, useSidebarStore } from '@/store/useStore';
 
 interface SubItem { href: string; label: string }
 interface NavGroup { label: string; icon: React.ReactNode; items: SubItem[] }
 
-const navGroups: NavGroup[] = [
+function navItemActive(pathname: string, href: string): boolean {
+  return pathname === href.split('?')[0];
+}
+
+const allNavGroups: NavGroup[] = [
   {
     label: 'รายการขาย',
     icon: <ReceiptIcon />,
     items: [
+      { href: '/rounds',      label: 'จัดการงวด' },
       { href: '/bets',        label: 'ทำรายการขาย' },
       { href: '/bets/search', label: 'ค้นหารายการขาย' },
       { href: '/bets/all',    label: 'แสดงรายการขายทั้งหมด' },
@@ -31,9 +38,7 @@ const navGroups: NavGroup[] = [
     label: 'รายการสรุปผล',
     icon: <SummaryIcon />,
     items: [
-      { href: '/results',     label: 'ใส่ผลสลาก' },
       { href: '/summary',     label: 'ทำรายการสรุป' },
-      { href: '/bet-results', label: 'ผลถูกรางวัล' },
     ],
   },
   {
@@ -50,7 +55,6 @@ const navGroups: NavGroup[] = [
     icon: <SettingsIcon />,
     items: [
       { href: '/settings', label: 'ตั้งค่าระบบ' },
-      { href: '/rounds',   label: 'จัดการงวด' },
     ],
   },
 ];
@@ -58,69 +62,148 @@ const navGroups: NavGroup[] = [
 export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuthStore();
+  const sidebarExpanded = useSidebarStore((s) => s.sidebarExpanded);
+  const toggleSidebar = useSidebarStore((s) => s.toggleSidebar);
+
+  const isOperator = user?.role === 'operator';
+  const navGroups = useMemo(
+    () => (isOperator ? allNavGroups.filter((g) => g.label === 'รายการขาย') : allNavGroups),
+    [isOperator],
+  );
 
   const activeGroupIndex = navGroups.findIndex((g) =>
-    g.items.some((i) => {
-      const base = i.href.split('?')[0];
-      return base !== '/' && pathname.startsWith(base);
-    }),
+    g.items.some((i) => navItemActive(pathname, i.href)),
   );
   const [openGroups, setOpenGroups] = useState<Record<number, boolean>>(
     activeGroupIndex >= 0 ? { [activeGroupIndex]: true } : { 0: true },
   );
+  /** เมนูย่อยโหมดย่อแถบ: fixed + portal (ถ้าใส่ absolute ใน nav จะถูกตัดเพราะ overflow-y-auto) */
+  const [navFlyout, setNavFlyout] = useState<{ groupIndex: number; top: number; left: number } | null>(null);
+  const navFlyoutRef = useRef<HTMLDivElement | null>(null);
   const toggle = (i: number) => setOpenGroups((prev) => ({ ...prev, [i]: !prev[i] }));
+  const expanded = sidebarExpanded;
+
+  useEffect(() => {
+    if (!navFlyout) return;
+    const onDown = (ev: MouseEvent) => {
+      const el = navFlyoutRef.current;
+      const t = ev.target as Node;
+      if (el?.contains(t)) return;
+      setNavFlyout(null);
+    };
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [navFlyout]);
+
+  useEffect(() => {
+    setNavFlyout(null);
+  }, [pathname, expanded]);
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-30 w-56 flex flex-col border-r border-border bg-surface-50/90 backdrop-blur-md">
-      {/* Logo */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-border shrink-0">
-        <div className="w-7 h-7 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center">
+    <aside
+      className={cn(
+        'fixed top-0 left-0 z-30 h-dvh max-h-dvh flex flex-col border-r border-[var(--color-border)] bg-[var(--color-sidebar-bg)] shadow-[var(--color-sidebar-inner-glow)] transition-[width] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+        expanded ? 'w-60' : 'w-[4.5rem]',
+      )}
+    >
+      {/* Logo + collapse */}
+      <div className={cn('flex items-center border-b border-[var(--color-border)] shrink-0', expanded ? 'gap-3 px-5 py-5' : 'flex-col gap-2 px-2 py-4')}>
+        <div
+          className="w-9 h-9 rounded-3xl border border-accent/20 flex items-center justify-center shadow-[var(--color-nav-active-shadow)] shrink-0"
+          style={{ background: 'var(--gradient-sidebar-logo)' }}
+        >
           <BrandIcon />
         </div>
-        <div>
-          <span className="text-sm font-bold text-slate-100 tracking-tight">CutHuay</span>
-          <p className="text-[10px] text-slate-500 leading-none mt-0.5">Risk Manager</p>
-        </div>
+        {expanded && (
+          <div className="flex-1 min-w-0">
+            <span className="text-sm font-semibold text-theme-text-primary tracking-[0.04em]">{APP_BRAND_NAME}</span>
+            <p className="text-[10px] text-theme-text-muted leading-none mt-0.5">Risk Manager</p>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          title={expanded ? 'ย่อเมนู (แสดงไอคอน)' : 'ขยายเมนู'}
+          className={cn(
+            'rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-theme-text-secondary hover:text-accent hover:border-accent/30 transition-all duration-theme shrink-0',
+            !expanded && 'mx-auto',
+          )}
+        >
+          {expanded ? <CollapseIcon /> : <ExpandIcon />}
+        </button>
       </div>
 
-      {/* Dashboard */}
-      <div className="px-3 pt-3 pb-1 shrink-0">
-        <Link href="/">
-          <span className={cn(
-            'relative flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150 cursor-pointer',
-            pathname === '/' ? 'bg-accent/15 text-accent' : 'text-slate-400 hover:text-slate-200 hover:bg-surface-200',
-          )}>
-            {pathname === '/' && (
-              <motion.span layoutId="sidebar-indicator"
-                className="absolute left-0 w-0.5 h-5 bg-accent rounded-full"
-                transition={{ type: 'spring', stiffness: 500, damping: 35 }} />
-            )}
-            <span className={pathname === '/' ? 'text-accent' : 'text-slate-500'}><DashboardIcon /></span>
-            หน้าหลัก
-          </span>
-        </Link>
-      </div>
+      {/* Dashboard — ซ่อนสำหรับ operator */}
+      {!isOperator && (
+        <div className={cn('pt-3 pb-1 shrink-0', expanded ? 'px-4' : 'px-2')}>
+          <Link href="/" title="หน้าหลัก">
+            <span className={cn(
+              'relative flex items-center rounded-xl text-sm font-medium transition-all duration-200 cursor-pointer',
+              expanded ? 'gap-3 px-4 py-3' : 'justify-center px-2 py-3',
+              pathname === '/'
+                ? 'bg-[var(--color-nav-active-bg)] text-accent shadow-[var(--color-nav-active-shadow)]'
+                : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-[var(--bg-glass)]',
+            )}>
+              {pathname === '/' && expanded && (
+                <motion.span layoutId="sidebar-indicator"
+                  className="absolute left-0 w-1.5 h-10 rounded-full bg-theme-text-primary"
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }} />
+              )}
+              <span className={pathname === '/' ? 'text-accent' : 'text-theme-text-secondary'}><DashboardIcon /></span>
+              {expanded && 'หน้าหลัก'}
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* Groups */}
-      <nav className="flex-1 px-3 pb-4 space-y-0.5 overflow-y-auto">
+      <nav className={cn('flex-1 pb-4 space-y-1 min-h-0 flex flex-col', expanded ? 'px-3' : 'px-2')}>
+        <div className="flex-1 overflow-y-auto overflow-x-visible space-y-1">
         {navGroups.map((group, gi) => {
           const isOpen = openGroups[gi] ?? false;
-          const groupActive = group.items.some((i) => {
-            const base = i.href.split('?')[0];
-            return base !== '/' && pathname.startsWith(base);
-          });
+          const groupActive = group.items.some((i) => navItemActive(pathname, i.href));
+
+          if (!expanded) {
+            return (
+              <div key={gi} className="relative">
+                <button
+                  type="button"
+                  title={group.label}
+                  onClick={(e) => {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    setNavFlyout((prev) => {
+                      if (prev?.groupIndex === gi) return null;
+                      setOpenGroups((p) => ({ ...p, [gi]: true }));
+                      return { groupIndex: gi, top: rect.top, left: rect.right + 8 };
+                    });
+                  }}
+                  className={cn(
+                    'w-full flex items-center justify-center px-2 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                    groupActive || navFlyout?.groupIndex === gi
+                      ? 'bg-[var(--color-nav-active-bg)] text-accent shadow-[var(--color-nav-active-shadow)]'
+                      : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-[var(--bg-glass)]',
+                  )}
+                >
+                  <span className={groupActive || navFlyout?.groupIndex === gi ? 'text-accent' : 'text-theme-text-secondary'}>{group.icon}</span>
+                </button>
+              </div>
+            );
+          }
+
           return (
             <div key={gi}>
-              <button onClick={() => toggle(gi)}
+              <button type="button" onClick={() => toggle(gi)}
                 className={cn(
-                  'w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
-                  groupActive ? 'text-accent bg-accent/10' : 'text-slate-400 hover:text-slate-200 hover:bg-surface-200',
+                  'w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200',
+                  groupActive
+                    ? 'bg-[var(--color-nav-active-bg)] text-accent shadow-[var(--color-nav-active-shadow)]'
+                    : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-[var(--bg-glass)]',
                 )}>
-                <span className="flex items-center gap-2.5">
-                  <span className={groupActive ? 'text-accent' : 'text-slate-500'}>{group.icon}</span>
-                  {group.label}
+                <span className="flex items-center gap-3 min-w-0">
+                  <span className={groupActive ? 'text-accent' : 'text-theme-text-secondary'}>{group.icon}</span>
+                  <span className="truncate">{group.label}</span>
                 </span>
-                <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.18 }} className="text-slate-500 shrink-0">
+                <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.18 }} className="text-theme-text-muted shrink-0">
                   <ChevronIcon />
                 </motion.span>
               </button>
@@ -129,17 +212,18 @@ export function Sidebar() {
                 {isOpen && (
                   <motion.div key="c" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease: 'easeInOut' }} className="overflow-hidden">
-                    <div className="ml-3 pl-3 border-l border-border/40 mt-0.5 mb-1 space-y-0.5">
+                    <div className="ml-4 pl-4 border-l border-[var(--color-border)] mt-1 mb-2 space-y-1">
                       {group.items.map((item, ii) => {
-                        const base = item.href.split('?')[0];
-                        const active = pathname === base || (base !== '/' && pathname === base);
+                        const active = navItemActive(pathname, item.href);
                         return (
                           <Link key={ii} href={item.href}>
                             <span className={cn(
-                              'flex items-center gap-2 px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-150 cursor-pointer',
-                              active ? 'bg-accent/15 text-accent' : 'text-slate-500 hover:text-slate-200 hover:bg-surface-200/60',
+                              'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 cursor-pointer',
+                              active
+                                ? 'bg-[var(--color-nav-active-bg)] text-accent shadow-[var(--color-nav-active-shadow)]'
+                                : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-[var(--bg-glass)]',
                             )}>
-                              {active && <span className="w-1 h-1 rounded-full bg-accent shrink-0" />}
+                              {active && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />}
                               {item.label}
                             </span>
                           </Link>
@@ -152,19 +236,67 @@ export function Sidebar() {
             </div>
           );
         })}
+        </div>
       </nav>
 
+      {navFlyout != null && typeof document !== 'undefined' && createPortal(
+        <motion.div
+          ref={navFlyoutRef}
+          role="menu"
+          initial={{ opacity: 0, x: -4 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -4 }}
+          transition={{ duration: 0.12 }}
+          style={{
+            position: 'fixed',
+            top: Math.max(8, navFlyout.top),
+            left: navFlyout.left,
+            zIndex: 10050,
+          }}
+          className="min-w-[220px] rounded-xl border border-[var(--color-card-border)] bg-[var(--color-card-bg-solid)] shadow-[var(--shadow-soft)] py-1.5"
+        >
+          <p className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-theme-text-muted border-b border-[var(--color-border)]">
+            {navGroups[navFlyout.groupIndex]?.label}
+          </p>
+          {navGroups[navFlyout.groupIndex]?.items.map((item, ii) => {
+            const active = navItemActive(pathname, item.href);
+            return (
+              <Link key={ii} href={item.href} onClick={() => setNavFlyout(null)}>
+                <span
+                  className={cn(
+                    'flex items-center gap-2 px-3 py-2.5 text-xs font-medium cursor-pointer',
+                    active ? 'text-theme-text-primary bg-[var(--color-nav-active-bg)]' : 'text-theme-text-secondary hover:text-theme-text-primary hover:bg-[var(--bg-glass)]',
+                  )}
+                >
+                  {active && <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />}
+                  {item.label}
+                </span>
+              </Link>
+            );
+          })}
+        </motion.div>,
+        document.body,
+      )}
+
       {/* User */}
-      <div className="border-t border-border px-3 py-3 shrink-0">
-        <div className="flex items-center gap-3 px-2 py-2 rounded-lg">
-          <div className="w-7 h-7 rounded-full bg-accent/20 flex items-center justify-center shrink-0">
-            <span className="text-xs font-bold text-accent">{user?.username?.[0]?.toUpperCase() ?? 'U'}</span>
+      <div className="border-t border-[var(--color-border)] px-4 py-4 shrink-0">
+        <div className={cn(
+          'flex items-center rounded-2xl bg-[var(--bg-glass)] border border-[var(--color-border)] shadow-[var(--color-card-shadow)]',
+          expanded ? 'gap-3 px-3 py-3' : 'flex-col gap-2 px-2 py-3',
+        )}>
+          <div
+            className="w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold text-accent shadow-[var(--color-nav-active-shadow)] shrink-0"
+            style={{ background: 'var(--gradient-sidebar-logo)' }}
+          >
+            {user?.username?.[0]?.toUpperCase() ?? 'U'}
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium text-slate-200 truncate">{user?.username}</p>
-            <p className="text-[10px] text-slate-500 capitalize">{user?.role}</p>
-          </div>
-          <button onClick={logout} className="text-slate-500 hover:text-rose-400 transition-colors p-1" title="ออกจากระบบ">
+          {expanded && (
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-theme-text-primary truncate">{user?.username}</p>
+              <p className="text-[10px] text-theme-text-muted capitalize">{user?.role}</p>
+            </div>
+          )}
+          <button onClick={logout} className="rounded-xl border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-theme-text-secondary hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] transition-all duration-theme" title="ออกจากระบบ">
             <LogoutIcon />
           </button>
         </div>
@@ -173,9 +305,24 @@ export function Sidebar() {
   );
 }
 
+function CollapseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <polyline points="15 6 9 12 15 18" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function ExpandIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <polyline points="9 6 15 12 9 18" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 function BrandIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-accent">
       <circle cx="6" cy="6" r="3" /><circle cx="6" cy="18" r="3" />
       <path d="M20 4L8.12 15.88M14.47 14.48L20 20M8.12 8.12L12 12" strokeLinecap="round" />
     </svg>

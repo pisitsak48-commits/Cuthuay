@@ -1,5 +1,6 @@
 // ─── betParser.ts ─────────────────────────────────────────────────────────────
 // Fast-key bet parser: แปลงรูปแบบเลขและจำนวนเงินเป็น ParsedBet[]
+// (สำเนาไป backend/src/lib/betParser.ts เมื่อแก้ — ใช้ LINE webhook)
 
 export type BetInputMode = 'run' | '2digit' | '3digit';
 
@@ -7,6 +8,8 @@ export interface ParsedBet {
   number:   string;
   bet_type: '2digit_top' | '2digit_bottom' | '3digit_top' | '3digit_tote' | '3digit_back' | '1digit_top' | '1digit_bottom';
   amount:   number;
+  /** ก้อนข้อความไลน์แยกตามบรรทัดเวลา HH:MM — ใช้แยกแถวในตารางเมื่อเลขซ้ำ */
+  segment_index?: number;
 }
 
 export interface ParseResult {
@@ -243,6 +246,40 @@ function splitAmounts(amtStr: string): string[] {
   return parts.map(p => p.trim()).filter(p => /^\d+$/.test(p));
 }
 
+/** 256 บ30 ล30 ต3 / บน·ล่าง·โต๊ด — ลำดับคำย่ออิสระ (รูปแบบเดิมบังคับ บ→ต→ล ผิด) */
+function parseThaiBlTLabels(s: string): { number: string; amountStr: string } | null {
+  const m = s.match(/^(\d{1,3})(\s+.*)$/u);
+  if (!m) return null;
+  const num = m[1];
+  const tail = m[2];
+
+  const bFull = tail.match(/\s+บน\s*(\d+)/u);
+  const bShort = !bFull ? tail.match(/\s+บ(\d+)/u) : null;
+  const bVal = bFull ? Number(bFull[1]) : (bShort ? Number(bShort[1]) : 0);
+
+  const lFull = tail.match(/\s+ล่าง\s*(\d+)/u);
+  const lShort = !lFull ? tail.match(/\s+ล(\d+)/u) : null;
+  const lVal = lFull ? Number(lFull[1]) : (lShort ? Number(lShort[1]) : 0);
+
+  const tFull = tail.match(/\s+โต๊ด\s*(\d+)/u);
+  const tShort = !tFull ? tail.match(/\s+ต(\d+)/u) : null;
+  const tVal = tFull ? Number(tFull[1]) : (tShort ? Number(tShort[1]) : 0);
+
+  if (!bVal && !lVal && !tVal) return null;
+
+  if (num.length === 3) {
+    return { number: num, amountStr: `${bVal}+${tVal}+${lVal}` };
+  }
+  const bot = lVal > 0 ? lVal : tVal;
+  if (num.length === 2) {
+    return { number: num, amountStr: `${bVal}+${bot}` };
+  }
+  if (num.length === 1) {
+    return { number: num, amountStr: `${bVal}+${bot}` };
+  }
+  return null;
+}
+
 /**
  * Parse a single "NUM<sep>AMT1<sep>AMT2" token into { number, amountStr }.
  * sep can be = - space (between number and amounts).
@@ -252,15 +289,34 @@ function parseToken(token: string): { number: string; amountStr: string } | null
   const s = token.trim();
   if (!s) return null;
 
-  // NUM=AMT*กลับ  → 3digit all-perms top
-  let m = s.match(/^(\d{3})\s*=\s*(\d+)\s*\*\s*(?:\d+)?กลับ$/u);
+  // NUM=AMT*…กลับ  → 3ตัวบนกลับครบ permutation (ไลน์ เช่น 816=20*6กลับ / 816=20* กลับ)
+  let m = s.match(/^(\d{3})\s*=\s*(\d+)\s*\*\s*(?:\d+\s*)?กลับ\s*$/u);
   if (m) return { number: m[1], amountStr: `${m[2]}*klap` };
 
-  // NUM=AMT1<sep>AMT2   (= sign, any sep)
-  m = s.match(/^(\d{1,3})\s*=\s*(\d+[\u00D7\u2715\u2716xX*%:\-]\d+)$/);
+  // NUM AMT*…กลับ — ช่องว่างหลังเลข เช่น "816 20*6 กลับ" "816 20* กลับ"
+  m = s.match(/^(\d{3})\s+(\d+)\s*\*\s*(?:\d+\s*)?กลับ\s*$/u);
+  if (m) return { number: m[1], amountStr: `${m[2]}*klap` };
+
+  // NUM AMT กลับ — ตัวละเดียวแล้วกลับ เช่น "816 20 กลับ"
+  m = s.match(/^(\d{3})\s+(\d+)\s+กลับ\s*$/u);
+  if (m) return { number: m[1], amountStr: `${m[2]}*klap` };
+
+  // NUM=AMT*N Thai_tag  e.g. "169=10*6 ประดู"  → all perms 3digit_top at price AMT
+  m = s.match(/^(\d{3})\s*=\s*(\d+)\s*\*\s*\d+\s+[\u0E00-\u0E7F]/u);
+  if (m) return { number: m[1], amountStr: `${m[2]}*klap` };
+
+  // NUM=AMT1<sep>AMT2[<sep>AMT3...]   (= sign, any sep, 2+ amounts)
+  m = s.match(/^(\d{1,3})\s*=\s*(\d+(?:[\u00D7\u2715\u2716xX*%:\-]\d+)+)$/);
   if (m) {
     const parts = splitAmounts(m[2]);
-    if (parts.length >= 2) return { number: m[1], amountStr: `${parts[0]}+${parts[1]}` };
+    if (parts.length >= 2) return { number: m[1], amountStr: parts.join('+') };
+  }
+
+  // NUM = AMT1*AMT2*AMT3  (with spaces around =)
+  m = s.match(/^(\d{1,3})\s+=\s+(\d+(?:[*+]\d+)+)$/);
+  if (m) {
+    const parts = splitAmounts(m[2].replace(/\+/g, '*'));
+    if (parts.length >= 2) return { number: m[1], amountStr: parts.join('+') };
   }
 
   // NUM=AMT  (single, = sign)
@@ -279,17 +335,22 @@ function parseToken(token: string): { number: string; amountStr: string } | null
   m = s.match(/^(\d{1,3})\s*-\s*(\d+)$/);
   if (m) return { number: m[1], amountStr: m[2] };
 
-  // NUM บTOP ตTOTE ลBOT  (Thai prefix labels บ/ต/ล)
-  m = s.match(/^(\d+)(?:\s+\u0E1A(\d+))?(?:\s+\u0E15(\d+))?(?:\s+\u0E25(\d+))?$/u);
-  if (m && (m[2] || m[3] || m[4])) {
-    return { number: m[1], amountStr: `${m[2] ?? 0}+${m[3] ?? 0}+${m[4] ?? 0}` };
-  }
-
-  // NUM AMT1<sep>AMT2  (space between number and amounts, sep for amounts)
-  m = s.match(/^(\d{1,3})\s+(\d+[\u00D7\u2715\u2716xX*%:\-]\d+)$/);
+  // NUM.AMT1*AMT2[*AMT3]  (dot separator, e.g. 29.100*100  92.50*50*50)
+  m = s.match(/^(\d{1,3})\.((\d+[\u00D7\u2715\u2716xX*%:\-])+\d+)$/);
   if (m) {
     const parts = splitAmounts(m[2]);
-    if (parts.length >= 2) return { number: m[1], amountStr: `${parts[0]}+${parts[1]}` };
+    if (parts.length >= 2) return { number: m[1], amountStr: parts.join('+') };
+  }
+
+  // NUM.AMT  (single amount, dot separator, e.g. 29.100)
+  m = s.match(/^(\d{1,3})\.(\d+)$/);
+  if (m) return { number: m[1], amountStr: m[2] };
+
+  // NUM AMT1<sep>AMT2[<sep>AMT3...]  (space between number and amounts)
+  m = s.match(/^(\d{1,3})\s+(\d+(?:[\u00D7\u2715\u2716xX*%:\-]\d+)+)$/);
+  if (m) {
+    const parts = splitAmounts(m[2]);
+    if (parts.length >= 2) return { number: m[1], amountStr: parts.join('+') };
   }
 
   // NUM AMT1 AMT2  (two space-separated amounts)
@@ -304,6 +365,8 @@ function parseToken(token: string): { number: string; amountStr: string } | null
 }
 
 function extractLineAmount(line: string): { number: string; amountStr: string } | null {
+  const t = parseThaiBlTLabels(line.trim());
+  if (t) return t;
   return parseToken(line.trim());
 }
 
@@ -320,7 +383,7 @@ export interface LineImportResult {
 }
 
 /** Section context from LINE headers — affects how × is interpreted */
-type SectionMode = 'none' | '2top' | '2bot' | '3top';
+type SectionMode = 'none' | '2top' | '2bot' | '3top' | '3bl' | '3back';
 
 function klap2(num: string): string {
   return num.length === 2 ? num[1] + num[0] : num;
@@ -333,6 +396,7 @@ function klap2(num: string): string {
  *         → append the next line to it (they're part of the same CSV number list)
  * Rule 2: a line that ends with =NUMBER and the next line is just *NUMBER / ×NUMBER
  *         → append the amount-suffix so we get the complete amount token
+ * Rule 3: "816 20*6" or "816 20" then next line only "กลับ" → join (LINE word-wrap)
  */
 function preJoinFragments(text: string): string {
   const lines = text.split('\n');
@@ -348,16 +412,194 @@ function preJoinFragments(text: string): string {
       } else { break; }
     }
     // Rule 2: amount suffix on its own next line (*30, ×30, x30)
+    // Rule 3: "816 20*6" แล้วบรรทัดถัดไปแค่ "กลับ" (word-wrap ไลน์)
     if (i + 1 < lines.length) {
       const next = lines[i + 1].trim();
       if (/^[*×xX]\d+$/.test(next) && cur.includes('=')) {
         cur = cur.trim() + next;
+        i++;
+      } else if (
+        /^กลับ\s*$/u.test(next)
+        && (
+          /^\d{3}(?:\s+|\s*=\s*)\d+\s*\*/u.test(cur.trim())
+          || /^\d{3}\s+\d+\s*$/u.test(cur.trim())
+        )
+      ) {
+        cur = `${cur.trim()} ${next}`;
         i++;
       }
     }
     out.push(cur);
   }
   return out.join('\n');
+}
+
+const LINE_PASTE_ZW_RE = /[\u200B-\u200D\uFEFF]/g;
+
+function stripLinePasteInvisible(s: string): string {
+  return s.replace(LINE_PASTE_ZW_RE, '');
+}
+
+/** เริ่มเนื้อโพยแล้วหรือยัง (หลังตัดเวลา) — ใช้ลบชื่อผู้ส่งหลายคำ */
+function isLikelyBetLineContentStart(s: string): boolean {
+  const t = s.trim();
+  if (!t) return true;
+  // บรรทัด =10*10 (ราคาล้วนต่อท้ายกลุ่มเลขเปล่า) — อย่าตัดทิ้งตอนสตริปคำนำหน้าแชท
+  if (/^=+\s*\d/.test(t)) return true;
+  const toks = t.split(/\s+/).filter(Boolean);
+  if (!toks.length) return true;
+  const a = toks[0];
+  if (/^\d/.test(a)) return true;
+  const head2 = toks.slice(0, 2).join(' ');
+  if (/^(?:2|3)\s*ต/u.test(head2)) return true;
+  if (/^บน|^ล่าง|^บต|^บล|^วิ่ง|^เต็ง/u.test(a)) return true;
+  return false;
+}
+
+/** คำนำหน้าไลน์: [HH:MM], เวลา + AM/PM, วันที่+เวลา (ก๊อปแชท), แล้วตัดชื่อผู้ส่งจนกว่าบรรทัดจะขึ้นต้นแบบโพย */
+function stripLineChatTimePrefix(line: string): string {
+  let s = stripLinePasteInvisible(line).trim();
+  // เวลาต้นบรรทัด — ช่องว่างหลังเวลา/วงเล็บไม่บังคับ (เช่น 13:31สมชาย … หรือ [13:31] - …)
+  s = s.replace(/^(?:\[)?\d{1,2}:\d{2}(?::\d{2})?(?:\])?\s*(?:[-–—:]\s*)?/u, '');
+  s = s.replace(/^(?:AM|PM|am|pm|น\.?)\s+/u, '');
+  // 24/04/2569, 13:31 หรือ 24-04-69 13:31 (สำเนาแอป/แจ้งเตือน)
+  s = s.replace(/^\d{1,2}[/.-]\d{1,2}[/.-]\d{2,4}\s*,\s*\d{1,2}:\d{2}(?::\d{2})?\s*(?:[-–—:]\s*)?/u, '');
+  const toks = s.split(/\s+/).filter(Boolean);
+  let i = 0;
+  while (i < toks.length) {
+    const rest = toks.slice(i).join(' ');
+    if (isLikelyBetLineContentStart(rest)) break;
+    i++;
+  }
+  return toks.slice(i).join(' ').trim();
+}
+
+function normalizeLinePasteBetSeparators(line: string): string {
+  let s = line.replace(/\u00D7/g, '*').replace(/\u2715/g, '*').replace(/\u2716/g, '*');
+  s = s.replace(/(\d)\s*["'`´]\s*(\d)/g, '$1*$2');
+  // 50x50 → 50*50 (ป้อน x จากมือถือ/คีย์บอร์ด)
+  let prev = '';
+  while (prev !== s) {
+    prev = s;
+    s = s.replace(/(\d)\s*[xX]\s*(\d)/g, '$1*$2');
+  }
+  s = s.replace(/[.。]+$/g, '');
+  return s.trim();
+}
+
+/**
+ * โพยไลน์: ==/=== , = คั่นราคา (98=50=50), ขีดคั่นราคาหลัง = (628 = 30 - 30 - 30), ท้าย "บ ล ต"
+ */
+function normalizeLineEquationStyles(line: string): string {
+  let s = line.trim();
+  if (!s) return s;
+
+  s = s.replace(/\s+(?:บ\s*ล\s*ต|บลต)\s*\.?\s*$/iu, '');
+  s = s.replace(/(\d)(?:บ\s*ล\s*ต|บลต)\s*\.?\s*$/iu, '$1');
+
+  s = s.replace(/(\d{1,3})\s*={2,}\s*/g, '$1=');
+
+  const eq = s.match(/^(\d{1,3})(\s*=\s*)(.+)$/);
+  if (!eq) return s;
+
+  let rhs = eq[3].trim().replace(/\s+/g, '');
+
+  const mPair = rhs.match(/^(\d{1,3})-(\d{1,3})-(\d+)(.*)$/);
+  if (mPair && /[\u00D7\u2715\u2716xX*]/.test(mPair[4])) {
+    return `${eq[1]}=${rhs}`;
+  }
+
+  let prev = '';
+  while (prev !== rhs) {
+    prev = rhs;
+    rhs = rhs.replace(/(\d)=+(\d)/g, '$1*$2');
+  }
+
+  if (!/^(\d{1,3}-\d{1,3}-\d+)/.test(rhs) || !/[\u00D7\u2715\u2716xX*]/.test(rhs)) {
+    rhs = rhs.replace(/(\d)-(\d)/g, '$1*$2');
+  }
+
+  // ไลน์บางแบบพิมพ์ราคาสองขาเป็น 20+20 แทน 20*20 (เช่น 04=20+20) — โพยมาตรฐานใช้ * คั่นยอด
+  if (/^\d+\+\d+$/.test(rhs)) rhs = rhs.replace('+', '*');
+
+  return `${eq[1]}=${rhs}`;
+}
+
+/** ชื่อคนในกลุ่มไลน์แบบ "นิ่ม/92" "P\"นุชจัง/94" — ไม่มี = */
+function isLineGroupSenderTag(line: string): boolean {
+  if (line.includes('=')) return false;
+  const t = line.trim();
+  if (!/[\/／]\d{2,3}\s*$/.test(t)) return false;
+  if (/[\u0E00-\u0E7F]/.test(t)) return true;
+  if (/^P["']?/i.test(t)) return true;
+  return false;
+}
+
+/** ข้อความแทรกจากการก๊อปแชท (เช่น วันที่แบบสั้น / ตัวเลขหัวข้อ) */
+function isLinePasteMetadataNoise(line: string): boolean {
+  const t = line.trim();
+  if (/^\d{1,2}-\d{1,2}-\d{1,4}\s*$/.test(t)) return true;
+  if (/^\d{1,2}\/\d{1,2}\/\d{2,4}\s*$/.test(t)) return true;
+  if (/^หวยไทย/u.test(t)) return true;
+  if (/^600\s*$/.test(t)) return true;
+  return false;
+}
+
+/**
+ * ตัดเวลา/ชื่อผู้ส่งจากแชท LINE, ลบ zero-width, แปลง × และ " ระหว่างตัวเลข เป็น *
+ * จากนั้นต่อบรรทัดที่ไลน์ตัด (preJoinFragments) — แล้ว normalize สมการ (==, = คั่นราคา, ขีดหลัง = , ตัดท้าย บลต)
+ * ผลลัพธ์ใช้ paste หรือส่งเข้า parseLineBetsText
+ */
+export function normalizeLinePasteText(raw: string): string {
+  const withNl = raw.replace(/\r\n|\r/g, '\n');
+  const timeStripped = withNl
+    .split('\n')
+    .map((l) => {
+      const a = stripLinePasteInvisible(l);
+      return stripLineChatTimePrefix(a).trim();
+    })
+    .join('\n');
+  const joined = preJoinFragments(timeStripped);
+  const out: string[] = [];
+  for (const rawLine of joined.split('\n')) {
+    let line = stripLinePasteInvisible(rawLine).trim();
+    if (!line) continue;
+    line = normalizeLinePasteBetSeparators(line);
+    if (!line) continue;
+    line = normalizeLineEquationStyles(line);
+    if (!line) continue;
+    if (isLineGroupSenderTag(line)) continue;
+    if (isLinePasteMetadataNoise(line)) continue;
+    out.push(line);
+  }
+  return out.join('\n');
+}
+
+/** แบ่งโพยรวมหลายข้อความไลน์ที่ต้นบรรทัดมีเวลา HH:MM (แต่ละข้อความ = segment ต่างกัน) */
+export function splitLinePasteByChatClock(raw: string): string[] {
+  const nl = raw.replace(/\r\n|\r/g, '\n').trim();
+  if (!nl) return [];
+  return nl.split(/(?=\n\d{1,2}:\d{2}\s+)/).map((s) => s.trim()).filter(Boolean);
+}
+
+/**
+ * parseLineBetsText + แยก segment ตามเวลาไลน์ — ลูกบอลเดียวกันในงวดจึงไม่ถูกรวมยอดเป็นคอลัมน์เดียวหลังนำเข้าครั้งเดียว
+ */
+export function parseLineBetsTextWithSegments(text: string): LineImportResult {
+  const chunks = splitLinePasteByChatClock(text);
+  const sources = chunks.length > 0 ? chunks : (text.trim() ? [text.trim()] : []);
+  if (!sources.length) return { bets: [], parsedCount: 0, skippedCount: 0 };
+  const allBets: ParsedBet[] = [];
+  let parsedCount = 0;
+  let skippedCount = 0;
+  for (let i = 0; i < sources.length; i++) {
+    const r = parseLineBetsText(sources[i]);
+    const seg = i + 1;
+    for (const b of r.bets) allBets.push({ ...b, segment_index: seg });
+    parsedCount += r.parsedCount;
+    skippedCount += r.skippedCount;
+  }
+  return { bets: allBets, parsedCount, skippedCount };
 }
 
 /**
@@ -370,18 +612,40 @@ function preJoinFragments(text: string): string {
  *   "2 ตัวบน"   → context: subsequent NUM=A×A means NUM top=A + klap(NUM) top=A
  *   "2 ตัวล่าง" → context: subsequent NUM=A×A means NUM bottom=A + klap(NUM) bottom=A
  *   "3 ตัวบน"   → context: NUM=A×B means 3ตัวบน×โต๊ด (normal 3digit parsing)
+ *   "บต" (ไลน์) → เหมือน 3 ตัวบน: เลข 3 หลัก NUM=A×B = บน A + โต๊ด B
+ *   "บล" (ไลน์) → เลข 2 หลัก NUM=A×B = 2บน+2ล่าง; เลข 3 หลัก NUM=A×B = 3บน A + 3ล่าง B (ไม่ใช่โต๊ด)
+ *   หัว "บน" บรรทัดเดียว → ถัดไปเน้นขาบน (เหมือน 2 ตัวบนสำหรับ 2 หลัก; 3 หลัก=tod default parse)
  *
- *   12=100×100          → บน=100, ล่าง=100  (no section)
+ *   816 20*6 กลับ     → 3บนกลับครบ permutation (ตัวละ 20)
  *   470 บ50 ต50         → 3บน=50, โต๊ด=50
  *   ── under "2 ตัวบน" header ──
  *   65=500×500          → 65บน=500 + 56บน=500  (กลับเลข: A=เลขตั้งต้น, B=เลขกลับ)
  *   66=500              → 66บน=500 only
  *   ── under "2 ตัวล่าง" header ──
  *   79=1000×1000        → 79ล่าง=1000 + 97ล่าง=1000  (กลับเลข: A=เลขตั้งต้น, B=เลขกลับ)
+ *
+ *   91 ล่าง 20         → 91 เฉพาะ 2ล่าง 20 (เทียบ 91=0*20; ไม่ให้ 91 ค้างไปรวมบรรทัดถัดไป)
+ *   65 บน 50           → 65 เฉพาะ 2บน 50
+ *   256 บ30 ล30 ต3     → 3บน+โต๊ด+3ล่าง (ลำดับคำย่อ บ/ล/ต เรียงได้อิสระ)
+ *   830-50*50 … 04-40-150*150 — หลายโทเค็นช่องว่างเดียวกันได้ (เลขคู่ NN-NN-A*B = 2บน+2ล่าง ต่อเลข; โต๊ด 2 หลักยังไม่มี type ในระบบ)
+ *
+ *   ── หลายบรรทัดแล้วราคาท้ายบรรทัด (= นำหน้าได้) ──
+ *   571 / 175 / … / =10*10  → ทุกเลขก่อนหน้าได้ 10*10
+ *   ── กลุ่มเลขเปล่า แล้วบรรทัดสุดท้าย NUM#ราคา (ไลน์) ──
+ *   23 / 32 / 92 / 29#50*50  → เลขทุกตัวในกลุ่มได้ 50*50
+ *   ── เลข=ราคาแบบยอดบวก (ไลน์) ──
+ *   04=20+20  → 04=20*20
+ *   ── เลข+ราคาช่องว่าง แล้วเลขเปล่าต่อท้าย (ต่อราคา) ──
+ *   460 10*10 / 46 20*20 / 64 / 40 / … / 70 20*20  → เลขเปล่าใช้ราคาล่าสุดที่มี * หรือหลายช่อง (เช่น 10*10, 30+40)
+ *
+ * normalizeLinePasteText: ==/=== , 98=50=50 , 628=30-30-30 , ท้าย "บลต" → โครง NUM=ราคา*ราคา
  */
 export function parseLineBetsText(text: string): LineImportResult {
+  const cleaned = normalizeLinePasteText(text);
   const allBets: ParsedBet[] = [];
   const pending: string[] = [];  // bare numbers waiting for an amount line
+  /** ราคาจากบรรทัด NUM+ราคา (มี * หรือ +) — ใช้กับเลขเปล่าถัดไปเมื่อไม่มี pending ค้าง */
+  let lineForwardFill: string | null = null;
   let parsedCount  = 0;
   let skippedCount = 0;
   let sectionMode: SectionMode = 'none';
@@ -390,9 +654,11 @@ export function parseLineBetsText(text: string): LineImportResult {
     allBets.push({ number, bet_type, amount });
   };
 
-  const flush = (numberWithAmt: string, amountStr: string) => {
-    const nums = [...pending, numberWithAmt];
-    pending.length = 0;
+  const amountTriggersForwardFill = (amountStr: string) =>
+    amountStr.includes('*') || amountStr.includes('+');
+
+  const applyAmountToNumbers = (nums: string[], amountStr: string) => {
+    const hadThreeDigitSlot = nums.some((n) => n.length === 3);
 
     for (const num of nums) {
       const hasTwoParts = amountStr.includes('+');
@@ -408,8 +674,16 @@ export function parseLineBetsText(text: string): LineImportResult {
         continue;
       }
 
-      // ── Section-aware logic ────────────────────────────────────────
+      // ── Section-aware logic (เฉพาะเลข 2 หลัก — เลข 3 หลักต้องไม่ถูกบังคับเป็น 2digit_*) ──
       if (sectionMode === '2top' || sectionMode === '2bot') {
+        if (num.length !== 2) {
+          const result = parseBetLine(num, amountStr);
+          if (!result.error && result.bets.length) {
+            allBets.push(...result.bets);
+            parsedCount++;
+          } else { skippedCount++; }
+          continue;
+        }
         const betType: ParsedBet['bet_type'] = sectionMode === '2top' ? '2digit_top' : '2digit_bottom';
 
         if (hasTwoParts) {
@@ -434,6 +708,52 @@ export function parseLineBetsText(text: string): LineImportResult {
         continue;
       }
 
+      // ── 3 ตัวล่าง (หัวข้อ): NUM=100 → เฉพาะ 3ล่าง = 0+0+100 ─────────
+      if (sectionMode === '3back') {
+        if (num.length === 3 && !hasTwoParts) {
+          const amt = Number(amountStr);
+          if (!isNaN(amt) && amt > 0) {
+            pushBet(num, '3digit_back', amt);
+            parsedCount++;
+          } else { skippedCount++; }
+        } else {
+          const result = parseBetLine(num, amountStr);
+          if (!result.error && result.bets.length) {
+            allBets.push(...result.bets);
+            parsedCount++;
+          } else { skippedCount++; }
+        }
+        continue;
+      }
+
+      // ── บล: เลข 3 หลัก NUM=A*B → 3บน + 3ล่าง (ไม่ใช่โต๊ด) ─────────
+      if (sectionMode === '3bl' && num.length === 3) {
+        const amtSegs = amountStr.split('+').map((p) => p.trim()).filter(Boolean);
+        if (amtSegs.length >= 3) {
+          const result = parseBetLine(num, amountStr);
+          if (!result.error && result.bets.length) {
+            allBets.push(...result.bets);
+            parsedCount++;
+          } else { skippedCount++; }
+          continue;
+        }
+        if (hasTwoParts) {
+          const parts = amountStr.split('+');
+          const amt1 = Number(parts[0]) || 0;
+          const amt2 = Number(parts[1]) || 0;
+          if (amt1 > 0) pushBet(num, '3digit_top', amt1);
+          if (amt2 > 0) pushBet(num, '3digit_back', amt2);
+          parsedCount++;
+        } else {
+          const amt = Number(amountStr);
+          if (!isNaN(amt) && amt > 0) {
+            pushBet(num, '3digit_top', amt);
+            parsedCount++;
+          } else { skippedCount++; }
+        }
+        continue;
+      }
+
       // ── Default / 3ตัวบน section (use parseBetLine as before) ─────
       const result = parseBetLine(num, amountStr);
       if (!result.error && result.bets.length) {
@@ -441,25 +761,125 @@ export function parseLineBetsText(text: string): LineImportResult {
         parsedCount++;
       } else { skippedCount++; }
     }
+
+    // หลังเลข 3 หลักในกลุ่มเดียวกับราคา — ไลน์มักไม่มีหัวข้อปิดท้าย ให้รีเซ็ตโหมด 2บน/2ล่าง
+    // (ไม่งั้น "ล่าง" ค้างแล้ว 30=50*50 ถูกตีเป็น ล่าง+กลับแทน บน+ล่าง)
+    if (hadThreeDigitSlot && (sectionMode === '2top' || sectionMode === '2bot')) sectionMode = 'none';
   };
 
-  for (const rawLine of preJoinFragments(text).split('\n')) {
-    const line = rawLine.trim();
+  const flush = (numberWithAmt: string, amountStr: string) => {
+    const hadPending = pending.length > 0;
+    applyAmountToNumbers([...pending, numberWithAmt], amountStr);
+    pending.length = 0;
+    if (hadPending) lineForwardFill = null;
+    else if (amountTriggersForwardFill(amountStr)) lineForwardFill = amountStr;
+    else lineForwardFill = null;
+  };
+
+  const rawLines = cleaned.split('\n');
+  for (let lineIdx = 0; lineIdx < rawLines.length; lineIdx++) {
+    const line = rawLines[lineIdx].trim();
     if (!line) continue;
 
     // ── Detect section headers ─────────────────────────────────────
-    if (/^2\s*ตัวบน$/u.test(line))              { skippedCount += pending.length; pending.length = 0; sectionMode = '2top';  continue; }
-    if (/^2\s*ตัวล่าง$|^ล่าง$/u.test(line))     { skippedCount += pending.length; pending.length = 0; sectionMode = '2bot';  continue; }
-    if (/^3\s*ตัวบน$/u.test(line))              { skippedCount += pending.length; pending.length = 0; sectionMode = '3top';  continue; }
+    if (/^บน\s*\/\s*ล่าง\s*$/u.test(line))     { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = 'none'; continue; }
+    if (/^บน\s*$/u.test(line))                  { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '2top';  continue; }
+    if (/บ\s*[-–—]\s*ต/u.test(line) && !/=/.test(line)) {
+      skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '3top'; continue;
+    }
+    if (/^2\s*ตัวบน$/u.test(line))              { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '2top';  continue; }
+    if (/^2\s*ตัวล่าง$|^ล่าง$/u.test(line))     { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '2bot';  continue; }
+    if (/^3\s*ตัวบน$/u.test(line))              { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '3top';  continue; }
+    if (/^3\s*ตัวล่าง$/u.test(line))            { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '3back'; continue; }
+    if (/^เต็ง\s*[-–—]\s*โต๊ด$/u.test(line))     { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '3top';  continue; }
+    if (/^บต\.?\s*$/u.test(line))               { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '3top';  continue; }
+    if (/^บล\.?\s*$/u.test(line))               { skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = '3bl'; continue; }
     // Any other Thai "ตัว" or "วิ่ง" header resets to default  
-    if (/ตัว|วิ่ง/u.test(line) && !/\d\s*=/.test(line)) {
-      skippedCount += pending.length; pending.length = 0; sectionMode = 'none'; continue;
+    // (exclude กลับ ตัวละ commands from this reset)
+    if (/ตัว|วิ่ง/u.test(line) && !/\d\s*=/.test(line) && !/กลับ.*ตัวละ/u.test(line)) {
+      skippedCount += pending.length; pending.length = 0; lineForwardFill = null; sectionMode = 'none'; continue;
     }
 
-    // ── "27,72,18,81 บน+ล่าง ตัวละ 50 บาท" format ────────────
+    // ── "91 ล่าง 20" / "65 บน 100" — ระบุขาเดียว (กันเลขค้าง pending ไปรวมบรรทัดถัดไป) ──
+    {
+      const oneSide = line.match(/^(\d{1,3})\s+(ล่าง|บน)\s+(\d+)\s*(?:บาท|฿)?\s*[.。]*\s*$/u);
+      if (oneSide) {
+        const num = oneSide[1];
+        const isBottom = oneSide[2] === 'ล่าง';
+        const amt = Number(oneSide[3]);
+        if (amt > 0 && /^\d+$/.test(num)) {
+          skippedCount += pending.length;
+          pending.length = 0;
+          lineForwardFill = null;
+          let amountStr: string;
+          if (num.length === 1 || num.length === 2) {
+            amountStr = isBottom ? `0+${amt}` : `${amt}+0`;
+          } else {
+            amountStr = isBottom ? `0+0+${amt}` : `${amt}+0+0`;
+          }
+          const result = parseBetLine(num, amountStr);
+          if (!result.error && result.bets.length) {
+            allBets.push(...result.bets);
+            parsedCount++;
+          } else skippedCount++;
+          continue;
+        }
+      }
+    }
+
+    // ── CSV numbers with shared amount: "584,589,481,...=30*30" ──────────
+    // ต้องก่อนบล็อกรายการคั่นจุลภาค+ไทย — ไม่งั้น "=30*30" ถูกไปจับแค่เลข 30 ตัวสุดท้าย
+    {
+      const csvMatch = line.match(/^((?:\d{1,3}\s*,\s*)+\d{1,3})\s*=\s*(.+)$/);
+      if (csvMatch) {
+        const nums = csvMatch[1].split(',').map(n => n.trim()).filter(n => /^\d{1,3}$/.test(n));
+        const amtRaw = csvMatch[2].trim();
+        if (nums.length > 0) {
+          skippedCount += pending.length;
+          pending.length = 0;
+          lineForwardFill = null;
+          for (const n of nums) {
+            const result = parseBetLine(n, amtRaw);
+            if (!result.error && result.bets.length) {
+              allBets.push(...result.bets);
+              parsedCount++;
+            } else { skippedCount++; }
+          }
+          continue;
+        }
+      }
+    }
+
+    // ── "321,412,038 10*10" — ช่องว่างระหว่างรายการกับราคา (ไม่มี =) ──
+    {
+      const csvSp = line.match(
+        /^((?:\d{1,3}\s*,\s*)+\d{1,3})\s+(\d+(?:[\*×xX\u00D7\u2715%:\-]\d+)+)\s*$/
+      );
+      if (csvSp) {
+        const nums = csvSp[1].split(',').map(n => n.trim()).filter(n => /^\d{1,3}$/.test(n));
+        const amtRaw = csvSp[2].trim();
+        if (nums.length > 0) {
+          skippedCount += pending.length;
+          pending.length = 0;
+          lineForwardFill = null;
+          for (const n of nums) {
+            const result = parseBetLine(n, amtRaw);
+            if (!result.error && result.bets.length) {
+              allBets.push(...result.bets);
+              parsedCount++;
+            } else { skippedCount++; }
+          }
+          continue;
+        }
+      }
+    }
+
+    // ── "27,72,18,81 บน+ล่าง ตัวละ 50 บาท" / "137, 173,...,713,บน 50฿" ─
     // CSV numbers followed by Thai descriptor containing amount
     {
-      const commaNumsMatch = line.match(/^([\d,]+)\s+.*?(\d+)\s*บาท?$/u);
+      const commaNumsMatch = line.match(
+        /^((?:\d{1,3}\s*,\s*)+\d{1,3}),?\s*.*?(\d+)\s*(?:บาท|฿)?\s*[.。]*\s*$/u
+      );
       if (commaNumsMatch) {
         const nums = commaNumsMatch[1].split(',').map(n => n.trim()).filter(n => /^\d{1,3}$/.test(n));
         const amt  = Number(commaNumsMatch[2]);
@@ -486,66 +906,54 @@ export function parseLineBetsText(text: string): LineImportResult {
       }
     }
 
-    // ── CSV numbers with shared amount: "584,589,481,...=30*30" ──────────
-    // Matches comma-separated 1-3 digit numbers followed by =AMT×AMT
+    // ── ช่องว่างคั่นหลายโทเค็น: 830-50*50 504-50*50 04-40-150*150 ─
     {
-      const csvMatch = line.match(/^((?:\d{1,3}\s*,\s*)+\d{1,3})\s*=\s*(.+)$/);
-      if (csvMatch) {
-        const nums = csvMatch[1].split(',').map(n => n.trim()).filter(n => /^\d{1,3}$/.test(n));
-        const amtRaw = csvMatch[2].trim();
-        if (nums.length > 0) {
+      const tokens = line.trim().split(/\s+/);
+      if (tokens.length >= 1) {
+        let allOk = true;
+        for (const tok of tokens) {
+          const triple = tok.match(/^(\d{1,3})-(\d{1,3})-(\d+)([\*xX\u00D7\u2715%:\-])(\d+)$/);
+          if (triple) continue;
+          if (!parseToken(tok)) { allOk = false; break; }
+        }
+        if (allOk && (tokens.length >= 2 || pending.length === 0)) {
           skippedCount += pending.length;
           pending.length = 0;
-          for (const n of nums) {
-            const result = parseBetLine(n, amtRaw);
-            if (!result.error && result.bets.length) {
-              allBets.push(...result.bets);
-              parsedCount++;
-            } else { skippedCount++; }
+          lineForwardFill = null;
+          for (const tok of tokens) {
+            const tr = tok.match(/^(\d{1,3})-(\d{1,3})-(\d+)([\*xX\u00D7\u2715%:\-])(\d+)$/);
+            if (tr) {
+              const amtStr = `${tr[3]}+${tr[5]}`;
+              flush(tr[1], amtStr);
+              flush(tr[2], amtStr);
+            } else {
+              const p = parseToken(tok)!;
+              flush(p.number, p.amountStr);
+            }
           }
           continue;
         }
       }
     }
 
-    // ── "A-B-AMT*AMT" pairs split by space: 04-40-150*150 10-01-150*150 ──
-    // Pattern: two 2-digit numbers paired with amounts → each number gets the amount
+    // ── Multi-pair inline: NUM1 AMT1 NUM2 AMT2 ... ────────────────
+    // e.g. "49 50*50 82 50*50 70 20*20"  (table row from lottery slip)
+    // e.g. "544 20*20*20 857 30*30*30"   (3-digit with 3 amounts)
+    // e.g. "27 100 72 100 30 50*50"      (mixed single/double amounts)
     {
-      // detect if line contains tokens like NN-NN-AMT*AMT or NN-NN-AMT-AMT
-      const pairPat = /^((?:\d{1,3}-\d{1,3}-\d+[\*xX\u00D7\u2715%:\-]\d+\s*)+)$/;
-      if (pairPat.test(line)) {
-        const tokens = line.trim().split(/\s+/);
-        let allOk = true;
-        for (const tok of tokens) {
-          // NN-NN-AMT*AMT → num1=NN, num2=NN, amts=AMT*AMT
-          const pm = tok.match(/^(\d{1,3})-(\d{1,3})-(\d+)([\*xX\u00D7\u2715%:\-])(\d+)$/);
-          if (pm) {
-            const n1 = pm[1], n2 = pm[2], a1 = Number(pm[3]), a2 = Number(pm[5]);
-            flush(n1, `${a1}+${a2}`);
-            flush(n2, `${a1}+${a2}`);
-          } else { allOk = false; }
-        }
-        if (allOk) continue;
+      const pairPat = /^(\d{1,3})\s+(\d+(?:[*×xX\u00D7]\d+)*)(?:\s|$)/u;
+      const pairs: Array<{ number: string; amountStr: string }> = [];
+      let rest = line.trim();
+      while (rest.length > 0) {
+        const m = rest.match(pairPat);
+        if (!m) break;
+        const normAmt = m[2].replace(/[×xX\u00D7]/g, '*');
+        pairs.push({ number: m[1], amountStr: splitAmounts(normAmt).join('+') || normAmt });
+        rest = rest.slice(m[0].length).trimStart();
       }
-    }
-
-    // ── Multiple space-separated bet-tokens in one line ────────────
-    // e.g. "830-50*50 504-50*50" or "830-50*50 504-50*50"
-    // Split by whitespace and try to parse each as a token
-    {
-      const parts = line.split(/\s+/);
-      if (parts.length >= 2) {
-        const parsed: Array<{ number: string; amountStr: string }> = [];
-        let allParsed = true;
-        for (const part of parts) {
-          const t = parseToken(part);
-          if (t) { parsed.push(t); }
-          else { allParsed = false; break; }
-        }
-        if (allParsed && parsed.length >= 2) {
-          for (const p of parsed) flush(p.number, p.amountStr);
-          continue;
-        }
+      if (pairs.length >= 2 && rest.trim() === '') {
+        for (const p of pairs) flush(p.number, p.amountStr);
+        continue;
       }
     }
 
@@ -566,12 +974,93 @@ export function parseLineBetsText(text: string): LineImportResult {
       }
     }
 
+    // ── NUM#AMT*… (ไลน์) — ปิดกลุ่มเลขเปล่า + เลขก่อน # ด้วยราคาเดียวกัน ──
+    {
+      const hm = line.match(/^(\d{1,3})#(.+)$/);
+      if (hm) {
+        let amtRaw = hm[2].trim().replace(/\s+/g, '').replace(/[xX×\u00D7]/g, '*');
+        if (/^\d+\+\d+$/.test(amtRaw)) amtRaw = amtRaw.replace('+', '*');
+        flush(hm[1], amtRaw);
+        continue;
+      }
+    }
+
+    // ── Standalone price line: "30*30" or "=10*10" (ท้ายบล็อกเลขเปล่า) ──
+    {
+      const compact = line.replace(/\s+/g, '').replace(/[xX×]/g, '*').replace(/^=+/, '');
+      const priceOnly = /^(\d+(?:\*\d+)+)$/.test(compact);
+      if (priceOnly && pending.length > 0) {
+        lineForwardFill = null;
+        const amtParts = splitAmounts(compact);
+        const amountStr = amtParts.join('+');
+        for (const num of pending.splice(0)) {
+          const result = parseBetLine(num, amountStr);
+          if (!result.error && result.bets.length) { allBets.push(...result.bets); parsedCount++; }
+          else { skippedCount++; }
+        }
+        continue;
+      }
+    }
+
+    // ── "6กลับ ตัวละ N บาท" command ─────────────────────────────────
+    // Flush pending numbers as all-permutations at given price
+    {
+      const klapCmd = line.match(/^\d*กลับ\s+ตัวละ\s+(\d+)\s*บาท?$/u);
+      if (klapCmd) {
+        const amt = Number(klapCmd[1]);
+        lineForwardFill = null;
+        if (amt > 0 && pending.length > 0) {
+          for (const num of pending.splice(0)) {
+            const perms = getPermutations(num);
+            const type: ParsedBet['bet_type'] = num.length === 3 ? '3digit_top' : '2digit_top';
+            for (const perm of perms) pushBet(perm, type, amt);
+            parsedCount++;
+          }
+        } else { skippedCount++; }
+        continue;
+      }
+    }
+
     // ── Standard single-line extraction ───────────────────────────
     const withAmt = extractLineAmount(line);
-    if (withAmt) { flush(withAmt.number, withAmt.amountStr); continue; }
+    if (withAmt) {
+      // เลข 2 หลักแบบ 89=50 หลังกลุ่มที่มีเลข 3 หลัก แล้วตามด้วยบรรทัดราคาเดี่ยว (20*20) — ไม่รวม pending
+      if (
+        pending.length > 0 &&
+        withAmt.number.length === 2 &&
+        pending.some((n) => n.length === 3)
+      ) {
+        let j = lineIdx + 1;
+        while (j < rawLines.length && !rawLines[j].trim()) j++;
+        if (j < rawLines.length) {
+          const nextCompact = rawLines[j].trim().replace(/\s+/g, '').replace(/[xX×]/g, '*').replace(/^=+/, '');
+          if (/^(\d+(?:\*\d+)+)$/.test(nextCompact)) {
+            applyAmountToNumbers([withAmt.number], withAmt.amountStr);
+            if (amountTriggersForwardFill(withAmt.amountStr)) lineForwardFill = withAmt.amountStr;
+            else lineForwardFill = null;
+            continue;
+          }
+        }
+      }
+      flush(withAmt.number, withAmt.amountStr);
+      continue;
+    }
 
     const bare = extractBareNumber(line);
-    if (bare) { pending.push(bare); continue; }
+    if (bare) {
+      if (lineForwardFill && pending.length === 0) {
+        applyAmountToNumbers([bare], lineForwardFill);
+        continue;
+      }
+      pending.push(bare);
+      continue;
+    }
+
+    // ── Number with Thai annotation: "678 ตรงโต๊ด" → bare number ──
+    {
+      const numThai = line.match(/^(\d{1,3})\s+[\u0E00-\u0E7F]/u);
+      if (numThai) { pending.push(numThai[1]); continue; }
+    }
 
     skippedCount++;
   }
@@ -622,4 +1111,219 @@ export function describeNumberExpansion(input: string): string {
   if (/^\d{2}$/.test(s))  return `2 ตัว`;
   if (/^\d{3}$/.test(s))  return `3 ตัว`;
   return 'รูปแบบไม่ถูกต้อง';
+}
+
+// ─── PDF / OCR import ──────────────────────────────────────────────────────────
+
+/**
+ * โพยมือแบบวงเล็บ } — รายการเลขแนวตั้งหลายตัว แล้วราคาเดียวกันข้างวงเล็บ (เช่น 50 x 50)
+ * แปลงเป็น N บรรทัด NUM=amt*amt เพื่อ import ข้อความตรงกับ parseToken / parseLineBetsText
+ */
+export function normalizeOcrCurlyBraceGroups(rawText: string): string {
+  const lines = rawText.replace(/\r\n|\r/g, '\n').split('\n');
+  const out: string[] = [];
+  let buf: string[] = [];
+
+  const isBareBetNum = (s: string) => /^(?:\d{2}|\d{3})$/.test(s.trim());
+
+  const normalizeBare = (s: string) => s.replace(/[Oo]/g, '0');
+
+  const parseSharedPriceLine = (raw: string): string | null => {
+    let s = raw.replace(/\t/g, ' ').trim();
+    if (!s) return null;
+    s = normalizeOcrBetSymbols(s);
+    s = s.replace(/\s+/g, '');
+    s = s.replace(/[xX×]/g, '*');
+    if (!/^\d+(?:\*\d+)+$/.test(s)) return null;
+    const segs = s.split('*');
+    if (segs.length < 2 || segs.some((p) => !/^\d+$/.test(p))) return null;
+    return segs.join('*');
+  };
+
+  const flushBufBare = () => {
+    for (const n of buf) out.push(n);
+    buf = [];
+  };
+
+  const expandBuf = (price: string) => {
+    for (const n of buf) out.push(`${n}=${price}`);
+    buf = [];
+  };
+
+  for (const raw of lines) {
+    let line = raw.replace(/\t/g, ' ').trim();
+    if (!line) continue;
+
+    // เส้นวงเล็บ / ขีด จาก OCR เดี่ยวๆ — ข้าม
+    if (/^[\}\{\|\[\]\(\)\/\\_\-]+$/.test(line)) continue;
+
+    // หลายเลขในบรรทัดเดียว: "817 125 417 426 205"
+    const compactNums = line.replace(/\s+/g, ' ').trim();
+    const multiNum = compactNums.match(/^(\d{2,3}(?:\s+\d{2,3})+)$/);
+    if (multiNum) {
+      const parts = compactNums.split(/\s+/).filter(isBareBetNum).map(normalizeBare);
+      if (parts.length === 2 && parts[0] === parts[1] && buf.length > 0) {
+        expandBuf(`${parts[0]}*${parts[1]}`);
+        continue;
+      }
+      if (parts.length >= 2) {
+        if (buf.length && buf[0].length !== parts[0].length) flushBufBare();
+        buf.push(...parts);
+        continue;
+      }
+    }
+
+    if (isBareBetNum(line)) {
+      const n = normalizeBare(line.trim());
+      if (buf.length && buf[0].length !== n.length) flushBufBare();
+      buf.push(n);
+      continue;
+    }
+
+    const price = parseSharedPriceLine(line);
+    if (price !== null) {
+      if (buf.length > 0) expandBuf(price);
+      continue;
+    }
+
+    if (/[\u0E00-\u0E7F]/.test(line)) {
+      if (buf.length) flushBufBare();
+      out.push(line);
+      continue;
+    }
+
+    if (buf.length) flushBufBare();
+    out.push(line);
+  }
+
+  if (buf.length) flushBufBare();
+
+  return out.join('\n');
+}
+
+/**
+ * แปลงสัญลักษณ์ยูนิโค้ด / เว้นวรรครอบ = * จาก OCR (สติกเกอร์ LINE, ภาพ)
+ */
+export function normalizeOcrBetSymbols(line: string): string {
+  let s = line
+    .replace(/[\uFF1D﹦＝]/g, '=')
+    .replace(/[\uFF0A＊∗﹡]/g, '*')
+    .replace(/[\u00D7\u2715\u2716]/g, '*');
+  s = s.replace(/\s+/g, ' ').trim();
+  return s.replace(/\s*=\s*/g, '=').replace(/\s*\*\s*/g, '*');
+}
+
+/**
+ * แปลงข้อความจาก OCR โพยตาราง / โพยวงเล็บ — เรียก normalizeOcrCurlyBraceGroups ก่อน
+ * · แนวตั้งหลายเลข + ราคาเดียว (50 x 50) → 817=50*50…
+ * · "548 20 20 20" → "548 20*20*20" · "13 30 30" → "13 30*30"
+ * · หัวข้อไลน์ บนล่าง / บนโต๊ด
+ */
+export function normalizeHandwrittenSlipTableOcr(rawText: string): string {
+  const expanded = normalizeOcrCurlyBraceGroups(rawText);
+  const lines = expanded.replace(/\r\n|\r/g, '\n').split('\n');
+  const out: string[] = [];
+  /** บริบทจากข้อความไทยบนภาพสติกเกอร์ (OCR อาจอ่านได้บางส่วน) */
+  let slipSection: 'none' | 'bon_lang' | 'bon_tod' = 'none';
+
+  for (let line of lines) {
+    line = line.replace(/\t/g, ' ');
+    line = normalizeOcrBetSymbols(line);
+    if (!line) continue;
+
+    // หัวข้อแยกกลุ่ม (ไม่ใส่ใน out)
+    if (/บน\s*ล่าง|บนล่าง/u.test(line) && !/โต๊ด/u.test(line)) {
+      slipSection = 'bon_lang';
+      continue;
+    }
+    if (/บน\s*โต๊ด|บนโต๊ด/u.test(line)) {
+      slipSection = 'bon_tod';
+      continue;
+    }
+
+    // แก้ O/o ที่มักออกจาก OCR ในช่องตัวเลข
+    if (/^\d/.test(line)) {
+      line = line.replace(/[Oo]/g, '0');
+    }
+
+    // 3 หลัก + บน + ล่าง + โต๊ด — ตารางโพยมักเรียง บน|ล่าง|โต๊ด แต่ parseBetLine(3digit) คาด บน|โต๊ด|ล่าง
+    const m3 = line.match(/^(\d{3})\s+(\d+)\s+(\d+)\s+(\d+)$/);
+    if (m3) {
+      const top = m3[2];
+      const bottom = m3[3];
+      const tote = m3[4];
+      out.push(`${m3[1]} ${top}*${tote}*${bottom}`);
+      continue;
+    }
+
+    // 3 หลัก เฉพาะบน+ล่าง (OCR ตกคอลโต๊ด) — หรือบน+โต๊ดเมื่อมีหัวข้อบนโต๊ด
+    const m3pair = line.match(/^(\d{3})\s+(\d+)\s+(\d+)$/);
+    if (m3pair) {
+      if (slipSection === 'bon_tod') {
+        out.push(`${m3pair[1]} ${m3pair[2]}*${m3pair[3]}*0`);
+      } else {
+        out.push(`${m3pair[1]} ${m3pair[2]}*0*${m3pair[3]}`);
+      }
+      continue;
+    }
+
+    // 2 หลัก + บน + ล่าง (ไม่มีโต๊ด)
+    const m2 = line.match(/^(\d{2})\s+(\d+)\s+(\d+)$/);
+    if (m2) {
+      out.push(`${m2[1]} ${m2[2]}*${m2[3]}`);
+      continue;
+    }
+
+    out.push(line);
+  }
+
+  return out.join('\n');
+}
+
+/**
+ * ดึงรายการเดิมพันจากข้อความ PDF/OCR — รองรับทั้ง
+ * - "เลข 20*20*20" (ช่องว่าง)
+ * - "เลข=20*20" (= จากสติกเกอร์/สกรีนช็อต)
+ * แล้ว parseLineBetsText
+ */
+export function parsePdfBetsText(rawText: string): LineImportResult & { extractedLines: string } {
+  const normalized = rawText
+    .replace(/[\u00D7\u2715\u2716]/g, '*')
+    .replace(/\r\n|\r/g, '\n');
+
+  const lines: string[] = [];
+  const seen = new Set<string>();
+  const addRow = (row: string) => {
+    if (!seen.has(row)) {
+      seen.add(row);
+      lines.push(row);
+    }
+  };
+
+  const perLineMulti = /(?<!\d)(\d{1,3})\s+(\d+(?:\*\d+)*)(?!\d)/g;
+
+  for (const rawLine of normalized.split('\n')) {
+    const line = normalizeOcrBetSymbols(rawLine.trim());
+    if (!line) continue;
+
+    const tok = parseToken(line);
+    if (tok) {
+      addRow(`${tok.number} ${tok.amountStr.replace(/\+/g, '*')}`);
+      continue;
+    }
+
+    let m: RegExpExecArray | null;
+    perLineMulti.lastIndex = 0;
+    let any = false;
+    while ((m = perLineMulti.exec(line)) !== null) {
+      addRow(`${m[1]} ${m[2]}`);
+      any = true;
+    }
+    if (any) continue;
+  }
+
+  const extractedLines = lines.join('\n');
+  const result = parseLineBetsText(extractedLines);
+  const bets = result.bets.map((b) => ({ ...b, segment_index: 1 }));
+  return { ...result, bets, extractedLines };
 }

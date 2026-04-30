@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ─── CutHuay — Quick Start (Development) ────────────────────────────────────
+# ─── AuraX — Quick Start (Development) ────────────────────────────────────
 set -e
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

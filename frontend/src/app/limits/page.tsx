@@ -29,6 +29,29 @@ const BET_TYPES: BetType[] = [
   '1digit_top', '1digit_bottom',
 ];
 
+/**
+ * คอลัมน์ราคา / % — ให้ 2 ตัวและ 3 ตัวอ่านสอดคล้องกัน:
+ * แสดงยอดจ่ายต่อบาท (จาก custom_payout หรือคำนวณจากเรทมาตรฐาน × %) ตามด้วย % เมื่อไม่ใช่ 100%
+ */
+function formatLimitPayoutCell(l: NumberLimit): string {
+  const pctRaw = Number(l.payout_pct);
+  const pct = Number.isFinite(pctRaw) ? Math.round(pctRaw) : 100;
+  const def = DEFAULT_PAYOUT_RATES[l.bet_type];
+  const useCustom = l.custom_payout != null && Number(l.custom_payout) > 0;
+  const rateNum = useCustom ? Number(l.custom_payout) : def * (pct / 100);
+  const rounded = Math.round(rateNum);
+  const rateStr =
+    Math.abs(rateNum - rounded) < 1e-6
+      ? rounded.toLocaleString('th-TH')
+      : Number(rateNum.toFixed(2)).toLocaleString('th-TH', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+
+  if (pct === 100) {
+    if (!useCustom) return '-';
+    return rateStr;
+  }
+  return `${rateStr} · ${pct}%`;
+}
+
 // ─── sub-components ───────────────────────────────────────────────────────────
 
 interface LimitTableProps {
@@ -37,11 +60,15 @@ interface LimitTableProps {
   dealers: Dealer[];
   dealerLimits?: NumberLimit[];
   selectedId: string | null;
+  tab: Tab;
   onSelect: (id: string) => void;
   onDelete: (id: string) => void;
 }
 
-function LimitTable({ limits, customers, dealers, dealerLimits, selectedId, onSelect, onDelete }: LimitTableProps) {
+function LimitTable({ limits, customers, dealers, dealerLimits, selectedId, tab, onSelect, onDelete }: LimitTableProps) {
+  const [filterBetType, setFilterBetType] = useState<BetType | ''>('');
+  const [filterNumber, setFilterNumber] = useState('');
+
   const entityName = (l: NumberLimit) => {
     if (l.entity_type === 'all') return 'ทั้งหมด';
     const c = customers.find((x) => x.id === l.entity_id);
@@ -57,13 +84,50 @@ function LimitTable({ limits, customers, dealers, dealerLimits, selectedId, onSe
            d.payout_pct === l.payout_pct && d.is_blocked === l.is_blocked
     );
 
-  if (limits.length === 0)
-    return <p className="text-slate-500 text-sm py-6 text-center">ยังไม่มีรายการอั้นเลข</p>;
+  // For customer tab: collapse per-customer duplicates into unique number+bet_type groups
+  const collapsedLimits = tab === 'customer'
+    ? (() => {
+        const seen = new Map<string, NumberLimit & { custCount: number }>();
+        for (const l of limits) {
+          const key = `${l.number}||${l.bet_type}||${l.custom_payout}||${l.payout_pct}||${l.is_blocked}`;
+          if (!seen.has(key)) seen.set(key, { ...l, custCount: 1 });
+          else seen.get(key)!.custCount++;
+        }
+        return Array.from(seen.values());
+      })()
+    : limits as (NumberLimit & { custCount?: number })[];
+
+  const displayLimits = collapsedLimits
+    .filter(l => !filterBetType || l.bet_type === filterBetType)
+    .filter(l => !filterNumber || l.number.includes(filterNumber.trim()));
 
   return (
-    <div className="overflow-auto max-h-[calc(100vh-260px)]">
+    <>
+      {/* Filter bar */}
+      <div className="flex gap-2 mb-2">
+        <input
+          type="text"
+          placeholder="กรองเลข..."
+          value={filterNumber}
+          onChange={e => setFilterNumber(e.target.value)}
+          className="flex-1 bg-surface-200 border border-border rounded px-2 py-1 text-xs text-theme-text-primary placeholder:text-theme-text-muted"
+        />
+        <select
+          value={filterBetType}
+          onChange={e => setFilterBetType(e.target.value as BetType | '')}
+          className="bg-surface-200 border border-border rounded px-2 py-1 text-xs text-theme-text-primary"
+        >
+          <option value="">ทุกประเภท</option>
+          {BET_TYPES.map(bt => (
+            <option key={bt} value={bt}>{BET_TYPE_LABELS[bt]}</option>
+          ))}
+        </select>
+      </div>
+      {displayLimits.length === 0
+        ? <p className="text-theme-text-muted text-sm py-6 text-center">ไม่มีรายการ</p>
+        : <div className="overflow-auto max-h-[calc(100vh-300px)]">
       <table className="w-full text-sm">
-        <thead className="sticky top-0 bg-slate-800 text-slate-400">
+        <thead className="sticky top-0 bg-surface-100 text-theme-text-secondary">
           <tr>
             <th className="px-3 py-2 text-left">ประเภท</th>
             <th className="px-3 py-2 text-center">เลข</th>
@@ -74,40 +138,47 @@ function LimitTable({ limits, customers, dealers, dealerLimits, selectedId, onSe
           </tr>
         </thead>
         <tbody>
-          {limits.map((l) => (
+          {displayLimits.map((l) => (
             <tr
               key={l.id}
               onClick={() => onSelect(l.id)}
-              className={`cursor-pointer border-b border-slate-700/50 transition-colors ${
-                l.id === selectedId ? 'bg-blue-900/40' : 'hover:bg-slate-700/40'
+              className={`cursor-pointer border-b border-border/50 transition-colors duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))] ${
+                l.id === selectedId ? 'bg-[var(--color-nav-active-bg)]' : 'hover:bg-[var(--bg-hover)]'
               }`}
             >
-              <td className="px-3 py-2 text-slate-300">{BET_TYPE_LABELS[l.bet_type]}</td>
-              <td className="px-3 py-2 text-center font-mono text-yellow-300">{l.number}</td>
-              <td className="px-3 py-2 text-center text-slate-300">
-                {l.custom_payout != null
-                  ? l.custom_payout
-                  : l.payout_pct !== 100
-                  ? `${l.payout_pct}%`
-                  : '-'}
+              <td className="px-3 py-2 text-theme-text-secondary">{BET_TYPE_LABELS[l.bet_type]}</td>
+              <td className="px-3 py-2 text-center font-mono font-semibold text-theme-text-primary">{l.number}</td>
+              <td className="px-3 py-2 text-center text-theme-text-secondary tabular-nums">
+                {formatLimitPayoutCell(l)}
               </td>
               <td className="px-3 py-2 text-center">
                 {l.is_blocked ? (
-                  <span className="text-red-400 font-bold">✓</span>
+                  <span className="text-loss font-bold">✓</span>
                 ) : (
-                  <span className="text-slate-600">-</span>
+                  <span className="text-theme-text-muted">-</span>
                 )}
               </td>
-              <td className="px-3 py-2 text-slate-400">
-                {entityName(l)}
-                {matchesDealer(l) && (
-                  <span className="ml-1.5 text-[10px] bg-emerald-900/30 border border-emerald-600/30 text-emerald-400 rounded px-1 py-0.5 align-middle">= เจ้ามือ</span>
+              <td className="px-3 py-2 text-theme-text-secondary">
+                {tab === 'customer' && (l as NumberLimit & { custCount?: number }).custCount != null ? (
+                  <span className="text-[10px] bg-[var(--color-badge-neutral-bg)] border border-[var(--color-badge-neutral-border)] text-theme-text-secondary rounded px-1.5 py-0.5">
+                    ลูกค้าทุกคน {(l as NumberLimit & { custCount: number }).custCount > 1 ? `(${(l as NumberLimit & { custCount: number }).custCount})` : ''}
+                  </span>
+                ) : (
+                  <>
+                    {entityName(l)}
+                    {l.entity_type === 'all' && (
+                      <span className="ml-1.5 text-[10px] bg-[var(--color-badge-neutral-bg)] border border-[var(--color-badge-neutral-border)] text-theme-text-secondary rounded px-1 py-0.5 align-middle">ทุกคน</span>
+                    )}
+                    {matchesDealer(l) && (
+                      <span className="ml-1.5 text-[10px] bg-[var(--color-badge-success-bg)] border border-[var(--color-badge-success-border)] text-[var(--color-badge-success-text)] rounded px-1 py-0.5 align-middle">= เจ้ามือ</span>
+                    )}
+                  </>
                 )}
               </td>
               <td className="px-3 py-2 text-right">
                 <button
                   onClick={(e) => { e.stopPropagation(); onDelete(l.id); }}
-                  className="text-red-500 hover:text-red-300 px-1"
+                  className="text-risk-high hover:text-red-300 px-1"
                   title="ลบ"
                 >✕</button>
               </td>
@@ -116,6 +187,8 @@ function LimitTable({ limits, customers, dealers, dealerLimits, selectedId, onSe
         </tbody>
       </table>
     </div>
+      }
+    </>
   );
 }
 
@@ -234,6 +307,34 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
     setBusy(false);
   };
 
+  // อั้นทั้ง 3บน + โต็ด พร้อมกัน — ใช้ % เดียวกับในฟอร์ม แต่ให้ backend คำนวณจ่ายแยกตามอัตราแต่ละประเภท
+  // (ห้ามใช้ buildPayload แล้วสลับ bet_type เพราะ custom_payout เป็นยอดจ่ายต่อบาทแบบตายตัวจากอัตราประเภทที่เลือก จะทำให้โต๊ดได้เรทเดียวกับ 3 บน)
+  const doLimitTopAndTote = async () => {
+    const nums = numbers();
+    if (!nums.length) return;
+    const pct = parseFloat(form.payoutPct) || 100;
+    setBusy(true); setMsg('');
+    try {
+      const base = {
+        round_id: roundId,
+        entity_type: entityType,
+        entity_id: entityId,
+        custom_payout: null as number | null,
+        payout_pct: pct,
+        is_blocked: false,
+        max_amount: null as number | null,
+      };
+      const payloads = [
+        ...nums.map((n) => ({ ...base, number: n, bet_type: '3digit_top' as const })),
+        ...nums.map((n) => ({ ...base, number: n, bet_type: '3digit_tote' as const })),
+      ];
+      await limitsApi.bulkUpsert(roundId, payloads);
+      setMsg(`บันทึก 3บน+โต็ด สำเร็จ (${nums.length * 2} รายการ) · ใช้ ${pct}% แยกคำนวณตามอัตราแต่ละประเภท`);
+      onSave();
+    } catch { setMsg('เกิดข้อผิดพลาด'); }
+    setBusy(false);
+  };
+
   const doCancel = async () => {
     if (!selectedLimitId) { setMsg('กรุณาเลือกรายการจากตาราง'); return; }
     setBusy(true); setMsg('');
@@ -269,25 +370,25 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
     <div className="flex flex-col gap-3">
       {/* Entity row */}
       <div>
-        <label className="block text-xs text-slate-400 mb-1">{entityLabel}</label>
+        <label className="block text-xs text-theme-text-secondary mb-1">{entityLabel}</label>
         <div className="flex items-center gap-2">
           <select
             value={form.entityId}
             onChange={(e) => set('entityId', e.target.value)}
             disabled={form.allEntities}
-            className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-200 disabled:opacity-40"
+            className="flex-1 bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary disabled:opacity-40"
           >
             <option value="">-- เลือก{entityLabel} --</option>
             {entities.map((e) => (
               <option key={e.id} value={e.id}>{e.name}</option>
             ))}
           </select>
-          <label className="flex items-center gap-1 text-sm text-slate-300 whitespace-nowrap cursor-pointer">
+          <label className="flex items-center gap-1 text-sm text-theme-text-secondary whitespace-nowrap cursor-pointer">
             <input
               type="checkbox"
               checked={form.allEntities}
               onChange={(e) => set('allEntities', e.target.checked)}
-              className="accent-blue-500"
+              className="accent"
             />
             ทั้งหมด
           </label>
@@ -296,11 +397,11 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
 
       {/* Bet type */}
       <div>
-        <label className="block text-xs text-slate-400 mb-1">ประเภท</label>
+        <label className="block text-xs text-theme-text-secondary mb-1">ประเภท</label>
         <select
           value={form.betType}
           onChange={(e) => handleBetTypeChange(e.target.value as BetType)}
-          className="w-full bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-200"
+          className="w-full bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary"
         >
           {BET_TYPES.map((bt) => (
             <option key={bt} value={bt}>{BET_TYPE_LABELS[bt]}</option>
@@ -310,7 +411,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
 
       {/* Number */}
       <div>
-        <label className="block text-xs text-slate-400 mb-1">เลข</label>
+        <label className="block text-xs text-theme-text-secondary mb-1">เลข</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -320,14 +421,14 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
             onChange={(e) => handleNumberChange(e.target.value.replace(/\D/g, ''))}
             maxLength={3}
             placeholder="000"
-            className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-200 font-mono text-center"
+            className="flex-1 bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary font-mono text-center"
           />
-          <label className="flex items-center gap-1 text-sm text-slate-300 whitespace-nowrap cursor-pointer">
+          <label className="flex items-center gap-1 text-sm text-theme-text-secondary whitespace-nowrap cursor-pointer">
             <input
               type="checkbox"
               checked={form.reverse}
               onChange={(e) => set('reverse', e.target.checked)}
-              className="accent-blue-500"
+              className="accent"
             />
             กลับเลข
           </label>
@@ -336,7 +437,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
 
       {/* Payout rate + pct — synced */}
       <div>
-        <label className="block text-xs text-slate-400 mb-1">จ่าย</label>
+        <label className="block text-xs text-theme-text-secondary mb-1">จ่าย</label>
         <div className="flex items-center gap-2">
           {/* จ่าย field: typing here recomputes % */}
           <input
@@ -351,7 +452,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 : String(Math.round((payout / defaultRate) * 100));
               setForm((p) => ({ ...p, customPayout: raw, payoutPct: newPct }));
             }}
-            className="flex-1 bg-slate-700 border border-slate-600 rounded px-2 py-1.5 text-sm text-slate-200 font-mono text-center"
+            className="flex-1 bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary font-mono text-center"
           />
           <div className="flex items-center gap-1">
             {/* % spinner: changing here recomputes จ่าย */}
@@ -362,7 +463,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 const newPayout = parseFloat((defaultRate * newPct / 100).toFixed(2));
                 setForm((p) => ({ ...p, payoutPct: String(newPct), customPayout: String(newPayout) }));
               }}
-              className="bg-slate-600 hover:bg-slate-500 text-white rounded px-2 py-1 text-xs"
+              className="bg-surface-300 hover:bg-surface-400 text-theme-btn-primary-fg rounded px-2 py-1 text-xs transition-all duration-theme"
             >▼</button>
             <input
               type="text"
@@ -374,7 +475,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 const newPayout = parseFloat((defaultRate * Math.min(pct, 100) / 100).toFixed(2));
                 setForm((p) => ({ ...p, payoutPct: raw, customPayout: String(newPayout) }));
               }}
-              className="w-12 bg-slate-700 border border-slate-600 rounded px-1 py-1.5 text-sm text-slate-200 font-mono text-center"
+              className="w-12 bg-surface-200 border border-border rounded px-1 py-1.5 text-sm text-theme-text-primary font-mono text-center"
             />
             <button
               type="button"
@@ -383,53 +484,48 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 const newPayout = parseFloat((defaultRate * newPct / 100).toFixed(2));
                 setForm((p) => ({ ...p, payoutPct: String(newPct), customPayout: String(newPayout) }));
               }}
-              className="bg-slate-600 hover:bg-slate-500 text-white rounded px-2 py-1 text-xs"
+              className="bg-surface-300 hover:bg-surface-400 text-theme-btn-primary-fg rounded px-2 py-1 text-xs transition-all duration-theme"
             >▲</button>
-            <span className="text-slate-400 text-sm">%</span>
+            <span className="text-theme-text-secondary text-sm">%</span>
           </div>
         </div>
       </div>
 
-      {/* Buttons */}
+      {/* Buttons — ปิดรับไว้ล่างสุด (ไม่ค่อยใช้) */}
       <div className="flex flex-col gap-2 mt-1">
-        <button
-          onClick={doBlock}
-          disabled={busy}
-          className="w-full bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white rounded py-2 text-sm font-semibold transition-colors"
-        >
-          ปิดรับ
-        </button>
         <button
           onClick={doLimit}
           disabled={busy}
-          className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded py-2 text-sm font-semibold transition-colors"
+          className="btn-toolbar-glow btn-fintech-search w-full !h-auto min-h-[2.5rem] py-2.5 text-sm font-semibold disabled:opacity-50"
         >
           ทำรายการอั้น
         </button>
-        <button
-          onClick={doCancel}
-          disabled={busy}
-          className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white rounded py-2 text-sm font-semibold transition-colors"
-        >
-          ยกเลิกการอั้น
-        </button>
-        <button
-          onClick={doLimitAll}
-          disabled={busy}
-          className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white rounded py-2 text-sm font-semibold transition-colors"
-        >
-          อั้นเลขติด
-        </button>
-        <button
-          onClick={doFinish}
-          className="w-full bg-slate-600 hover:bg-slate-500 text-white rounded py-2 text-sm font-semibold transition-colors"
-        >
-          จบการทำงาน
-        </button>
+        {(form.betType === '3digit_top' || form.betType === '3digit_tote') && (
+          <button
+            onClick={doLimitTopAndTote}
+            disabled={busy}
+            className="btn-toolbar-glow btn-fintech-spark w-full !h-auto min-h-[2.5rem] py-2.5 text-sm font-semibold disabled:opacity-50"
+            title="ใช้ % จ่ายในฟอร์มเดียวกัน ระบบคำนวณยอดจ่ายต่อบาทแยกตามอัตรา 3 บน / โต๊ด"
+          >
+            อั้น 3บน + โต็ด พร้อมกัน
+          </button>
+        )}
+        <div className="pt-2 mt-1 border-t border-border/70 space-y-1.5">
+          <p className="text-[10px] text-theme-text-muted text-center leading-snug px-0.5">
+            ปิดรับทันที (ไม่ค่อยใช้)
+          </p>
+          <button
+            onClick={doBlock}
+            disabled={busy}
+            className="btn-toolbar-glow btn-toolbar-danger w-full !h-auto min-h-[2.25rem] py-2 text-sm font-semibold disabled:opacity-50 opacity-95"
+          >
+            ปิดรับ
+          </button>
+        </div>
       </div>
 
       {msg && (
-        <p className={`text-sm text-center mt-1 ${msg.includes('ผิดพลาด') ? 'text-red-400' : 'text-green-400'}`}>
+        <p className={`text-sm text-center mt-1 ${msg.includes('ผิดพลาด') ? 'text-loss' : 'text-green-400'}`}>
           {msg}
         </p>
       )}
@@ -461,58 +557,60 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
     if (dealerLimits.length === 0) { setMsg('ไม่มีเลขอั้นเจ้ามือ'); return; }
     if (!allCustomers && selectedCust.size === 0) { setMsg('กรุณาเลือกลูกค้าอย่างน้อย 1 ราย'); return; }
     setBusy(true); setMsg('');
+    const toNum = (v: unknown) => (v == null ? null : Number(v));
+    const mapLimit = (l: NumberLimit, entity_type: 'all' | 'customer', entity_id: string | null) => ({
+      round_id: roundId, number: l.number, bet_type: l.bet_type,
+      entity_type, entity_id,
+      custom_payout: toNum(l.custom_payout),
+      payout_pct: Number(l.payout_pct) || 100,
+      is_blocked: l.is_blocked,
+      max_amount: toNum(l.max_amount),
+    });
     try {
-      if (allCustomers) {
-        // entity_type: 'all' — applies to all customers
-        const payloads = dealerLimits.map(l => ({
-          round_id: roundId, number: l.number, bet_type: l.bet_type,
-          entity_type: 'all' as const, entity_id: null,
-          custom_payout: l.custom_payout ?? null,
-          payout_pct: l.payout_pct, is_blocked: l.is_blocked, max_amount: l.max_amount ?? null,
-        }));
-        await limitsApi.bulkUpsert(roundId, payloads);
-      } else {
-        // one row per customer per limit
-        const payloads = [...selectedCust].flatMap(custId =>
-          dealerLimits.map(l => ({
-            round_id: roundId, number: l.number, bet_type: l.bet_type,
-            entity_type: 'customer' as const, entity_id: custId,
-            custom_payout: l.custom_payout ?? null,
-            payout_pct: l.payout_pct, is_blocked: l.is_blocked, max_amount: l.max_amount ?? null,
-          }))
-        );
-        await limitsApi.bulkUpsert(roundId, payloads);
+      // ทุกกรณีบันทึกเป็น per-customer rows (entity_type='customer')
+      // เพื่อไม่ให้ทับซ้อนกับ row ของเจ้ามือ (entity_type='all')
+      const targetIds = allCustomers
+        ? customers.map(c => c.id)
+        : [...selectedCust];
+
+      if (targetIds.length === 0) {
+        setMsg('ไม่มีลูกค้าในระบบ'); setBusy(false); return;
       }
-      setMsg(`คัดลอกสำเร็จ ${dealerLimits.length} รายการ`);
+
+      const payloads = targetIds.flatMap(custId =>
+        dealerLimits.map(l => mapLimit(l, 'customer', custId))
+      );
+      await limitsApi.bulkUpsert(roundId, payloads);
+      setMsg(`คัดลอกสำเร็จ ${dealerLimits.length} รายการ × ${targetIds.length} ลูกค้า`);
       setTimeout(onDone, 800);
     } catch { setMsg('เกิดข้อผิดพลาด'); }
     finally { setBusy(false); }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4" onClick={onClose}>
       <div
-        className="bg-slate-800 border border-slate-600 rounded-xl shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]"
+        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-5 py-3 border-b border-slate-700 flex items-center justify-between shrink-0">
+        <div className="px-5 py-3 border-b border-border flex items-center justify-between shrink-0">
           <div>
-            <h3 className="font-bold text-slate-100 text-sm">คัดลอกเลขอั้นจากเจ้ามือ</h3>
-            <p className="text-xs text-slate-500 mt-0.5">{dealerLimits.length} รายการ — เลือกว่าจะใช้กับลูกค้าใด</p>
+            <h3 className="font-bold text-theme-text-primary text-sm">คัดลอกเลขอั้นจากเจ้ามือ</h3>
+            <p className="text-xs text-theme-text-muted mt-0.5">{dealerLimits.length} รายการ — เลือกว่าจะใช้กับลูกค้าใด</p>
           </div>
-          <button onClick={onClose} className="text-slate-500 hover:text-slate-300 text-lg leading-none">✕</button>
+          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-lg leading-none">✕</button>
         </div>
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left: dealer limits preview */}
-          <div className="flex-1 border-r border-slate-700 overflow-auto">
-            <div className="px-3 py-2 text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-700 sticky top-0 bg-slate-800">เลขอั้นเจ้ามือที่จะคัดลอก</div>
+          <div className="flex-1 border-r border-border overflow-auto">
+            <div className="px-3 py-2 text-[10px] text-theme-text-muted uppercase tracking-wider border-b border-border sticky top-0 bg-surface-100">เลขอั้นเจ้ามือที่จะคัดลอก</div>
             {dealerLimits.length === 0
-              ? <p className="text-slate-600 text-xs italic text-center py-8">ไม่มีเลขอั้นเจ้ามือ</p>
+              ? <p className="text-theme-text-muted text-xs italic text-center py-8">ไม่มีเลขอั้นเจ้ามือ</p>
               : (
                 <table className="w-full text-xs">
-                  <thead className="sticky top-[29px] bg-slate-800 text-slate-500">
+                  <thead className="sticky top-[29px] bg-surface-100 text-theme-text-muted">
                     <tr>
                       <th className="px-3 py-1.5 text-left">ประเภท</th>
                       <th className="px-3 py-1.5 text-center">เลข</th>
@@ -522,14 +620,14 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
                   </thead>
                   <tbody>
                     {dealerLimits.map((l, i) => (
-                      <tr key={l.id} className={`border-b border-slate-700/40 ${i % 2 === 0 ? '' : 'bg-slate-700/20'}`}>
-                        <td className="px-3 py-1.5 text-slate-300">{BET_TYPE_LABELS[l.bet_type]}</td>
-                        <td className="px-3 py-1.5 text-center font-mono text-yellow-300">{l.number}</td>
-                        <td className="px-3 py-1.5 text-center text-slate-300">
-                          {l.is_blocked ? '—' : l.payout_pct !== 100 ? `${l.payout_pct}%` : '100%'}
+                      <tr key={l.id} className={`border-b border-border/40 ${i % 2 === 0 ? '' : 'bg-surface-200/20'}`}>
+                        <td className="px-3 py-1.5 text-theme-text-secondary">{BET_TYPE_LABELS[l.bet_type]}</td>
+                        <td className="px-3 py-1.5 text-center font-mono font-semibold text-theme-text-primary">{l.number}</td>
+                        <td className="px-3 py-1.5 text-center text-theme-text-secondary tabular-nums">
+                          {l.is_blocked ? '—' : formatLimitPayoutCell(l)}
                         </td>
                         <td className="px-3 py-1.5 text-center">
-                          {l.is_blocked ? <span className="text-red-400 font-bold">✓</span> : <span className="text-slate-600">—</span>}
+                          {l.is_blocked ? <span className="text-loss font-bold">✓</span> : <span className="text-theme-text-muted">—</span>}
                         </td>
                       </tr>
                     ))}
@@ -540,25 +638,25 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
 
           {/* Right: customer selection */}
           <div className="w-52 shrink-0 flex flex-col overflow-hidden">
-            <div className="px-3 py-2 text-[10px] text-slate-500 uppercase tracking-wider border-b border-slate-700">ใช้กับ</div>
+            <div className="px-3 py-2 text-[10px] text-theme-text-muted uppercase tracking-wider border-b border-border">ใช้กับ</div>
             <div className="flex-1 overflow-auto p-3 space-y-2">
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
-                allCustomers ? 'bg-blue-600/20 border-blue-500/40 text-blue-300' : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
               }`}>
-                <input type="radio" checked={allCustomers} onChange={() => setAllCustomers(true)} className="accent-blue-500" />
+                <input type="radio" checked={allCustomers} onChange={() => setAllCustomers(true)} className="accent" />
                 ลูกค้าทุกคน
               </label>
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
-                !allCustomers ? 'bg-blue-600/20 border-blue-500/40 text-blue-300' : 'border-slate-600 text-slate-400 hover:border-slate-500'
+                !allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
               }`}>
-                <input type="radio" checked={!allCustomers} onChange={() => setAllCustomers(false)} className="accent-blue-500" />
+                <input type="radio" checked={!allCustomers} onChange={() => setAllCustomers(false)} className="accent" />
                 เลือกลูกค้า
               </label>
               {!allCustomers && (
                 <div className="space-y-1 pl-2">
                   {customers.map(c => (
-                    <label key={c.id} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer py-1">
-                      <input type="checkbox" className="accent-blue-500"
+                    <label key={c.id} className="flex items-center gap-2 text-xs text-theme-text-secondary cursor-pointer py-1">
+                      <input type="checkbox" className="accent"
                         checked={selectedCust.has(c.id)}
                         onChange={() => toggleCust(c.id)} />
                       {c.name}
@@ -571,14 +669,14 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-700 flex items-center justify-between shrink-0">
-          <span className={`text-xs ${msg.includes('ผิดพลาด') ? 'text-red-400' : 'text-emerald-400'}`}>{msg}</span>
+        <div className="px-5 py-3 border-t border-border flex items-center justify-between shrink-0">
+          <span className={`text-xs ${msg.includes('ผิดพลาด') ? 'text-loss' : 'text-profit'}`}>{msg}</span>
           <div className="flex gap-2">
-            <button onClick={onClose} className="h-8 px-4 rounded-lg bg-slate-700 hover:bg-slate-600 text-sm text-slate-300 transition-colors border border-slate-600">
+            <button onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-surface-300 text-sm text-theme-text-secondary transition-colors border border-border">
               ยกเลิก
             </button>
             <button onClick={handleConfirm} disabled={busy || dealerLimits.length === 0}
-              className="h-8 px-5 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm text-white font-semibold transition-colors disabled:opacity-50">
+              className="btn-primary-glow h-8 px-5 text-sm rounded-xl">
               {busy ? 'กำลังบันทึก…' : `ยืนยัน (${dealerLimits.length} รายการ)`}
             </button>
           </div>
@@ -641,7 +739,8 @@ export default function LimitsPage() {
     setLoading(true);
     try {
       if (tab === 'customer') {
-        // Customer tab: show only customer-specific limits (not 'all' / dealer limits)
+        // Customer tab: per-customer rows only (entity_type='customer')
+        // 'all' rows belong to dealer configuration — shown in dealer tab
         const res = await limitsApi.list(roundId, { entity_type: 'customer' });
         setLimits(res.data.limits ?? []);
       } else {
@@ -669,7 +768,48 @@ export default function LimitsPage() {
   }, [fetchLimits, fetchDealerLimits]);
 
   const handleDelete = async (id: string) => {
-    await limitsApi.deleteById(roundId, id);
+    try {
+      await limitsApi.deleteById(roundId, id);
+    } catch {
+      // ignore if already deleted
+    }
+    setSelectedId(null);
+    fetchLimits();
+    fetchDealerLimits();
+  };
+
+  const handleDeleteAll = async () => {
+    if (!roundId) return;
+    if (!confirm('ลบเลขอั้นทั้งหมดในแท็บนี้?')) return;
+    try {
+      if (tab === 'dealer') {
+        await Promise.all([
+          limitsApi.deleteAll(roundId, 'all'),
+          limitsApi.deleteAll(roundId, 'dealer'),
+        ]);
+      } else {
+        await limitsApi.deleteAll(roundId, 'customer');
+      }
+    } catch {
+      // ignore
+    }
+    setSelectedId(null);
+    fetchLimits();
+    fetchDealerLimits();
+  };
+
+  /** ลบทุก entity_type ในงวด (ลูกค้า + เจ้ามือ + ทั่วไป) — หน้าตัดอ้างอิงแค่ all+dealer แต่ล้างครบกันข้อมูลค้าง */
+  const handlePurgeAllLimitsInRound = async () => {
+    if (!roundId) return;
+    if (!confirm(
+      'ลบเลขอั้นทั้งหมดของงวดนี้ทุกประเภท (ลูกค้า + เจ้ามือ + ทั่วไป)?\n'
+      + 'ปุ่ม "ลบทั้งหมด" ในแต่ละแท็บลบเฉพาะแท็บนั้น — ปุ่มนี้เคลียร์ทั้งฐานข้อมูลของงวด',
+    )) return;
+    try {
+      await limitsApi.deleteAll(roundId);
+    } catch {
+      // ignore
+    }
     setSelectedId(null);
     fetchLimits();
     fetchDealerLimits();
@@ -685,7 +825,7 @@ export default function LimitsPage() {
           <select
             value={roundId}
             onChange={(e) => setRoundId(e.target.value)}
-            className="bg-slate-700 border border-slate-600 rounded px-3 py-1.5 text-sm text-slate-200"
+            className="bg-surface-200 border border-border rounded px-3 py-1.5 text-sm text-theme-text-primary"
           >
             <option value="">-- เลือกงวด --</option>
             {rounds.map((r) => (
@@ -693,58 +833,88 @@ export default function LimitsPage() {
             ))}
           </select>
 
-          <div className="flex border border-slate-600 rounded overflow-hidden">
+          <div className="flex border border-border rounded-xl overflow-hidden">
             <button
               onClick={() => setTab('customer')}
-              className={`px-4 py-1.5 text-sm font-medium transition-colors ${
-                tab === 'customer' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-all ${
+                tab === 'customer' ? 'btn-primary-glow rounded-none' : 'bg-surface-200 text-theme-text-secondary hover:bg-surface-300 rounded-none'
               }`}
             >
               อั้นเลขลูกค้า
             </button>
             <button
               onClick={() => setTab('dealer')}
-              className={`px-4 py-1.5 text-sm font-medium transition-colors ${
-                tab === 'dealer' ? 'bg-blue-600 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+              className={`flex-1 px-4 py-2 text-sm font-medium transition-all ${
+                tab === 'dealer' ? 'btn-primary-glow rounded-none' : 'bg-surface-200 text-theme-text-secondary hover:bg-surface-300 rounded-none'
               }`}
             >
               เลขอั้นเจ้ามือ
             </button>
           </div>
 
-          <span className="text-xs text-slate-500 ml-auto">{limits.length} รายการ{loading ? ' (โหลด...)' : ''}</span>
+          <div className="flex items-center gap-2 ml-auto flex-wrap justify-end">
+            {roundId && (
+              <button
+                type="button"
+                onClick={handlePurgeAllLimitsInRound}
+                className="text-xs px-2 py-1 rounded-lg border border-risk-medium/50 bg-risk-medium/10 text-risk-medium hover:bg-risk-medium/20 transition-all duration-theme"
+                title="ลบทุกแถว number_limits ของงวดนี้ (ทุก entity_type)"
+              >
+                ล้างทั้งงวด (ทุกแท็บ)
+              </button>
+            )}
+            <span className="text-xs text-theme-text-muted">{limits.length} รายการ{loading ? ' (โหลด...)' : ''}</span>
+          </div>
         </div>
 
         {/* Split panel */}
         {roundId ? (
           <div className="flex gap-4 min-h-0 flex-1">
             {/* Left: table */}
-            <div className="flex-[3] bg-slate-800 border border-slate-700 rounded-lg p-3 overflow-hidden">
+            <div className="flex-[3] bg-surface-100 border border-border rounded-lg p-3 overflow-hidden">
+              {limits.length > 0 && (
+                <div className="flex justify-end mb-2">
+                  <button
+                    onClick={handleDeleteAll}
+                    className="text-xs px-2 py-1 rounded bg-[var(--color-badge-danger-bg)] border-[var(--color-badge-danger-border)] text-loss hover:bg-risk-high/20 transition-all duration-theme"
+                  >
+                    ลบทั้งหมด
+                  </button>
+                </div>
+              )}
               <LimitTable
                 limits={limits}
                 customers={customers}
                 dealers={dealers}
                 dealerLimits={dealerLimits}
                 selectedId={selectedId}
+                tab={tab}
                 onSelect={setSelectedId}
                 onDelete={handleDelete}
               />
             </div>
 
             {/* Right: form */}
-            <div className="flex-[2] bg-slate-800 border border-slate-700 rounded-lg p-4 overflow-y-auto">
-              <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-700">
-                <p className="text-sm font-semibold text-slate-300">
+            <div className="flex-[2] bg-surface-100 border border-border rounded-lg p-4 overflow-y-auto">
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-border gap-2">
+                <p className="text-sm font-semibold text-theme-text-secondary">
                   {tab === 'customer' ? 'อั้นเลขลูกค้า' : 'เลขอั้นเจ้ามือ'}
                 </p>
                 {tab === 'customer' && dealerLimits.length > 0 && (
                   <button
                     onClick={() => setShowCopyModal(true)}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-emerald-700/30 border border-emerald-600/40 text-emerald-300 hover:bg-emerald-700/50 transition-colors">
+                    className="text-xs px-3 py-1.5 rounded-lg bg-[var(--color-badge-success-bg)] border border-[var(--color-badge-success-border)] text-[var(--color-badge-success-text)] hover:opacity-90 transition-opacity duration-200 shrink-0">
                     คัดลอกจากเจ้ามือ ({dealerLimits.length})
                   </button>
                 )}
               </div>
+              {tab === 'customer' && (
+                <p className="text-[11px] text-theme-text-muted leading-relaxed mb-3 px-0.5 rounded-lg border border-border/40 bg-surface-200/25 py-2">
+                  <span className="font-semibold text-theme-text-secondary">อั้นแยกจากเจ้ามือ:</span>{' '}
+                  เลือกลูกค้าหรือติ๊ก «ทั้งหมด» แล้วกรอกเลขกด «ทำรายการอั้น» ได้เลย ไม่จำเป็นต้องกดคัดลอก
+                  — ระบบใช้เฉพาะค่าที่คุณตั้งในฟอร์มนี้ ป้าย «= เจ้ามือ» ในรายการแค่บอกว่าค่าตรงกับเลขอั้นเจ้ามือเท่านั้น
+                </p>
+              )}
               <RightForm
                 key={tab + roundId}
                 tab={tab}
@@ -758,7 +928,7 @@ export default function LimitsPage() {
             </div>
           </div>
         ) : (
-          <p className="text-slate-500 text-sm text-center py-12">กรุณาเลือกงวด</p>
+          <p className="text-theme-text-muted text-sm text-center py-12">กรุณาเลือกงวด</p>
         )}
       </main>
 

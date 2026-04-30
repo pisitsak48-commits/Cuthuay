@@ -1,55 +1,82 @@
 'use client';
-import { useAppStore, useThemeStore } from '@/store/useStore';
+import type { ReactNode } from 'react';
+import { useAppStore } from '@/store/useStore';
 import { Badge } from '@/components/ui/Badge';
-import { formatBaht } from '@/lib/utils';
+import { cn, formatBaht } from '@/lib/utils';
 
 interface HeaderProps {
   title: string;
   subtitle?: string;
+  /** หัวข้อใหญ่ขึ้น (เช่น หน้าสรุป / แดชบอร์ดหลัก) */
+  variant?: 'default' | 'prominent';
+  /** ปุ่ม/ลิงก์ด้านขวา (เช่น ออกผล) — ใช้คลาส btn-toolbar-glow ให้เข้าธีม */
+  trailing?: ReactNode;
 }
 
-export function Header({ title, subtitle }: HeaderProps) {
+export function Header({ title, subtitle, variant = 'default', trailing }: HeaderProps) {
   const { selectedRound } = useAppStore();
-  const { theme, toggleTheme } = useThemeStore();
+  const prominent = variant === 'prominent';
 
   return (
-    <header className="flex items-center justify-between px-6 py-4 border-b border-border bg-surface-50/60 backdrop-blur-sm">
+    <header className="flex items-center justify-between px-6 py-5 border border-theme-card-border bg-theme-header-bg shadow-[var(--shadow-soft)] rounded-card mx-4 mt-4 transition-[background-color,border-color,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]">
       <div>
-        <h1 className="text-lg font-semibold text-slate-100 tracking-tight">{title}</h1>
-        {subtitle && <p className="text-xs text-slate-500 mt-0.5">{subtitle}</p>}
+        <h1
+          className={cn(
+            'font-semibold text-theme-text-primary tracking-[0.02em]',
+            prominent ? 'text-3xl sm:text-4xl' : 'text-2xl',
+          )}>
+          {title}
+        </h1>
+        {subtitle && (
+          <p
+            className={cn(
+              'text-theme-text-secondary mt-1',
+              prominent ? 'text-base mt-1.5 max-w-2xl leading-snug' : 'text-sm',
+            )}>
+            {subtitle}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-3">
         {selectedRound && (
           <>
             <div className="text-right">
-              <p className="text-xs text-slate-500">งวด</p>
-              <p className="text-sm font-semibold text-slate-200">{selectedRound.name}</p>
+              <p
+                className={cn(
+                  'uppercase text-theme-text-muted',
+                  prominent ? 'text-xs tracking-[0.2em]' : 'text-[11px] tracking-[0.22em]',
+                )}>
+                งวด
+              </p>
+              <p
+                className={cn(
+                  'font-semibold text-theme-text-primary',
+                  prominent ? 'text-base mt-0.5' : 'text-sm',
+                )}>
+                {selectedRound.name}
+              </p>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-500">ยอดรับ</p>
-              <p className="text-sm font-mono font-semibold text-emerald-400">
+              <p
+                className={cn(
+                  'uppercase text-theme-text-muted',
+                  prominent ? 'text-xs tracking-[0.2em]' : 'text-[11px] tracking-[0.22em]',
+                )}>
+                ยอดรับ
+              </p>
+              <p
+                className={cn(
+                  'font-mono font-semibold text-accent',
+                  prominent ? 'text-base mt-0.5' : 'text-sm',
+                )}>
                 {formatBaht(selectedRound.total_revenue ?? 0)}
               </p>
             </div>
             <BadgeWrap status={selectedRound.status} />
           </>
         )}
-        <button
-          onClick={toggleTheme}
-          title={theme === 'dark' ? 'เปลี่ยนเป็นธีมสว่าง' : 'เปลี่ยนเป็นธีมมืด'}
-          className="w-8 h-8 flex items-center justify-center rounded-lg border border-border/60 text-slate-400 hover:text-slate-200 hover:border-accent/60 hover:bg-accent/10 transition-colors"
-        >
-          {theme === 'dark' ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
-            </svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-            </svg>
-          )}
-        </button>
+        {trailing}
       </div>
     </header>
   );

@@ -1,5 +1,11 @@
-import { Pool, PoolClient } from 'pg';
+import { Pool, PoolClient, types } from 'pg';
 import { env } from './env';
+
+// Parse NUMERIC / DECIMAL (OID 1700) as float instead of string
+types.setTypeParser(1700, (val: string) => parseFloat(val));
+// Return timestamps as raw strings to preserve microsecond precision
+types.setTypeParser(1114, (val: string) => val); // timestamp
+types.setTypeParser(1184, (val: string) => val); // timestamptz
 
 export const pool = new Pool({
   connectionString: env.DATABASE_URL,

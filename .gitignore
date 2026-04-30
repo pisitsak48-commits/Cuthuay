@@ -13,6 +13,7 @@ frontend/out/
 backend/.env
 frontend/.env
 frontend/.env.local
+backend/secrets/
 
 # ── Logs ──────────────────────────────────────────────────
 *.log

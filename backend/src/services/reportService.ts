@@ -1,5 +1,6 @@
 import PDFDocument from 'pdfkit';
 import fs from 'fs';
+import path from 'path';
 import { BetRow, RiskReport } from '../models/types';
 
 /**
@@ -18,10 +19,19 @@ export async function generateRoundReport(
     doc.pipe(stream);
 
     // ── Header ──────────────────────────────────────────────────────────
+    const logoPath = path.join(__dirname, '../../assets/aurax-logo.png');
+    if (fs.existsSync(logoPath)) {
+      const logoW = 95;
+      const lx = (doc.page.width - logoW) / 2;
+      doc.image(logoPath, lx, 42, { width: logoW });
+      doc.y = 42 + 50;
+    }
     doc
-      .fontSize(22)
+      .fontSize(20)
       .font('Helvetica-Bold')
-      .text('CUT HUAY — ROUND REPORT', { align: 'center' });
+      .fillColor('#0b1c3f')
+      .text('AuraX — ROUND REPORT', { align: 'center' });
+    doc.fillColor('#000000');
     doc.moveDown(0.3);
     doc
       .fontSize(12)

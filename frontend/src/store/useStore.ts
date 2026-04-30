@@ -10,6 +10,8 @@ interface AuthState {
   _hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
   login: (username: string, password: string) => Promise<void>;
+  /** หลัง deploy ครั้งแรก — สร้าง admin คนแรกเมื่อยังไม่มี user */
+  bootstrapFirstAdmin: (username: string, password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -27,6 +29,14 @@ export const useAuthStore = create<AuthState>()(
       setHasHydrated: (v) => set({ _hasHydrated: v }),
       login: async (username, password) => {
         const res = await authApi.login(username, password);
+        const { token, user: rawUser } = res.data;
+        const user: User = { ...rawUser, role: rawUser.role as User['role'] };
+        localStorage.setItem('token', token);
+        wsClient.connect(token);
+        set({ user, token });
+      },
+      bootstrapFirstAdmin: async (username, password) => {
+        const res = await authApi.bootstrap(username, password);
         const { token, user: rawUser } = res.data;
         const user: User = { ...rawUser, role: rawUser.role as User['role'] };
         localStorage.setItem('token', token);
@@ -54,17 +64,20 @@ export const useAppStore = create<AppState>()((set) => ({
   setSelectedRound: (r) => set({ selectedRound: r }),
 }));
 
-interface ThemeState {
-  theme: 'dark' | 'light';
-  toggleTheme: () => void;
+interface SidebarState {
+  sidebarExpanded: boolean;
+  setSidebarExpanded: (v: boolean) => void;
+  toggleSidebar: () => void;
 }
 
-export const useThemeStore = create<ThemeState>()(
+export const useSidebarStore = create<SidebarState>()(
   persist(
     (set) => ({
-      theme: 'dark',
-      toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      sidebarExpanded: true,
+      setSidebarExpanded: (v) => set({ sidebarExpanded: v }),
+      toggleSidebar: () => set((s) => ({ sidebarExpanded: !s.sidebarExpanded })),
     }),
-    { name: 'cuthuay-theme' },
+    { name: 'cuthuay-sidebar' },
   ),
 );
+

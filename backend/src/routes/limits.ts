@@ -72,7 +72,7 @@ router.get('/:roundId', async (req: Request, res: Response, next: NextFunction) 
       where += ` AND entity_id = $${params.length}`;
     }
     const result = await query<NumberLimitRow>(
-      `SELECT * FROM number_limits WHERE round_id = $1 ${where} ORDER BY number, bet_type`,
+      `SELECT * FROM number_limits WHERE round_id = $1 ${where} ORDER BY created_at DESC`,
       params,
     );
     res.json({ limits: result.rows });
@@ -130,12 +130,35 @@ router.delete(
     try {
       const roundId = z.string().uuid().parse(req.params.roundId);
       const id = z.string().uuid().parse(req.params.id);
-      const result = await query(
-        'DELETE FROM number_limits WHERE round_id = $1 AND id = $2 RETURNING *',
+      await query(
+        'DELETE FROM number_limits WHERE round_id = $1 AND id = $2',
         [roundId, id],
       );
-      if (result.rowCount === 0) throw createError('Limit not found', 404);
       res.json({ deleted: true });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
+
+// DELETE /api/limits/:roundId — delete all limits for a round (optionally filter entity_type)
+router.delete(
+  '/:roundId',
+  authorize('admin'),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const roundId = z.string().uuid().parse(req.params.roundId);
+      const params: unknown[] = [roundId];
+      let where = '';
+      if (req.query.entity_type) {
+        params.push(String(req.query.entity_type));
+        where = ` AND entity_type = $2`;
+      }
+      const result = await query(
+        `DELETE FROM number_limits WHERE round_id = $1${where}`,
+        params,
+      );
+      res.json({ deleted: result.rowCount ?? 0 });
     } catch (err) {
       next(err);
     }

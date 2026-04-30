@@ -1,6 +1,12 @@
 'use client';
 
-const WS_BASE = process.env.NEXT_PUBLIC_WS_URL ?? 'ws://localhost:4000';
+function wsBaseUrl(): string {
+  if (typeof window !== 'undefined') {
+    const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return `${proto}//${window.location.hostname}:4000`;
+  }
+  return process.env.NEXT_PUBLIC_WS_URL ?? 'ws://127.0.0.1:4000';
+}
 
 export type WsMessage = {
   type: string;
@@ -20,7 +26,7 @@ class RealtimeClient {
     if (this.ws?.readyState === WebSocket.OPEN) return;
     this.intentionalClose = false;
 
-    this.ws = new WebSocket(`${WS_BASE}/ws?token=${encodeURIComponent(token)}`);
+    this.ws = new WebSocket(`${wsBaseUrl()}/ws?token=${encodeURIComponent(token)}`);
 
     this.ws.onopen = () => {
       console.debug('[WS] connected');

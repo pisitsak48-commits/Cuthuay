@@ -33,28 +33,29 @@ export function StatCard({
 
   const valueColor =
     colorOverride ??
-    (trend === 'up'   ? 'text-emerald-400' :
-     trend === 'down' ? 'text-rose-400'    : 'text-slate-100');
+    (trend === 'up'   ? 'text-accent' :
+     trend === 'down' ? 'text-loss' : 'text-theme-text-primary');
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
+      transition={{ duration: 0.22, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'rounded-xl border border-border bg-surface-100/70 p-5 backdrop-blur-sm',
-        'hover:border-border-bright transition-colors duration-200',
+        'rounded-card border border-theme-card-border p-5 transition-[transform,box-shadow,border-color] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+        'bg-[var(--bg-glass)] shadow-card',
+        'hover:-translate-y-0.5 hover:border-[var(--color-border-strong)] hover:shadow-[var(--shadow-hover)]',
         className,
       )}
     >
-      <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest mb-2">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-theme-text-secondary mb-2">
         {label}
       </p>
-      <p className={cn('font-mono text-2xl font-semibold tracking-tight leading-none', valueColor)}>
+      <p className={cn('font-mono text-3xl font-semibold tabular-nums tracking-wide leading-none', valueColor)}>
         {displayValue}
       </p>
       {subLabel && (
-        <p className="text-xs text-slate-500 mt-1.5">{subLabel}</p>
+        <p className="text-xs text-theme-text-secondary mt-2">{subLabel}</p>
       )}
     </motion.div>
   );

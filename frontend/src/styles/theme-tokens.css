@@ -1,0 +1,192 @@
+/**
+ * AuraX — light monochrome SaaS dashboard (design tokens only).
+ * Maps legacy --color-* / --tw-* names to grayscale + minimal green/red accents.
+ */
+
+:root {
+  --ease-premium: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --radius-sm: 10px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 12px;
+  --radius-2xl: 12px;
+  --radius-card: 16px;
+
+  --transition-theme:
+    color 200ms var(--ease-premium), background-color 200ms var(--ease-premium),
+    border-color 200ms var(--ease-premium), box-shadow 200ms var(--ease-premium),
+    transform 200ms var(--ease-premium), opacity 200ms var(--ease-premium);
+
+  --font-family-ui: 'Inter', 'Prompt', system-ui, sans-serif;
+  --font-family-numeric: 'JetBrains Mono', ui-monospace, monospace;
+  --letter-spacing-ui: 0.01em;
+  --font-weight-body: 400;
+  --font-weight-label: 500;
+  --font-weight-heading: 600;
+
+  --blur-glass: 0px;
+  --blur-glass-strong: 0px;
+
+  /* ─── Base palette (spec + legacy aliases) ───────────────────────────── */
+  --bg-main: #f9fafb;
+  --bg-card: #ffffff;
+  --bg-glass: #ffffff;
+  --bg-glass-strong: #ffffff;
+  --bg-glass-subtle: #f3f4f6;
+  --bg-hover: #f3f4f6;
+  --text-primary: #111827;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --border-soft: #e5e7eb;
+
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 6px 16px rgba(0, 0, 0, 0.06);
+  --accent-gradient: #111111;
+  --glow-shadow: var(--shadow-hover);
+
+  --color-bg-primary: var(--bg-main);
+  --color-bg-secondary: #ffffff;
+  --color-bg-mid: #f3f4f6;
+  --color-bg-gradient: #f9fafb;
+  --color-bg-ambient: transparent;
+
+  --color-card-bg: #ffffff;
+  --color-card-bg-solid: #ffffff;
+  --color-card-border: #e5e7eb;
+  --color-card-shadow: var(--shadow-soft);
+
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-text-muted: var(--text-muted);
+  --color-text-inverse: #ffffff;
+
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+
+  --color-accent: #111111;
+  --color-accent-hover: #374151;
+  --color-accent-muted: #f3f4f6;
+  --color-accent-ring: rgba(17, 24, 39, 0.18);
+
+  --color-btn-primary-fg: #ffffff;
+
+  --gradient-btn-from: #111111;
+  --gradient-btn-via: #111111;
+  --gradient-btn-to: #111111;
+  --shadow-btn-primary: var(--shadow-soft);
+  --shadow-btn-primary-hover: var(--shadow-hover);
+
+  --gradient-btn-danger: #ef4444;
+  --shadow-btn-danger: var(--shadow-soft);
+
+  --gradient-btn-success: #22c55e;
+
+  --color-input-bg: #ffffff;
+  --color-input-border: #e5e7eb;
+  --color-input-text: #111827;
+  --color-input-placeholder: #9ca3af;
+
+  --color-header-bg: #ffffff;
+  --color-header-border: #e5e7eb;
+
+  --color-sidebar-bg: #ffffff;
+  --color-sidebar-inner-glow: inset 0 0 0 1px #e5e7eb;
+  --color-nav-active-bg: #f3f4f6;
+  --color-nav-active-shadow: none;
+  --gradient-sidebar-logo: #f3f4f6;
+
+  /* Badges — mostly neutral; green/red for status only */
+  --color-badge-neutral-bg: #f3f4f6;
+  --color-badge-neutral-border: #e5e7eb;
+  --color-badge-success-bg: rgba(34, 197, 94, 0.12);
+  --color-badge-success-text: #15803d;
+  --color-badge-success-border: rgba(34, 197, 94, 0.35);
+  --color-badge-warning-bg: #f3f4f6;
+  --color-badge-warning-text: #4b5563;
+  --color-badge-warning-border: #d1d5db;
+  --color-badge-danger-bg: rgba(239, 68, 68, 0.1);
+  --color-badge-danger-text: #b91c1c;
+  --color-badge-danger-border: rgba(239, 68, 68, 0.35);
+  --color-badge-info-bg: #f3f4f6;
+  --color-badge-info-text: #374151;
+  --color-badge-info-border: #e5e7eb;
+
+  --color-notify: 239 68 68;
+  --color-validation-error: 185 28 28;
+  --color-validation-error-border: 239 68 68;
+  --color-backdrop-overlay: rgba(17, 24, 39, 0.45);
+
+  /* Tailwind RGB triplets (light surfaces) */
+  --tw-surface-default: 249 250 251;
+  --tw-surface-50: 243 244 246;
+  --tw-surface-100: 229 231 235;
+  --tw-surface-200: 209 213 219;
+  --tw-surface-300: 156 163 175;
+  --tw-surface-400: 107 114 128;
+
+  --tw-border-default: 229 231 235;
+  --tw-border-muted: 243 244 246;
+  --tw-border-bright: 209 213 219;
+
+  --tw-accent: 17 24 39;
+  --tw-accent-hover: 55 65 81;
+  --tw-accent-glow: 75 85 99;
+
+  --color-scrollbar-track: 243 244 246;
+  --color-scrollbar-thumb: 209 213 219;
+  --color-scrollbar-thumb-hover: 156 163 175;
+
+  --scroll-track: rgb(var(--color-scrollbar-track));
+  --scroll-thumb: rgb(var(--color-scrollbar-thumb));
+  --scroll-thumb-hover: rgb(var(--color-scrollbar-thumb-hover));
+
+  /* Status — grayscale steps + reserved green/red */
+  --color-risk-low: 107 114 128;
+  --color-risk-medium: 75 85 99;
+  --color-risk-high: 239 68 68;
+  --color-risk-critical: 220 38 38;
+  --color-profit: 34 197 94;
+  --color-loss: 239 68 68;
+  --color-neutral: 156 163 175;
+
+  /* Charts — monochrome + small accent */
+  --chart-grid: rgba(0, 0, 0, 0.06);
+  --chart-tick: #6b7280;
+  --chart-axis: #9ca3af;
+  --chart-ref-line: rgba(0, 0, 0, 0.08);
+  --chart-axis-line: #e5e7eb;
+  --chart-tick-label: #374151;
+  --chart-profit: #22c55e;
+  --chart-profit-stop: #16a34a;
+  --chart-bar-kept: #111111;
+  --chart-bar-sent: #6b7280;
+  --chart-bar-new: #d1d5db;
+  --chart-threshold: #374151;
+  --chart-commit: #6b7280;
+  --chart-palette-1: #111111;
+  --chart-palette-2: #4b5563;
+  --chart-palette-3: #9ca3af;
+  --chart-palette-4: #d1d5db;
+  --chart-palette-5: #22c55e;
+  --chart-palette-6: #ef4444;
+  --chart-palette-7: #6b7280;
+  --chart-gauge-low: 107 114 128;
+  --chart-gauge-mid: 75 85 99;
+  --chart-gauge-high: 239 68 68;
+  --chart-gauge-crit: 220 38 38;
+  --chart-tooltip-cursor: rgba(0, 0, 0, 0.04);
+
+  --notebook-swatches-1: #f3f4f6;
+  --notebook-swatches-2: #e5e7eb;
+  --notebook-swatches-3: #d1d5db;
+  --notebook-swatches-4: #f9fafb;
+  --notebook-swatches-5: #f3f4f6;
+  --notebook-swatches-6: #e5e7eb;
+
+  --toggle-knob: #111827;
+}
+
+html {
+  color-scheme: light;
+}

@@ -4,12 +4,17 @@ import { cn } from '@/lib/utils';
 type BadgeVariant = 'default' | 'success' | 'warning' | 'danger' | 'info' | 'muted';
 
 const variantMap: Record<BadgeVariant, string> = {
-  default: 'bg-slate-700/60 text-slate-300',
-  success: 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/25',
-  warning: 'bg-amber-500/15 text-amber-400 border border-amber-500/25',
-  danger:  'bg-rose-500/15 text-rose-400 border border-rose-500/25',
-  info:    'bg-blue-500/15 text-blue-400 border border-blue-500/25',
-  muted:   'bg-surface-300/50 text-slate-500',
+  default:
+    'bg-[var(--color-badge-neutral-bg)] text-theme-text-primary border-[var(--color-badge-neutral-border)]',
+  success:
+    'bg-[var(--color-badge-success-bg)] text-[var(--color-badge-success-text)] border-[var(--color-badge-success-border)]',
+  warning:
+    'bg-[var(--color-badge-warning-bg)] text-[var(--color-badge-warning-text)] border-[var(--color-badge-warning-border)]',
+  danger:
+    'bg-[var(--color-badge-danger-bg)] text-[var(--color-badge-danger-text)] border-[var(--color-badge-danger-border)]',
+  info: 'bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border-[var(--color-badge-info-border)]',
+  muted:
+    'bg-[var(--color-badge-neutral-bg)] text-theme-text-secondary border-[var(--color-badge-neutral-border)]',
 };
 
 interface BadgeProps {
@@ -23,7 +28,7 @@ export function Badge({ children, variant = 'default', className, dot }: BadgePr
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium',
+        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide border transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
         variantMap[variant],
         className,
       )}
@@ -31,11 +36,12 @@ export function Badge({ children, variant = 'default', className, dot }: BadgePr
       {dot && (
         <span
           className={cn(
-            'w-1.5 h-1.5 rounded-full animate-pulse-slow',
-            variant === 'success' && 'bg-emerald-400',
-            variant === 'danger'  && 'bg-rose-400',
-            variant === 'warning' && 'bg-amber-400',
-            variant === 'info'    && 'bg-blue-400',
+            'w-2.5 h-2.5 rounded-full',
+            variant === 'success' && 'bg-accent',
+            variant === 'danger' && 'bg-risk-high',
+            variant === 'warning' && 'bg-accent-glow',
+            variant === 'info' && 'bg-accent-glow',
+            variant === 'muted' && 'bg-theme-text-muted',
           )}
         />
       )}
@@ -65,4 +71,12 @@ export function RiskBadge({ percent }: { percent: number }) {
     percent < 60 ? 'กลาง' :
     percent < 100 ? 'สูง' : 'วิกฤต';
   return <Badge variant={level}>{label} {percent.toFixed(1)}%</Badge>;
+}
+
+export function NotificationBadge({ count }: { count: number }) {
+  return (
+    <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 rounded-full bg-[rgb(var(--color-notify)/1)] text-[11px] font-semibold text-theme-btn-primary-fg shadow-[var(--shadow-soft)]">
+      {count}
+    </span>
+  );
 }

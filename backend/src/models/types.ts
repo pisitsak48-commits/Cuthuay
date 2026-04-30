@@ -45,7 +45,12 @@ export interface BetRow {
   payout_rate: number;
   customer_ref: string | null;
   created_by: string;
+  /** จาก JOIN users — มีเมื่อดึงรายการแทง */
+  created_by_name?: string | null;
   created_at: Date;
+  sort_order: number | null;
+  import_batch_id: string | null;
+  segment_index: number;
 }
 
 export interface NumberLimitRow {
@@ -142,8 +147,8 @@ export const DEFAULT_PAYOUT_RATES: Record<BetType, number> = {
   '3digit_top':    700,
   '3digit_tote':   120,
   '3digit_back':   150,
-  '1digit_top':    3.2,
-  '1digit_bottom': 4.2,
+  '1digit_top':    3.0,
+  '1digit_bottom': 4.0,
 };
 
 export const DEFAULT_DEALER_RATES: DealerRates = {

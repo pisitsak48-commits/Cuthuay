@@ -41,7 +41,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.15 }}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-[var(--color-backdrop-overlay)]"
             onClick={onClose}
           />
           {/* Panel */}
@@ -51,18 +51,19 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
             exit={{ opacity: 0, scale: 0.95, y: -8 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
             className={cn(
-              'relative z-10 w-full rounded-2xl border border-border bg-surface-50',
-              'shadow-2xl p-6',
+              'relative z-10 w-full rounded-2xl border border-theme-card-border',
+              'shadow-[var(--shadow-soft)] p-6',
+              'bg-[var(--color-card-bg-solid)]',
               sizeMap[size],
               className,
             )}
           >
             {title && (
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-slate-100">{title}</h2>
+                <h2 className="text-base font-semibold text-theme-text-primary">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="text-slate-500 hover:text-slate-200 transition-colors p-1 rounded-lg hover:bg-surface-200"
+                  className="text-theme-text-muted hover:text-theme-text-primary transition-all duration-theme p-1 rounded-lg hover:bg-[var(--bg-hover)]"
                 >
                   <XIcon />
                 </button>

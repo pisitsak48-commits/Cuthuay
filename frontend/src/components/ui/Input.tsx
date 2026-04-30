@@ -12,7 +12,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={id} className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[0.24em] text-theme-text-secondary">
             {label}
           </label>
         )}
@@ -20,17 +20,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={id}
           className={cn(
-            'h-9 w-full rounded-lg bg-surface-200 border border-border px-3 py-2',
-            'text-sm text-slate-100 placeholder:text-slate-600',
-            'focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent',
-            'transition-colors duration-150',
+            'h-11 w-full rounded-2xl px-3 py-2 border',
+            'bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-[var(--color-input-text)] placeholder:text-theme-text-muted',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:ring-offset-0 focus:border-[var(--color-border-strong)]',
+            'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
-            error && 'border-rose-500 focus:ring-rose-500',
+            error && 'border-[rgb(var(--color-validation-error-border)/1)] focus:ring-[rgb(var(--color-validation-error)/0.35)]',
             className,
           )}
           {...props}
         />
-        {error && <span className="text-xs text-rose-400">{error}</span>}
+        {error && <span className="text-xs text-[rgb(var(--color-validation-error)/1)]">{error}</span>}
       </div>
     );
   },
@@ -47,7 +47,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={id} className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[0.24em] text-theme-text-secondary">
             {label}
           </label>
         )}
@@ -55,19 +55,19 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={id}
           className={cn(
-            'h-9 w-full rounded-lg bg-surface-200 border border-border px-3 py-2',
-            'text-sm text-slate-100',
-            'focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent',
-            'transition-colors duration-150',
+            'h-11 w-full rounded-2xl px-3 py-2 border text-sm',
+            'bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-[var(--color-input-text)]',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:ring-offset-0 focus:border-[var(--color-border-strong)]',
+            'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
-            error && 'border-rose-500',
+            error && 'border-[rgb(var(--color-validation-error-border)/1)]',
             className,
           )}
           {...props}
         >
           {children}
         </select>
-        {error && <span className="text-xs text-rose-400">{error}</span>}
+        {error && <span className="text-xs text-[rgb(var(--color-validation-error)/1)]">{error}</span>}
       </div>
     );
   },
@@ -84,7 +84,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={id} className="text-xs font-medium text-slate-400 uppercase tracking-wider">
+          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[0.24em] text-theme-text-secondary">
             {label}
           </label>
         )}
@@ -92,16 +92,16 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={id}
           className={cn(
-            'w-full rounded-lg bg-surface-200 border border-border px-3 py-2',
-            'text-sm text-slate-100 placeholder:text-slate-600',
-            'focus:outline-none focus:ring-1 focus:ring-accent focus:border-accent',
-            'transition-colors duration-150 resize-y min-h-[80px]',
-            error && 'border-rose-500',
+            'w-full rounded-2xl px-3 py-3 border text-sm resize-y min-h-[80px]',
+            'bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-[var(--color-input-text)] placeholder:text-theme-text-muted',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:ring-offset-0 focus:border-[var(--color-border-strong)]',
+            'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+            error && 'border-[rgb(var(--color-validation-error-border)/1)]',
             className,
           )}
           {...props}
         />
-        {error && <span className="text-xs text-rose-400">{error}</span>}
+        {error && <span className="text-xs text-[rgb(var(--color-validation-error)/1)]">{error}</span>}
       </div>
     );
   },

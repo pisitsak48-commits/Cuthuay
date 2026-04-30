@@ -43,6 +43,10 @@ export interface Bet {
   created_by_name?: string;
   created_at: string;
   sheet_no: number;
+  sort_order: number | null;
+  /** นำเข้าเดียวกัน (กดรับไลน์ครั้งเดียว) — แยกแถวตามข้อความย่อย */
+  import_batch_id?: string | null;
+  segment_index?: number;
 }
 
 export interface Customer {
@@ -164,8 +168,8 @@ export const DEFAULT_PAYOUT_RATES: Record<BetType, number> = {
   '3digit_top':    500,
   '3digit_tote':   100,
   '3digit_back':   100,
-  '1digit_top':    3.2,
-  '1digit_bottom': 4.2,
+  '1digit_top':    3.0,
+  '1digit_bottom': 4.0,
 };
 
 export const DEFAULT_DEALER_RATES: DealerRates = {
@@ -229,14 +233,23 @@ export interface SendBatch {
 
 export interface RangeSimResponse {
   rows: RangeSimRow[];
+  /** ผลได้เสียที่ยอดเก็บตัวละ = active_threshold (ถ้าส่งใน request) */
+  at_threshold?: RangeSimRow | null;
+  /** ขอบเขตที่ใช้คำนวณ (แผ่นโพย / ลูกค้า) */
+  cut_scope?: { sheet_no: number | null; customer_id: string | null };
   bet_type: BetType;
   total_revenue: number;
   max_single_bet: number;
+  min_single_bet?: number;
   unique_numbers: number;
-  distribution: { number: string; total: number }[];
+  distribution: { number: string; total: number; is_blocked?: boolean; custom_payout?: number | null }[];
   dealer_params?: {
     upper_rate: number;
-    commission_pct: number;
+    effective_rate?: number;
+    commission_pct?: number;
+    dealer_pct?: number;
+    customer_pct?: number;
+    net_comm_pct?: number;
     keep_net_pct: number;
   };
 }

@@ -12,9 +12,9 @@ export function Card({ children, className, hover, glow }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-xl border border-border bg-surface-100/70 backdrop-blur-sm p-5 shadow-card',
-        hover && 'transition-all duration-200 hover:border-border-bright hover:shadow-card-hover cursor-pointer',
-        glow && 'border-accent/30 shadow-glow-blue',
+        'rounded-card border border-theme-card-border bg-theme-card p-5 shadow-card transition-[transform,box-shadow,border-color] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+        hover && 'hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] cursor-pointer',
+        glow && 'border-[var(--color-border-strong)] shadow-[var(--shadow-soft)]',
         className,
       )}
     >
@@ -31,9 +31,25 @@ export function CardHeader({ children, className }: { children: React.ReactNode;
   );
 }
 
-export function CardTitle({ children, className }: { children: React.ReactNode; className?: string }) {
+export function CardTitle({
+  children,
+  className,
+  size = 'default',
+}: {
+  children: React.ReactNode;
+  className?: string;
+  /** lg = หัวข้อการ์ดใหญ่ขึ้น (เช่น หน้าสรุป) */
+  size?: 'default' | 'lg';
+}) {
   return (
-    <h3 className={cn('text-sm font-semibold text-slate-300 uppercase tracking-widest letter-spacing-wider', className)}>
+    <h3
+      className={cn(
+        'font-semibold text-theme-text-primary uppercase opacity-95',
+        size === 'lg'
+          ? 'text-base sm:text-[1.0625rem] tracking-[0.2em]'
+          : 'text-sm tracking-[0.24em] opacity-90',
+        className,
+      )}>
       {children}
     </h3>
   );

@@ -18,7 +18,9 @@ import cutRouter       from './routes/cut';
 import limitsRouter    from './routes/limits';
 import reportsRouter   from './routes/reports';
 import customersRouter from './routes/customers';
-import dealersRouter   from './routes/dealers';
+import dealersRouter        from './routes/dealers';
+import lineWebhookRouter    from './routes/lineWebhook';
+import lineIntegrationRouter from './routes/lineIntegration';
 
 const app = express();
 const server = http.createServer(app);
@@ -26,9 +28,10 @@ const server = http.createServer(app);
 // ─── Security & Middleware ────────────────────────────────────────────────────
 app.set('trust proxy', 1);
 app.use(helmet());
+const corsOrigins = env.CORS_ORIGIN.split(',').map((o) => o.trim()).filter(Boolean);
 app.use(
   cors({
-    origin: env.CORS_ORIGIN,
+    origin: corsOrigins.length <= 1 ? (corsOrigins[0] ?? true) : corsOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   }),
@@ -36,13 +39,20 @@ app.use(
 app.use(
   rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
-    max: 500,
+    max: 5000,
     standardHeaders: true,
     legacyHeaders: false,
     message: { error: 'Too many requests, please try again later.' },
+    skip: (req) => req.originalUrl.startsWith('/api/line/webhook'),
   }),
 );
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+// LINE ต้องใช้ raw body ในการตรวจ HMAC — วางก่อน express.json()
+app.use(
+  '/api/line/webhook',
+  express.raw({ type: 'application/json' }),
+  lineWebhookRouter,
+);
 app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: false }));
 
@@ -51,7 +61,18 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', ts: new Date().toISOString() });
 });
 
+// หน้าเว็บจริงอยู่พอร์ต frontend (3000) — แค่บอกทางเมื่อเปิดพอร์ต API โดยตรง
+app.get('/', (_req, res) => {
+  res.json({
+    name: 'AuraX API',
+    hint: 'เปิดแอปที่พอร์ต 3000 (frontend); เส้นทาง API อยู่ภายใต้ /api/...',
+    health: '/health',
+    example: '/api/auth/setup-status',
+  });
+});
+
 // ─── API Routes ───────────────────────────────────────────────────────────────
+app.use('/api/line-integration', lineIntegrationRouter);
 app.use('/api/auth',      authRouter);
 app.use('/api/bets',      betsRouter);
 app.use('/api/rounds',    roundsRouter);
@@ -70,7 +91,7 @@ initWebSocket(server);
 
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(env.PORT, () => {
-  console.log(`\n🚀 CutHuay API running on http://localhost:${env.PORT}`);
+  console.log(`\n🚀 AuraX API running on http://localhost:${env.PORT}`);
   console.log(`   WebSocket: ws://localhost:${env.PORT}/ws`);
   console.log(`   Mode: ${env.NODE_ENV}\n`);
 });

@@ -21,9 +21,31 @@ export function errorHandler(
     return;
   }
 
+  const pg = err as { code?: string; detail?: string; constraint?: string; message?: string };
+
   // PostgreSQL unique violation
-  if ((err as any).code === '23505') {
-    res.status(409).json({ error: 'Duplicate entry', detail: (err as any).detail });
+  if (pg.code === '23505') {
+    res.status(409).json({ error: 'Duplicate entry', detail: pg.detail });
+    return;
+  }
+
+  // FK / CHECK — มักเกิดตอน import ข้อมูลจากเครื่องอื่น
+  if (pg.code === '23503') {
+    console.error('[PG FK]', pg.message, pg.detail);
+    res.status(400).json({
+      error: 'ข้อมูลอ้างอิงไม่มีในระบบ (เช่น dealer / customer)',
+      detail: pg.detail,
+    });
+    return;
+  }
+  if (pg.code === '23514') {
+    console.error('[PG CHECK]', pg.message, pg.detail);
+    res.status(400).json({ error: 'ค่าไม่ตรงกับเงื่อนไขฐานข้อมูล', detail: pg.detail });
+    return;
+  }
+  if (pg.code === '22P02') {
+    console.error('[PG invalid input]', pg.message, pg.detail);
+    res.status(400).json({ error: 'รูปแบบข้อมูลไม่ถูกต้อง', detail: pg.detail });
     return;
   }
 
@@ -31,7 +53,7 @@ export function errorHandler(
   const message = status < 500 ? err.message : 'Internal server error';
 
   if (status >= 500) {
-    console.error('[Error]', err);
+    console.error('[Error]', err instanceof Error ? err.message : err, pg.code, pg.detail);
   }
 
   res.status(status).json({

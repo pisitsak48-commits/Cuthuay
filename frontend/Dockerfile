@@ -1,5 +1,8 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
+# rewrite /api → ชื่อ service ใน docker-compose (เครือข่ายภายใน)
+ARG BACKEND_INTERNAL_URL=http://backend:4000
+ENV BACKEND_INTERNAL_URL=$BACKEND_INTERNAL_URL
 COPY package*.json ./
 RUN npm ci
 COPY . .

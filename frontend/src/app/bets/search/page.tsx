@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { roundsApi, betsApi, customersApi } from '@/lib/api';
 import { Round, Customer } from '@/types';
 import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/useStore';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const BET_TYPES = [
@@ -46,7 +47,7 @@ function fNum(v: number) {
 
 // ─── Form pieces ──────────────────────────────────────────────────────────────
 function Label({ children }: { children: React.ReactNode }) {
-  return <span className="text-sm text-slate-300 w-28 shrink-0">{children}</span>;
+  return <span className="text-sm text-theme-text-secondary w-28 shrink-0">{children}</span>;
 }
 
 function Sel({
@@ -60,7 +61,7 @@ function Sel({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="flex-1 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-40"
+      className="flex-1 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 focus:outline-none focus:border-blue-400 disabled:opacity-40"
     >
       {children}
     </select>
@@ -70,6 +71,7 @@ function Sel({
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function BetsSearchPage() {
   const router = useRouter();
+  const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
 
   const [rounds, setRounds]       = useState<Round[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -95,12 +97,16 @@ export default function BetsSearchPage() {
 
   useEffect(() => {
     Promise.all([roundsApi.list(), customersApi.list()]).then(([r, c]) => {
-      const rl: Round[] = r.data.rounds ?? [];
+      const full: Round[] = r.data.rounds ?? [];
+      const rl = isAdmin ? full : full.filter((x) => x.status === 'open');
       setRounds(rl);
-      if (rl.length > 0) setRoundId(rl[0].id);
+      setRoundId((prev) => {
+        if (prev && rl.some((x) => x.id === prev)) return prev;
+        return rl[0]?.id ?? '';
+      });
       setCustomers(c.data.customers ?? []);
     }).catch(() => {});
-  }, []);
+  }, [isAdmin]);
 
   const doSearch = useCallback(async () => {
     if (!roundId) { setError('กรุณาเลือกงวด'); return; }
@@ -129,7 +135,7 @@ export default function BetsSearchPage() {
     }
   }, [roundId, mode, topLimit, topType, hasCust, hasType, hasNum, exdCust, exdType, exdAmt]);
 
-  const isHas = mode === 'has';
+  const showLineDetail = mode === 'has' || mode === 'exceed';
 
   return (
     <AppShell>
@@ -138,51 +144,51 @@ export default function BetsSearchPage() {
       <div className="flex flex-1 overflow-hidden p-4 gap-4 min-h-0">
 
         {/* ── Left: Results Table ── */}
-        <div className="flex flex-col flex-1 min-w-0 bg-slate-800 border border-slate-700 rounded-lg overflow-hidden">
+        <div className="flex flex-col flex-1 min-w-0 bg-surface-100 border border-border rounded-lg overflow-hidden">
           <div className="flex-1 overflow-auto">
             <table className="w-full text-sm border-collapse">
-              <thead className="sticky top-0 bg-slate-700 z-10">
+              <thead className="sticky top-0 bg-surface-200 z-10">
                 <tr>
-                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs w-12">ลำดับ</th>
-                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">เลข</th>
-                  <th className="px-3 py-2 text-right text-slate-300 font-medium text-xs">ราคา</th>
-                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">ประเภทเลข</th>
-                  <th className="px-3 py-2 text-center text-slate-300 font-medium text-xs w-20">
-                    {isHas ? 'แผนที่' : 'รายการ'}
+                  <th className="px-3 py-2 text-left text-theme-text-secondary font-medium text-xs w-12">ลำดับ</th>
+                  <th className="px-3 py-2 text-left text-theme-text-secondary font-medium text-xs">เลข</th>
+                  <th className="px-3 py-2 text-right text-theme-text-secondary font-medium text-xs">ราคา</th>
+                  <th className="px-3 py-2 text-left text-theme-text-secondary font-medium text-xs">ประเภทเลข</th>
+                  <th className="px-3 py-2 text-center text-theme-text-secondary font-medium text-xs w-20">
+                    {showLineDetail ? 'แผ่นที่' : 'รายการ'}
                   </th>
-                  <th className="px-3 py-2 text-left text-slate-300 font-medium text-xs">ลูกค้า</th>
+                  <th className="px-3 py-2 text-left text-theme-text-secondary font-medium text-xs">ลูกค้า</th>
                 </tr>
               </thead>
               <tbody>
                 {!searched && (
                   <tr>
-                    <td colSpan={6} className="text-center text-slate-500 py-20 text-sm">
+                    <td colSpan={6} className="text-center text-theme-text-muted py-20 text-sm">
                       กรอกเงื่อนไขแล้วกด{' '}
-                      <span className="text-blue-400 font-medium">ค้นหา</span>{' '}
+                      <span className="text-accent font-medium">ค้นหา</span>{' '}
                       เพื่อดูผลลัพธ์
                     </td>
                   </tr>
                 )}
                 {searched && rows.length === 0 && (
                   <tr>
-                    <td colSpan={6} className="text-center text-slate-500 py-20 text-sm">ไม่พบรายการ</td>
+                    <td colSpan={6} className="text-center text-theme-text-muted py-20 text-sm">ไม่พบรายการ</td>
                   </tr>
                 )}
                 {rows.map((row, i) => (
                   <tr
                     key={i}
-                    className={`border-t border-slate-700/50 hover:bg-slate-700/30 transition-colors ${
-                      i % 2 === 1 ? 'bg-slate-800/60' : ''
+                    className={`border-t border-border/50 hover:bg-surface-200/30 transition-colors ${
+                      i % 2 === 1 ? 'bg-surface-100/60' : ''
                     }`}
                   >
-                    <td className="px-3 py-1.5 text-slate-500 text-xs">{row.rank}</td>
-                    <td className="px-3 py-1.5 font-mono text-base text-slate-100 font-bold tracking-widest">{row.number}</td>
-                    <td className="px-3 py-1.5 text-right font-mono text-amber-300 font-semibold">{fNum(Number(row.total_amount))}</td>
-                    <td className="px-3 py-1.5 text-slate-300 text-xs">{BET_TYPE_LABEL[row.bet_type] ?? row.bet_type}</td>
-                    <td className="px-3 py-1.5 text-center text-slate-400 text-xs">
-                      {isHas ? (row.sheet_no ?? '-') : (row.bet_count ?? '-')}
+                    <td className="px-3 py-1.5 text-theme-text-muted text-xs">{row.rank}</td>
+                    <td className="px-3 py-1.5 font-mono text-base text-theme-text-primary font-bold tracking-widest">{row.number}</td>
+                    <td className="px-3 py-1.5 text-right font-mono text-risk-medium font-semibold">{fNum(Number(row.total_amount))}</td>
+                    <td className="px-3 py-1.5 text-theme-text-secondary text-xs">{BET_TYPE_LABEL[row.bet_type] ?? row.bet_type}</td>
+                    <td className="px-3 py-1.5 text-center text-theme-text-secondary text-xs">
+                      {showLineDetail ? (row.sheet_no ?? '-') : (row.bet_count ?? '-')}
                     </td>
-                    <td className="px-3 py-1.5 text-slate-300 text-xs">{row.customer_name ?? ''}</td>
+                    <td className="px-3 py-1.5 text-theme-text-secondary text-xs">{row.customer_name ?? ''}</td>
                   </tr>
                 ))}
               </tbody>
@@ -191,11 +197,11 @@ export default function BetsSearchPage() {
 
           {/* Status bar */}
           {searched && (
-            <div className="shrink-0 border-t border-slate-700 px-4 py-2 flex gap-4 text-xs text-slate-400">
-              <span>พบ <span className="text-slate-200 font-semibold">{rows.length}</span> รายการ</span>
+            <div className="shrink-0 border-t border-border px-4 py-2 flex gap-4 text-xs text-theme-text-secondary">
+              <span>พบ <span className="text-theme-text-primary font-semibold">{rows.length}</span> รายการ</span>
               {rows.length > 0 && (
                 <span>ยอดรวม{' '}
-                  <span className="text-amber-300 font-semibold">
+                  <span className="text-risk-medium font-semibold">
                     {fNum(rows.reduce((s, r) => s + Number(r.total_amount), 0))}
                   </span>{' '}บาท
                 </span>
@@ -208,7 +214,7 @@ export default function BetsSearchPage() {
         <div className="w-80 shrink-0 flex flex-col gap-3 overflow-y-auto">
 
           {/* Round */}
-          <div className="bg-slate-800 border border-slate-700 rounded-lg p-3">
+          <div className="bg-surface-100 border border-border rounded-lg p-3">
             <div className="flex items-center gap-2">
               <Label>งวด</Label>
               <Sel value={roundId} onChange={setRoundId}>
@@ -231,9 +237,9 @@ export default function BetsSearchPage() {
                 type="number" min={1} max={1000}
                 value={topLimit}
                 onChange={(e) => setTopLimit(Math.max(1, parseInt(e.target.value) || 1))}
-                className="w-20 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-2 py-1 text-right focus:outline-none focus:border-blue-400"
+                className="w-20 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 text-right focus:outline-none focus:border-blue-400"
               />
-              <span className="text-sm text-slate-400 shrink-0">รายการ</span>
+              <span className="text-sm text-theme-text-secondary shrink-0">รายการ</span>
             </div>
             <div className="flex items-center gap-2">
               <Label>ประเภท</Label>
@@ -269,7 +275,7 @@ export default function BetsSearchPage() {
                 value={hasNum}
                 onChange={(e) => setHasNum(e.target.value.replace(/\D/g, ''))}
                 placeholder="ทั้งหมด"
-                className="flex-1 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-2 py-1 font-mono focus:outline-none focus:border-blue-400 placeholder:text-slate-500"
+                className="flex-1 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 font-mono focus:outline-none focus:border-blue-400 placeholder:text-theme-text-muted"
               />
             </div>
           </ModeCard>
@@ -299,27 +305,29 @@ export default function BetsSearchPage() {
                 type="number" min={0}
                 value={exdAmt}
                 onChange={(e) => setExdAmt(Math.max(0, parseInt(e.target.value) || 0))}
-                className="w-24 bg-slate-700 border border-slate-600 text-slate-100 text-sm rounded px-2 py-1 text-right focus:outline-none focus:border-blue-400"
+                className="w-24 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 text-right focus:outline-none focus:border-blue-400"
               />
-              <span className="text-sm text-slate-400 shrink-0">บาท</span>
+              <span className="text-sm text-theme-text-secondary shrink-0">บาท</span>
             </div>
           </ModeCard>
 
-          {error && <p className="text-red-400 text-xs px-1">{error}</p>}
+          {error && <p className="text-loss text-xs px-1">{error}</p>}
 
           {/* Buttons */}
           <div className="flex gap-2">
             <button
               onClick={doSearch}
               disabled={loading}
-              className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:bg-blue-800/60 text-white font-semibold text-sm py-2 rounded transition-colors"
+              className="btn-primary-glow flex-1 py-2.5 text-sm rounded-xl font-semibold disabled:bg-surface-300/60 disabled:hover:translate-y-0 disabled:shadow-none"
             >
               {loading ? 'กำลังค้นหา...' : 'ค้นหา'}
             </button>
             <button
+              type="button"
               onClick={() => router.back()}
-              className="flex-1 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold text-sm py-2 rounded transition-colors"
+              className="btn-toolbar-glow btn-fintech-spark flex-1 py-2.5 text-sm font-semibold rounded-xl min-h-[2.75rem] gap-1"
             >
+              <span aria-hidden>✓</span>
               จบการทำงาน
             </button>
           </div>
@@ -340,8 +348,8 @@ function ModeCard({
 }) {
   return (
     <div
-      className={`bg-slate-800 border rounded-lg p-3 cursor-pointer transition-colors ${
-        active ? 'border-blue-500/60' : 'border-slate-700 hover:border-slate-600'
+      className={`bg-surface-100 border rounded-lg p-3 cursor-pointer transition-colors ${
+        active ? 'border-blue-500/60' : 'border-border hover:border-border'
       }`}
       onClick={onActivate}
     >
@@ -352,7 +360,7 @@ function ModeCard({
           onChange={onActivate}
           className="accent-blue-500"
         />
-        <span className="text-sm font-semibold text-slate-100">{label}</span>
+        <span className="text-sm font-semibold text-theme-text-primary">{label}</span>
       </label>
       <div
         className={`flex flex-col gap-2 transition-opacity ${
