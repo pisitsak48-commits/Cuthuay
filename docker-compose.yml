@@ -1,0 +1,100 @@
+# รันทั้งระบบ: npm run docker:up  (หรือ ./scripts/docker-up.sh)
+# หยุด: npm run docker:down
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cuthuay_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cuthuay}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cuthuay_secret}
+      POSTGRES_DB: ${POSTGRES_DB:-cuthuay}
+    ports:
+      # host 5433 กันชน PostgreSQL บนเครื่อง (localhost:5432)
+      - '${POSTGRES_HOST_PORT:-5433}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-cuthuay}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: cuthuay_redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: cuthuay_backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-cuthuay}:${POSTGRES_PASSWORD:-cuthuay_secret}@postgres:5432/${POSTGRES_DB:-cuthuay}
+      JWT_SECRET: ${JWT_SECRET:-supersecretkey_change_in_production_min32}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
+      PORT: 4000
+      REPORTS_DIR: /app/reports
+      # คั่นหลาย origin ได้ เช่น https://app.example.com,http://localhost:3000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      # Google Vision: path ภายใน container — mount ./backend/secrets → /app/secrets
+      GOOGLE_APPLICATION_CREDENTIALS: ${GOOGLE_APPLICATION_CREDENTIALS:-/app/secrets/vision-key.json}
+      GOOGLE_VISION_KEY_FILE: ${GOOGLE_VISION_KEY_FILE:-}
+      GOOGLE_VISION_USE_ADC: ${GOOGLE_VISION_USE_ADC:-}
+    ports:
+      - '4000:4000'
+    volumes:
+      - ./backend/reports:/app/reports
+      - ./backend/secrets:/app/secrets:ro
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:4000/health').then((r)=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        BACKEND_INTERNAL_URL: http://backend:4000
+    container_name: cuthuay_frontend
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      BACKEND_INTERNAL_URL: http://backend:4000
+    ports:
+      - '3000:3000'
+
+  # รัน unit test: docker compose --profile test run --rm backend-test
+  backend-test:
+    profiles: ['test']
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.test
+    container_name: cuthuay_backend_test
+    environment:
+      NODE_ENV: test
+
+volumes:
+  postgres_data:
+  redis_data:

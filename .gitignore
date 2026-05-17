@@ -1,0 +1,33 @@
+# ── Dependencies ──────────────────────────────────────────
+node_modules/
+
+# ── Build outputs ─────────────────────────────────────────
+backend/dist/
+frontend/.next/
+frontend/out/
+**/tsconfig.tsbuildinfo
+
+# ── Environment & secrets ─────────────────────────────────
+.env
+.env.local
+.env.*.local
+scripts/deploy.local.env
+backend/.env
+frontend/.env
+frontend/.env.local
+backend/secrets/
+
+# ── Logs ──────────────────────────────────────────────────
+*.log
+logs/
+/tmp/
+
+# ── OS files ──────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ── Reports output ────────────────────────────────────────
+reports/
+
+# ── IDE ───────────────────────────────────────────────────
+.vscode/settings.json

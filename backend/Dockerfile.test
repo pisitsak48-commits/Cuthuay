@@ -1,0 +1,12 @@
+# Unit tests only — ไม่ติดตั้ง Python/Paddle (เร็วกว่า Dockerfile หลักมาก)
+FROM node:20-bookworm-slim
+WORKDIR /app
+ENV NODE_ENV=development
+
+COPY package*.json ./
+RUN npm ci
+
+COPY tsconfig.json vitest.config.ts ./
+COPY src ./src
+
+CMD ["npm", "test"]

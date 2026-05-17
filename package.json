@@ -1,0 +1,22 @@
+{
+  "name": "aurax",
+  "private": true,
+  "scripts": {
+    "dev": "bash start-dev.sh",
+    "dev:local": "bash scripts/dev-local.sh",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "test": "npm run test --prefix backend",
+    "test:watch": "npm run test:watch --prefix backend",
+    "test:docker": "docker compose --profile test run --rm backend-test",
+    "test:docker:build": "docker compose --profile test build backend-test",
+    "docker:up": "bash scripts/docker-up.sh",
+    "docker:down": "bash scripts/docker-down.sh",
+    "docker:logs": "docker compose logs -f --tail=100",
+    "docker:ps": "docker compose ps",
+    "deploy:nutanix": "bash scripts/deploy-nutanix.sh"
+  },
+  "dependencies": {
+    "jszip": "^3.10.1"
+  }
+}

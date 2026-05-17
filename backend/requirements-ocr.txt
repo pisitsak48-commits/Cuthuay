@@ -1,0 +1,8 @@
+# OCR แยกจาก backend Node — ติดตั้งบนเครื่องที่รัน API (ไม่ใช้ใน npm)
+# pip install -r requirements-ocr.txt
+#
+# CPU (ทั่วไป):
+paddlepaddle>=2.6.0,<3.0.0
+paddleocr>=2.7.0,<3.0.0
+Pillow>=10.0.0
+numpy>=1.24.0
