@@ -61,7 +61,7 @@ function Sel({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       disabled={disabled}
-      className="flex-1 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-40"
+      className="flex-1 min-w-0 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 focus:outline-none focus:border-[var(--color-accent)] disabled:opacity-40"
     >
       {children}
     </select>
@@ -211,7 +211,7 @@ export default function BetsSearchPage() {
         </div>
 
         {/* ── Right: Search Panel ── */}
-        <div className="w-80 shrink-0 flex flex-col gap-3 overflow-y-auto">
+        <div className="w-80 max-w-full shrink-0 flex flex-col gap-3 overflow-y-auto min-w-0">
 
           {/* Round */}
           <div className="bg-surface-100 border border-border rounded-lg p-3">
@@ -255,27 +255,27 @@ export default function BetsSearchPage() {
             label="ค้นหาเลขที่มีรายการขาย"
             onActivate={() => setMode('has')}
           >
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Label>ลูกค้า</Label>
               <Sel value={hasCust} onChange={setHasCust}>
                 <option value="all">ทั้งหมด</option>
                 {customers.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Sel>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Label>ประเภท</Label>
               <Sel value={hasType} onChange={setHasType}>
                 {BET_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </Sel>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 min-w-0">
               <Label>เลข</Label>
               <input
-                type="text" maxLength={4}
+                type="text" maxLength={3}
                 value={hasNum}
                 onChange={(e) => setHasNum(e.target.value.replace(/\D/g, ''))}
                 placeholder="ทั้งหมด"
-                className="flex-1 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1  tracking-tight focus:outline-none focus:border-[var(--color-accent)] placeholder:text-theme-text-muted"
+                className="flex-1 min-w-0 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 tracking-tight focus:outline-none focus:border-[var(--color-accent)] placeholder:text-theme-text-muted"
               />
             </div>
           </ModeCard>
@@ -348,7 +348,7 @@ function ModeCard({
 }) {
   return (
     <div
-      className={`bg-surface-100 border rounded-lg p-3 cursor-pointer transition-colors ${
+      className={`bg-surface-100 border rounded-lg p-3 min-w-0 overflow-hidden cursor-pointer transition-colors ${
         active ? 'border-[var(--color-accent)]' : 'border-border hover:border-border'
       }`}
       onClick={onActivate}
@@ -363,7 +363,7 @@ function ModeCard({
         <span className="text-sm font-semibold text-theme-text-primary">{label}</span>
       </label>
       <div
-        className={`flex flex-col gap-2 transition-opacity ${
+        className={`flex flex-col gap-2 min-w-0 transition-opacity ${
           active ? 'opacity-100' : 'opacity-40 pointer-events-none'
         }`}
         onClick={(e) => e.stopPropagation()}

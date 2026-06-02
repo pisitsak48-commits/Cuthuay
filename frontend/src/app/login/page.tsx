@@ -109,14 +109,10 @@ export default function LoginPage() {
       >
         <h1 className="sr-only">{APP_BRAND_NAME} — เข้าสู่ระบบ</h1>
 
-        <div className="rounded-3xl bg-white shadow-[0_8px_40px_rgba(30,41,59,0.12),0_1px_3px_rgba(30,41,59,0.06)] overflow-hidden ring-1 ring-[var(--color-border)]">
+        <div className="ui-surface rounded-3xl overflow-hidden">
 
           {/* ── Brand zone ── */}
           <div className="relative flex flex-col items-center text-center px-8 sm:px-10 pt-10 pb-8">
-            {/* Top gradient sheen */}
-            <div aria-hidden className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-[rgba(74,144,226,0.07)] to-transparent pointer-events-none" />
-            {/* Hairline top border glow */}
-            <div aria-hidden className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-blue-400/50 to-transparent" />
 
             {/* Logo */}
             <motion.div
@@ -125,8 +121,7 @@ export default function LoginPage() {
               transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="relative"
             >
-              <div className="absolute -inset-2 rounded-2xl bg-gradient-to-b from-blue-500/10 to-transparent blur-xl pointer-events-none" />
-              <div className="relative w-[13rem] sm:w-[14.5rem] rounded-2xl bg-white shadow-sm ring-1 ring-[var(--color-border)] px-5 py-4 sm:py-5">
+              <div className="relative w-[13rem] sm:w-[14.5rem] rounded-2xl bg-[var(--color-card-bg-solid)] shadow-sm ring-1 ring-[var(--color-border)] px-5 py-4 sm:py-5">
                 <Image
                   src={APP_LOGO_PUBLIC_PATH}
                   alt={APP_BRAND_NAME}

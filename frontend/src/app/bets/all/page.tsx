@@ -10,6 +10,9 @@ import { themeHex } from '@/lib/printColorTokens';
 import { PRINT_FONT_FAMILY, PRINT_GOOGLE_FONTS_HREF, PRINT_ROOT_INLINE_STYLE } from '@/lib/printTypography';
 import { BET_TYPE_LABELS, BetType, Round } from '@/types';
 
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface BetViewRow { number: string; bet_type: string; sold: number; sent: number; remaining: number }
 interface BetViewResult { rows: BetViewRow[]; total_sold: number; total_sent: number; total_remaining: number }
@@ -83,8 +86,8 @@ function buildBetTableHtml(
 ): string {
   const body = rows.map((row, idx) => `
     <tr class="${idx % 2 === 0 ? 'even' : 'odd'}">
-      <td class="num"><span style="font-weight:700">${escapeHtml(row.number)}</span></td>
-      <td class="num blue"><span style="font-weight:400">${formatN(row.sold)}</span></td>
+      <td class="num" style="text-align:center;color:${themeHex.primary600};font-weight:700;letter-spacing:0.06em">${escapeHtml(row.number)}</td>
+      <td class="num blue"><span style="font-weight:600;color:${themeHex.textPrimary}">${formatN(row.sold)}</span></td>
       <td class="num neg"><span style="font-weight:400">${formatN(row.sent)}</span></td>
       <td class="num pos"><span style="font-weight:400">${formatN(row.remaining)}</span></td>
     </tr>
@@ -146,11 +149,15 @@ function GridCell({ row, rowIndex, fontSize, thresholds }: { row: BetViewRow; ro
       className={`grid border-b border-[var(--color-border)] hover:bg-[var(--bg-hover)] transition-colors duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))] ${rowBg}`}
       style={{ fontSize, gridTemplateColumns: CELL_GRID_TEMPLATE, lineHeight: 1.35 }}
     >
-      <div className={`px-2 sm:px-2.5 ${padY} tabular-nums tracking-tight font-bold tracking-wide text-theme-text-primary border-r border-[var(--color-border)] text-center bg-[var(--bg-glass-subtle)]`}>
+      <div
+        className={`px-2 sm:px-2.5 ${padY} tabular-nums font-bold tracking-widest text-[var(--color-accent-hover)] border-r border-[var(--color-border)] text-center bg-[var(--bg-glass-subtle)]`}
+      >
         {row.number}
       </div>
       <div
-        className={`px-2 sm:px-2.5 ${padY} text-right  tracking-tight font-semibold border-r border-[var(--color-border)] text-theme-text-primary`}
+        className={`px-2 sm:px-2.5 ${padY} text-right tracking-tight font-semibold border-r border-[var(--color-border)] ${
+          soldColor ? '' : 'text-theme-text-secondary'
+        }`}
         style={soldColor ? { color: soldColor } : undefined}
       >
         {formatN(row.sold)}
@@ -172,7 +179,9 @@ function ColHeader({ fontSize }: { fontSize: number }) {
       className="grid border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)] sticky top-0 z-10 select-none shadow-[var(--shadow-soft)]"
       style={{ fontSize: Math.max(fontSize, 11), gridTemplateColumns: CELL_GRID_TEMPLATE }}
     >
-      <div className="px-2 sm:px-2.5 py-2 text-theme-text-primary font-semibold border-r border-[var(--color-border)] text-center tracking-wide">เลข</div>
+      <div className="px-2 sm:px-2.5 py-2 text-[var(--color-accent-hover)] font-semibold border-r border-[var(--color-border)] text-center tracking-wide">
+        เลข
+      </div>
       <div className="px-2 sm:px-2.5 py-2 text-theme-text-secondary font-semibold text-right border-r border-[var(--color-border)]">ขาย</div>
       <div className="px-2 sm:px-2.5 py-2 text-theme-text-secondary font-semibold text-right border-r border-[var(--color-border)]">ส่ง</div>
       <div className="px-2 sm:px-2.5 py-2 text-theme-text-secondary font-semibold text-right border-r-0 sm:border-r border-[var(--color-border)]">เหลือ</div>
@@ -183,6 +192,7 @@ function ColHeader({ fontSize }: { fontSize: number }) {
 // ─── Threshold Settings Modal ─────────────────────────────────────────────────
 function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Threshold[]; onChange: (t: Threshold[]) => void; onClose: () => void }) {
   const nextId = useRef(Math.max(0, ...thresholds.map(t => t.id)) + 1);
+  const panelRef = useRef<HTMLDivElement>(null);
   // local draft amounts (string) to allow free typing without mid-sort jumps
   const [draftAmounts, setDraftAmounts] = useState<Record<number, string>>(() =>
     Object.fromEntries(thresholds.map(t => [t.id, String(t.amount)]))
@@ -209,43 +219,88 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
 
   const remove = (id: number) => onChange(thresholds.filter(t => t.id !== id));
 
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    const focusable = panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    focusable[0]?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const nodes = panel.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!nodes.length) return;
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const active = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && active === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    panel.addEventListener('keydown', onKeyDown);
+    return () => panel.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white border-0 rounded-2xl shadow-md p-6 w-[380px] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="threshold-panel-title"
+        aria-describedby="threshold-panel-desc"
+        className="ui-surface p-5 w-[380px] flex flex-col gap-3"
+        onClick={e => e.stopPropagation()}
+      >
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold text-theme-text-primary">ตั้งค่าสีแจ้งเตือนยอดขาย</div>
-            <div className="text-xs text-theme-text-muted mt-0.5 leading-snug">
+            <div id="threshold-panel-title" className="text-sm font-semibold text-theme-text-primary">ตั้งค่าสีแจ้งเตือนยอดขาย</div>
+            <div id="threshold-panel-desc" className="text-sm text-theme-text-muted mt-0.5 leading-snug">
               ไล่โทนจากเย็นไปร้อนตามความเสี่ยง — ยอดสูงควรเป็นโทนร้อน/แดงเข้ม · คอลัมน์ขายเปลี่ยนสีเมื่อถึงขั้นที่กำหนด
             </div>
           </div>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-xl leading-none ml-4">×</button>
+          <button onClick={onClose} aria-label="ปิดหน้าต่างตั้งค่าสี" className="text-theme-text-muted hover:text-theme-text-secondary text-xl leading-none ml-4">×</button>
         </div>
 
         <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto">
           {thresholds.length === 0 && (
-            <div className="text-xs text-theme-text-muted text-center py-3">ยังไม่มีการกำหนดยอด</div>
+            <div className="text-sm text-theme-text-muted text-center py-3">ยังไม่มีการกำหนดยอด</div>
           )}
           {[...thresholds].sort((a, b) => a.amount - b.amount).map((t) => (
             <div key={t.id} className="flex items-center gap-2 bg-surface-50/60 rounded px-3 py-2">
-              <span className="text-xs text-theme-text-muted w-8 shrink-0">ถึง</span>
+              <span className="text-sm text-theme-text-muted w-10 shrink-0">ถึง</span>
               <input
                 type="number" min={1} value={draftAmounts[t.id] ?? t.amount}
                 onChange={e => setDraftAmounts(d => ({ ...d, [t.id]: e.target.value }))}
                 onBlur={() => commitAmount(t.id)}
-                className="w-24 h-7 bg-surface-default border border-border rounded px-2 text-xs  tracking-tight text-theme-text-primary text-right focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]"
+                className="w-28 h-11 bg-surface-default border border-border rounded px-3 text-sm tracking-tight text-theme-text-primary text-right focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]"
               />
-              <span className="text-xs text-theme-text-muted shrink-0">สี</span>
+              <span className="text-sm text-theme-text-muted shrink-0">สี</span>
               <div className="flex gap-1.5 flex-wrap flex-1">
                 {PRESET_COLORS.map(pc => (
                   <button key={pc.value} title={pc.label}
                     onClick={() => updateColor(t.id, pc.value)}
+                    aria-label={`เลือกสี ${pc.label}`}
                     className={`w-5 h-5 rounded-full border-2 transition-all ${t.color === pc.value ? 'border-[var(--text-inverse)] scale-110' : 'border-transparent hover:border-border-bright'}`}
                     style={{ backgroundColor: pc.value }}
                   />
                 ))}
               </div>
               <button onClick={() => remove(t.id)}
+                aria-label={`ลบเงื่อนไขยอด ${t.amount.toLocaleString()}`}
                 className="text-theme-text-muted hover:text-loss text-lg leading-none shrink-0">×</button>
             </div>
           ))}
@@ -253,14 +308,14 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
 
         <div className="flex items-center gap-3 pt-2 border-t border-border">
           <button onClick={addRow}
-            className="btn-primary-glow h-8 px-4 text-xs rounded-xl">
+            className="btn-primary-glow h-11 px-4 text-sm rounded-xl">
             + เพิ่มยอด
           </button>
           {thresholds.length > 0 && (
             <div className="flex gap-1.5 items-center flex-1 flex-wrap">
-              <span className="text-xs text-theme-text-muted">ตัวอย่าง:</span>
+              <span className="text-sm text-theme-text-muted">ตัวอย่าง:</span>
               {[...thresholds].sort((a, b) => a.amount - b.amount).map(t => (
-                <span key={t.id} className="text-xs  tracking-tight font-semibold px-2 py-0.5 rounded"
+                <span key={t.id} className="text-sm tracking-tight font-semibold px-2 py-0.5 rounded"
                   style={{ color: t.color, backgroundColor: `${t.color}22` }}>
                   {t.amount.toLocaleString()}
                 </span>
@@ -268,7 +323,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
             </div>
           )}
           <button onClick={onClose}
-            className="btn-toolbar-glow btn-toolbar-muted !h-8 px-4 text-xs ml-auto rounded-2xl">
+            className="btn-toolbar-glow btn-toolbar-muted !h-11 px-4 text-sm ml-auto rounded-2xl">
             ปิด
           </button>
         </div>
@@ -463,16 +518,16 @@ function BetsAllInner() {
   return (
     <AppShell>
       <Header title="แสดงรายการขายทั้งหมด" subtitle={rounds.find(r => r.id === roundId)?.name ?? ''} />
-      <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
+      <main className="adapt-readable adapt-touch flex-1 flex flex-col min-h-0 overflow-hidden">
 
         {/* ── Tabs ── */}
-        <div className="flex gap-2 px-4 py-3 shrink-0 bg-[#f5f7fb]">
+        <div className="flex gap-0 px-4 shrink-0 bg-[#f5f7fb] border-b border-[var(--color-border)]">
           {([['by_type', 'ยอดขายตามประเภท'], ['total', 'ยอดขายรวม']] as const).map(([k, label]) => (
             <button key={k} onClick={() => setTab(k)}
-              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
+              className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 tab === k
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200/90'
+                  ? 'bg-white border-[var(--primary-600)] text-[var(--primary-600)]'
+                  : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}>
               {label}
             </button>
@@ -484,13 +539,13 @@ function BetsAllInner() {
           <div className="flex flex-wrap gap-x-3 gap-y-2 items-center px-4 py-2.5">
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--bg-glass-subtle)] px-2.5 py-1.5">
               <select value={roundId} onChange={e => setRoundId(e.target.value)}
-                className="h-8 rounded-lg bg-[var(--color-input-bg)] border border-border px-2.5 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] max-w-[11rem]">
+                className="h-11 rounded-lg bg-[var(--color-input-bg)] border border-border px-2.5 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] max-w-[11rem]">
                 {rounds.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
               </select>
               <button
                 type="button"
                 onClick={fetchData}
-                className="btn-toolbar-glow btn-fintech-range !h-8 px-2.5 text-[11px] gap-1.5"
+                className="btn-toolbar-glow btn-fintech-range !h-11 px-3 text-sm gap-1.5"
               >
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={loading ? 'animate-spin shrink-0' : 'shrink-0'}>
                   <polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/>
@@ -500,17 +555,17 @@ function BetsAllInner() {
               </button>
               {tab === 'by_type' && (
                 <>
-                  <span className="text-[11px] text-theme-text-muted hidden sm:inline">ประเภท</span>
+                  <span className="text-sm text-theme-text-muted hidden sm:inline">ประเภท</span>
                   <select value={activeBetType} onChange={e => setActiveBetType(e.target.value as BetType | 'all')}
-                    className="h-8 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] max-w-[9.5rem]">
+                    className="h-11 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] max-w-[10.5rem]">
                     <option value="all">ทั้งหมด</option>
                     {BET_TYPE_ORDER.map(bt => <option key={bt} value={bt}>{BET_TYPE_LABELS[bt]}</option>)}
                   </select>
                 </>
               )}
-              <span className="text-[11px] text-theme-text-muted hidden sm:inline">เรียง</span>
+              <span className="text-sm text-theme-text-muted hidden sm:inline">เรียง</span>
               <select value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)}
-                className="h-8 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] max-w-[10rem]">
+                className="h-11 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] max-w-[10.5rem]">
                 {(Object.keys(SORT_LABELS) as SortMode[]).map(k => (
                   <option key={k} value={k}>{SORT_LABELS[k]}</option>
                 ))}
@@ -518,36 +573,36 @@ function BetsAllInner() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--bg-glass-subtle)] px-2.5 py-1.5">
-              <span className="text-[11px] text-theme-text-muted">คอลัมน์</span>
+              <span className="text-sm text-theme-text-muted">คอลัมน์</span>
               <select value={cols} onChange={e => setCols(parseInt(e.target.value))}
-                className="h-8 w-14 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
+                className="h-11 w-16 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
                 {[2, 3, 4, 5, 6].map(c => <option key={c} value={c}>{c}</option>)}
               </select>
-              <span className="text-[11px] text-theme-text-muted">ขนาด</span>
+              <span className="text-sm text-theme-text-muted">ขนาด</span>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => setFontSize(f => Math.max(9, f - 1))}
-                  className="h-8 w-8 rounded-lg border border-border bg-surface-200/90 text-theme-text-secondary hover:bg-surface-300/80 text-sm leading-none transition-colors">−</button>
-                <span className="text-xs  tracking-tight text-theme-text-primary w-7 text-center ">{fontSize}</span>
+                  className="h-11 w-11 rounded-lg border border-border bg-surface-200/90 text-theme-text-secondary hover:bg-surface-300/80 text-lg leading-none transition-colors">−</button>
+                <span className="text-sm tracking-tight text-theme-text-primary w-8 text-center ">{fontSize}</span>
                 <button type="button" onClick={() => setFontSize(f => Math.min(16, f + 1))}
-                  className="h-8 w-8 rounded-lg border border-border bg-surface-200/90 text-theme-text-secondary hover:bg-surface-300/80 text-sm leading-none transition-colors">+</button>
+                  className="h-11 w-11 rounded-lg border border-border bg-surface-200/90 text-theme-text-secondary hover:bg-surface-300/80 text-lg leading-none transition-colors">+</button>
               </div>
-              <span className="text-[11px] text-theme-text-muted hidden md:inline">รีเฟรช</span>
+              <span className="text-sm text-theme-text-muted hidden md:inline">รีเฟรช</span>
               <input type="number" min={1} max={60} value={autoRefreshMin}
                 title="ดึงข้อมูลอัตโนมัติ"
                 onChange={e => setAutoRefreshMin(Math.max(1, parseInt(e.target.value) || 5))}
-                className="h-8 w-12 rounded-lg bg-[var(--color-input-bg)] border border-border px-1 text-xs  tracking-tight text-theme-text-primary text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]" />
-              <span className="text-[11px] text-theme-text-muted hidden md:inline">นาที</span>
+                className="h-11 w-14 rounded-lg bg-[var(--color-input-bg)] border border-border px-1 text-sm tracking-tight text-theme-text-primary text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]" />
+              <span className="text-sm text-theme-text-muted hidden md:inline">นาที</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 ml-auto">
-              <span className="text-xs text-theme-text-muted  whitespace-nowrap">{displayRows.length} เลข</span>
+              <span className="text-sm text-theme-text-muted whitespace-nowrap">{displayRows.length} เลข</span>
               {isAdmin && (
                 <>
                   <button
                     type="button"
                     onClick={handleExportPdfCombined}
                     disabled={!roundId || exportingPdf}
-                    className="btn-toolbar-glow btn-fintech-search !h-8 px-3 text-[11px] whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-toolbar-glow btn-fintech-search !h-11 px-3 text-sm whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     {exportingPdf ? 'กำลังสร้าง...' : 'PDF รวม'}
                   </button>
@@ -555,7 +610,7 @@ function BetsAllInner() {
                     type="button"
                     onClick={handleExportPdfByType}
                     disabled={!roundId || exportingPdf}
-                    className="btn-toolbar-glow btn-fintech-spark !h-8 px-3 text-[11px] whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-toolbar-glow btn-fintech-spark !h-11 px-3 text-sm whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     PDF แยกประเภท
                   </button>
@@ -564,7 +619,7 @@ function BetsAllInner() {
               <button
                 type="button"
                 onClick={() => setShowThresholdPanel(true)}
-                className="btn-toolbar-glow btn-toolbar-muted !h-8 px-3 text-[11px] gap-1.5 whitespace-nowrap"
+                className="btn-toolbar-glow btn-toolbar-muted !h-11 px-3 text-sm gap-1.5 whitespace-nowrap"
               >
                 ตั้งค่าสี
                 {thresholds.length > 0 && (
@@ -583,7 +638,7 @@ function BetsAllInner() {
         </div>
 
         {/* ── Grid ── */}
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto">
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-auto overscroll-contain">
           {loading && displayRows.length === 0 ? (
             <div className="flex items-center justify-center min-h-[8rem] text-theme-text-muted text-sm">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="animate-spin mr-2">
@@ -595,11 +650,11 @@ function BetsAllInner() {
           ) : displayRows.length === 0 ? (
             <div className="flex items-center justify-center min-h-[8rem] text-theme-text-muted text-sm">ไม่มีข้อมูล</div>
           ) : (
-            <div className="grid gap-1.5 sm:gap-2 p-1.5 sm:p-2 items-start content-start" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
+            <div className="grid gap-1.5 sm:gap-2 p-1.5 sm:p-2 items-start content-start min-w-[52rem]" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
               {columnGroups.map((group, ci) => (
                 <div
                   key={ci}
-                  className="flex flex-col min-w-0 rounded-2xl border border-[var(--color-border)] bg-white shadow-sm"
+                  className="ui-surface flex flex-col min-w-0"
                 >
                   <ColHeader fontSize={fontSize} />
                   {group.map((row, ri) => (

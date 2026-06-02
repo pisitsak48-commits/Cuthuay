@@ -234,7 +234,7 @@ export default function RoundsPage() {
         title="จัดการงวด"
         subtitle="สร้างงวด สถานะเปิด/ปิด — อัตราเจ้ามือสำหรับคำนวณตัดหวยกำหนดในหน้า «ตัดหวย» (ผูกกับงวดทีละงวด)"
       />
-      <main className="flex-1 p-6 space-y-5">
+      <main className="ui-page-main overflow-auto">
         <div className="flex flex-wrap justify-end gap-2 items-center">
           {isAdmin ? (
             <label className="flex items-center gap-2 text-xs text-theme-text-secondary mr-auto cursor-pointer select-none">

@@ -12,9 +12,9 @@ export function Card({ children, className, hover, glow }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border-0 bg-white p-6 shadow-sm backdrop-blur-none transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
-        hover && 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer',
-        glow && 'shadow-md',
+        'rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm',
+        hover && 'hover:bg-[var(--bg-hover)] cursor-pointer',
+        glow && 'shadow-sm',
         className,
       )}
     >
@@ -25,7 +25,7 @@ export function Card({ children, className, hover, glow }: CardProps) {
 
 export function CardHeader({ children, className }: { children: React.ReactNode; className?: string }) {
   return (
-    <div className={cn('flex items-center justify-between mb-6', className)}>
+    <div className={cn('ui-panel-head mb-0', className)}>
       {children}
     </div>
   );
@@ -44,8 +44,8 @@ export function CardTitle({
   return (
     <h3
       className={cn(
-        'text-lg font-medium tracking-tight text-theme-text-primary',
-        size === 'lg' && 'sm:text-xl',
+        'text-base font-semibold tracking-tight text-theme-text-primary',
+        size === 'lg' && 'text-lg',
         className,
       )}>
       {children}

@@ -103,7 +103,7 @@ export function Sidebar() {
   return (
     <aside
       className={cn(
-        'fixed top-0 left-0 z-30 h-dvh max-h-dvh flex flex-col border-0 border-r-0 shadow-[4px_0_24px_-8px_rgba(15,23,42,0.08)] bg-white/95 backdrop-blur-[18px] transition-[width] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+        'fixed top-0 left-0 z-30 h-dvh max-h-dvh flex flex-col ui-surface rounded-none border-0 border-r shadow-[4px_0_24px_-8px_rgba(15,23,42,0.08)] transition-[width] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
         expanded ? 'w-60' : 'w-[4.5rem]',
       )}
     >
@@ -126,7 +126,7 @@ export function Sidebar() {
           onClick={toggleSidebar}
           title={expanded ? 'ย่อเมนู (แสดงไอคอน)' : 'ขยายเมนู'}
           className={cn(
-            'rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 backdrop-blur-[8px] transition-all duration-theme shrink-0',
+            'rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 transition-all duration-theme shrink-0',
             !expanded && 'mx-auto',
           )}
         >
@@ -353,7 +353,7 @@ export function Sidebar() {
               <p className="text-[10px] text-theme-text-muted capitalize">{user?.role}</p>
             </div>
           )}
-          <button onClick={logout} className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] backdrop-blur-[8px] transition-all duration-theme" title="ออกจากระบบ">
+          <button onClick={logout} className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] transition-all duration-theme" title="ออกจากระบบ">
             <LogoutIcon />
           </button>
         </div>

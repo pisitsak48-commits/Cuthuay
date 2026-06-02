@@ -11,36 +11,25 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'primary', size = 'md', loading, disabled, className, children, ...props }, ref) => {
     const base =
-      'inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-[transform,box-shadow,background-color,border-color,opacity,filter] duration-[200ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed select-none';
-    const ease = '[transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]';
+      'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed select-none';
 
     const variants = {
-      primary: cn(
-        ease,
-        'border-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 hover:brightness-[1.02]',
-      ),
-      ghost: cn(
-        ease,
-        'bg-white border-0 text-gray-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
-      ),
-      danger: cn(
-        ease,
-        'bg-[rgb(var(--color-loss)/1)] text-[var(--text-inverse)] border border-[rgb(var(--color-validation-error-border)/0.35)] shadow-btn-danger hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5 active:translate-y-0 hover:brightness-90',
-      ),
-      success: cn(
-        ease,
-        'bg-[rgb(var(--color-profit)/1)] text-[var(--text-inverse)] border border-profit/30 shadow-btn-success hover:shadow-btn-success-hover hover:-translate-y-0.5 active:translate-y-0 hover:brightness-90',
-      ),
-      outline: cn(
-        ease,
-        'bg-gray-100 border-0 text-gray-900 shadow-sm hover:bg-gray-200/90 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
-      ),
+      primary:
+        'bg-[var(--color-accent)] text-white border border-[var(--color-accent-hover)] hover:bg-[var(--color-accent-hover)]',
+      ghost:
+        'bg-white text-gray-900 border border-[var(--color-border)] hover:bg-[var(--bg-hover)]',
+      danger:
+        'bg-[rgb(var(--color-loss)/1)] text-[var(--text-inverse)] border border-[rgb(var(--color-validation-error-border)/0.35)] hover:brightness-95',
+      success:
+        'bg-[rgb(var(--color-profit)/1)] text-[var(--text-inverse)] border border-profit/30 hover:brightness-95',
+      outline:
+        'bg-gray-100 text-gray-900 border border-[var(--color-border)] hover:bg-gray-200/90',
     };
 
     const sizes = {
-      sm: 'text-xs px-3 py-2 h-8',
-      md: 'text-sm px-4 py-2.5 h-10',
-      lg: 'text-base px-5 py-3 h-12',
+      sm: 'text-sm px-3 h-9 min-h-9',
+      md: 'text-sm px-4 h-10 min-h-10',
+      lg: 'text-base px-5 h-11 min-h-11',
     };
 
     return (

@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useId, useCallback, type RefObject } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
@@ -20,6 +20,72 @@ const ROLE_LABEL: Record<string, string> = {
   operator: 'ผู้ปฏิบัติงาน',
   viewer: 'ผู้ดูข้อมูล',
 };
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function useOverlayDialogA11y(
+  open: boolean,
+  onClose: () => void,
+  dialogRef: RefObject<HTMLDivElement | null>,
+) {
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+
+    const raf = requestAnimationFrame(() => {
+      const el = dialogRef.current;
+      if (!el) return;
+      el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)[0]?.focus();
+    });
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const el = dialogRef.current;
+      if (!el) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const nodes = el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!nodes.length) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const current = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey && current === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && current === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    const el = dialogRef.current;
+    el?.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      el?.removeEventListener('keydown', onKeyDown);
+
+      const prev = previouslyFocusedRef.current;
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
+        prev.focus();
+      }
+    };
+  }, [open, onClose, dialogRef]);
+}
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
@@ -48,6 +114,9 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
 }
 
 export default function UsersPage() {
+  const userFormDialogRef = useRef<HTMLDivElement>(null);
+  const userFormDialogTitleId = useId();
+
   const [users, setUsers]       = useState<UserRow[]>([]);
   const [loading, setLoading]   = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -135,10 +204,13 @@ export default function UsersPage() {
     }
   };
 
+  const closeUserForm = useCallback(() => setShowForm(false), []);
+  useOverlayDialogA11y(showForm, closeUserForm, userFormDialogRef);
+
   return (
     <AppShell>
       <Header title="ข้อมูลผู้ใช้งาน" subtitle="จัดการบัญชีผู้ใช้ในระบบ" />
-      <main className="flex-1 overflow-auto p-5">
+      <main className="flex-1 overflow-auto ui-page-main">
         <div className="max-w-3xl mx-auto space-y-4">
 
           <div className="flex gap-3 items-center flex-wrap">
@@ -188,10 +260,24 @@ export default function UsersPage() {
 
       <AnimatePresence>
         {showForm && (
-          <div className="fixed inset-0 z-50 bg-[var(--color-backdrop-overlay)] flex items-center justify-center p-4">
-            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-md p-5 space-y-4">
-              <h3 className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้ใหม่'}</h3>
+          <div
+            className="fixed inset-0 z-50 bg-[var(--color-backdrop-overlay)] flex items-center justify-center p-4"
+            role="presentation"
+            onClick={closeUserForm}
+          >
+            <motion.div
+              ref={userFormDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={userFormDialogTitleId}
+              tabIndex={-1}
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-md p-5 space-y-4 outline-none"
+              onClick={e => e.stopPropagation()}
+            >
+              <h3 id={userFormDialogTitleId} className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้ใหม่'}</h3>
 
               {!editing && (
                 <div>
@@ -217,7 +303,7 @@ export default function UsersPage() {
 
               {error && <p className="text-xs text-loss">{error}</p>}
               <div className="flex gap-2 justify-end">
-                <Button variant="ghost" onClick={() => setShowForm(false)}>ยกเลิก</Button>
+                <Button variant="ghost" onClick={closeUserForm}>ยกเลิก</Button>
                 <Button onClick={handleSave} loading={saving}>บันทึก</Button>
               </div>
             </motion.div>

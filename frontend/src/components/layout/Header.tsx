@@ -18,7 +18,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
   const prominent = variant === 'prominent';
 
   return (
-    <header className="flex items-center justify-between px-6 py-5 border-0 bg-white shadow-sm rounded-2xl mx-4 mt-4 backdrop-blur-none transition-[background-color,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]">
+    <header className="ui-surface flex items-center justify-between px-5 py-4 mx-4 mt-4">
       <div>
         <h1
           className={cn(
@@ -42,11 +42,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
         {selectedRound && (
           <>
             <div className="text-right">
-              <p
-                className={cn(
-                  'uppercase text-theme-text-muted',
-                  prominent ? 'text-xs tracking-[0.2em]' : 'text-[11px] tracking-[0.22em]',
-                )}>
+              <p className={cn('text-theme-text-muted', prominent ? 'text-sm' : 'text-xs')}>
                 งวด
               </p>
               <p
@@ -58,11 +54,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
               </p>
             </div>
             <div className="text-right">
-              <p
-                className={cn(
-                  'uppercase text-theme-text-muted',
-                  prominent ? 'text-xs tracking-[0.2em]' : 'text-[11px] tracking-[0.22em]',
-                )}>
+              <p className={cn('text-theme-text-muted', prominent ? 'text-sm' : 'text-xs')}>
                 ยอดรับ
               </p>
               <p

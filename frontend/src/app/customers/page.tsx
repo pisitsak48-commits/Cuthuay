@@ -20,12 +20,12 @@ const BET_TYPES = [
 ] as const;
 
 // ─── Shared styles ────────────────────────────────────────────────────────────
-const inputCls = 'w-full h-7 rounded-lg bg-[var(--color-input-bg)] border border-[var(--color-input-border)] px-2 text-[12px] text-theme-text-primary text-right placeholder:text-theme-text-muted focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--color-accent)] tabular-nums tracking-tight transition-colors';
-const fieldCls = 'w-full h-9 rounded-lg bg-[var(--color-input-bg)] border border-[var(--color-input-border)] px-3 text-sm text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--color-accent)] transition-colors';
-const btnSave   = 'btn-toolbar-glow btn-toolbar-profit flex-1 !h-9 text-sm rounded-xl justify-center';
-const btnCancel = 'btn-toolbar-glow btn-toolbar-muted flex-1 !h-9 text-sm rounded-xl justify-center';
-const btnExport = 'btn-toolbar-glow btn-fintech-search !h-8 px-3.5 text-xs font-semibold justify-center border border-[var(--color-border-strong)]';
-const btnImport = 'btn-toolbar-glow btn-toolbar-profit !h-8 px-3.5 text-xs font-semibold justify-center border border-[var(--color-border-strong)] shadow-[var(--shadow-soft)]';
+const inputCls = 'ui-field text-right tabular-nums bg-[var(--color-input-bg)] border-[var(--color-input-border)] placeholder:text-theme-text-muted focus:ring-[var(--color-accent-ring)] focus:border-[var(--color-accent)]';
+const fieldCls = 'ui-field bg-[var(--color-input-bg)] border-[var(--color-input-border)] placeholder:text-theme-text-muted focus:ring-[var(--color-accent-ring)] focus:border-[var(--color-accent)]';
+const btnSave   = 'btn-toolbar-glow btn-toolbar-profit flex-1 justify-center';
+const btnCancel = 'btn-toolbar-glow btn-toolbar-muted flex-1 justify-center';
+const btnExport = 'btn-toolbar-glow btn-fintech-search justify-center';
+const btnImport = 'btn-toolbar-glow btn-toolbar-profit justify-center';
 
 function triggerDownload(blob: Blob, filename: string) {
   const url = URL.createObjectURL(blob);
@@ -163,7 +163,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
 
           {/* Rate table */}
           <div>
-            <p className="text-[10px] text-theme-text-muted uppercase tracking-widest font-semibold mb-2">
+            <p className="text-sm text-theme-text-muted font-medium mb-2">
               อัตราจ่ายและเปอร์เซ็นต์
             </p>
             <div className="rounded-xl overflow-hidden border border-[var(--color-border)]">
@@ -253,9 +253,9 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
             <table className="w-full text-[12px] whitespace-nowrap">
               <thead className="sticky top-0 bg-[var(--bg-glass-subtle)] border-b border-[var(--color-border)] z-10">
                 <tr>
-                  <th className="text-left py-2.5 px-4 text-[11px] text-theme-text-secondary font-semibold uppercase tracking-wide">ชื่อ</th>
+                  <th className="text-left py-2.5 px-4 text-sm text-theme-text-secondary font-medium">ชื่อ</th>
                   {BET_TYPES.map(t => (
-                    <th key={'p'+t.dPctKey} className="text-right py-2.5 px-1.5 text-[11px] text-theme-text-secondary font-semibold uppercase tracking-wide">
+                    <th key={'p'+t.dPctKey} className="text-right py-2.5 px-1.5 text-sm text-theme-text-secondary font-medium">
                       %{t.label.replace('3 ตัวบน','3บ').replace('3 ตัวโต็ด','3ต').replace('3 ตัวล่าง','3ล').replace('2 ตัวบน','2บ').replace('2 ตัวล่าง','2ล').replace('วิ่งบน','วบ').replace('วิ่งล่าง','วล')}
                     </th>
                   ))}
@@ -263,7 +263,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                     <span className="inline-block w-px h-3 bg-[var(--color-border)]" />
                   </th>
                   {BET_TYPES.map(t => (
-                    <th key={'r'+t.cKey} className="text-right py-2.5 px-2 text-[11px] text-theme-text-secondary font-semibold uppercase tracking-wide">
+                    <th key={'r'+t.cKey} className="text-right py-2.5 px-2 text-sm text-theme-text-secondary font-medium">
                       {t.label.replace('3 ตัวบน','3บน').replace('3 ตัวโต็ด','โต็ด').replace('3 ตัวล่าง','3ล่าง').replace('2 ตัวบน','2บน').replace('2 ตัวล่าง','2ล่าง')}
                     </th>
                   ))}
@@ -440,7 +440,7 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
           </div>
 
           <div>
-            <p className="text-[10px] text-theme-text-muted uppercase tracking-widest font-semibold mb-2">
+            <p className="text-sm text-theme-text-muted font-medium mb-2">
               อัตราจ่ายและเปอร์เซ็นต์
             </p>
             <div className="rounded-xl overflow-hidden border border-[var(--color-border)]">
@@ -512,9 +512,9 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
             <table className="w-full text-[12px] whitespace-nowrap">
               <thead className="sticky top-0 bg-[var(--bg-glass-subtle)] border-b border-[var(--color-border)] z-10">
                 <tr>
-                  <th className="text-left py-2.5 px-4 text-[11px] text-theme-text-secondary font-semibold uppercase tracking-wide">เจ้ามือ</th>
+                  <th className="text-left py-2.5 px-4 text-sm text-theme-text-secondary font-medium">เจ้ามือ</th>
                   {BET_TYPES.map(t => (
-                    <th key={'p'+t.dPctKey} className="text-right py-2.5 px-1.5 text-[11px] text-theme-text-secondary font-semibold uppercase tracking-wide">
+                    <th key={'p'+t.dPctKey} className="text-right py-2.5 px-1.5 text-sm text-theme-text-secondary font-medium">
                       %{t.label.replace('3 ตัวบน','3บ').replace('3 ตัวโต็ด','3ต').replace('3 ตัวล่าง','3ล').replace('2 ตัวบน','2บ').replace('2 ตัวล่าง','2ล').replace('วิ่งบน','วบ').replace('วิ่งล่าง','วล')}
                     </th>
                   ))}
@@ -522,7 +522,7 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                     <span className="inline-block w-px h-3 bg-[var(--color-border)]" />
                   </th>
                   {BET_TYPES.map(t => (
-                    <th key={'r'+t.dRateKey} className="text-right py-2.5 px-2 text-[11px] text-theme-text-secondary font-semibold uppercase tracking-wide">
+                    <th key={'r'+t.dRateKey} className="text-right py-2.5 px-2 text-sm text-theme-text-secondary font-medium">
                       {t.label.replace('3 ตัวบน','3บน').replace('3 ตัวโต็ด','โต็ด').replace('3 ตัวล่าง','3ล่าง').replace('2 ตัวบน','2บน').replace('2 ตัวล่าง','2ล่าง')}
                     </th>
                   ))}
@@ -674,7 +674,7 @@ function ContactsPageInner() {
         }
       />
 
-      <main className="flex flex-col flex-1 min-h-0 overflow-hidden px-4 pb-4 gap-3">
+      <main className="adapt-readable adapt-touch flex flex-col flex-1 min-h-0 overflow-hidden px-4 pb-6 pt-4 gap-4 sm:px-5">
         {/* Segmented tab control */}
         <div className="shrink-0 flex items-center gap-3 pt-1">
           <div className="inline-flex bg-[var(--bg-glass-subtle)] rounded-xl p-1 border border-[var(--color-border)] gap-0.5">

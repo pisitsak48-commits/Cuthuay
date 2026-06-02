@@ -1,16 +1,9 @@
 'use client';
-import { motion } from 'framer-motion';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn, formatBaht, formatPercent } from '@/lib/utils';
 
 type AccentKey = 'blue' | 'green' | 'amber' | 'rose' | 'violet';
 
-const accentLine: Record<AccentKey, string> = {
-  blue:   'bg-gradient-to-r from-blue-400  to-blue-600',
-  green:  'bg-gradient-to-r from-emerald-400 to-emerald-600',
-  amber:  'bg-gradient-to-r from-amber-400 to-orange-500',
-  rose:   'bg-gradient-to-r from-rose-400  to-red-500',
-  violet: 'bg-gradient-to-r from-violet-400 to-violet-600',
-};
 const accentIconBg: Record<AccentKey, string> = {
   blue:   'bg-blue-500',
   green:  'bg-emerald-500',
@@ -36,6 +29,7 @@ export function StatCard({
   label, value, subLabel, trend, format = 'raw',
   colorOverride, className, index = 0, accent, icon,
 }: StatCardProps) {
+  const prefersReducedMotion = useReducedMotion();
   const numericValue = typeof value === 'number' ? value : parseFloat(String(value)) || 0;
 
   const displayValue =
@@ -51,25 +45,26 @@ export function StatCard({
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.22, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
+      transition={
+        prefersReducedMotion
+          ? { duration: 0 }
+          : { duration: 0.22, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }
+      }
       className={cn(
-        'rounded-2xl border-0 bg-white shadow-sm overflow-hidden',
-        'transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
-        'hover:shadow-md hover:-translate-y-0.5',
+        'rounded-xl border border-[var(--color-border)] bg-white shadow-sm overflow-hidden',
         className,
       )}
     >
-      {accent && <div className={cn('h-[3px] w-full', accentLine[accent])} />}
-      <div className="px-5 py-4">
+      <div className="p-5">
         <div className="flex items-start justify-between gap-3 mb-3">
-          <p className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wider leading-tight mt-0.5">
+          <p className="text-sm font-medium text-theme-text-secondary leading-tight mt-0.5">
             {label}
           </p>
           {icon && accent && (
             <div className={cn(
-              'shrink-0 rounded-xl p-2 text-white shadow-sm',
+              'shrink-0 rounded-lg p-2 text-white',
               accentIconBg[accent],
             )}>
               {icon}

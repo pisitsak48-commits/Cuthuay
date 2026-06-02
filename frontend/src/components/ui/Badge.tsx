@@ -28,7 +28,7 @@ export function Badge({ children, variant = 'default', className, dot }: BadgePr
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-semibold tracking-wide border transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+        'inline-flex items-center gap-1.5 rounded-md px-2.5 py-0.5 text-xs font-medium border transition-colors duration-150',
         variantMap[variant],
         className,
       )}
@@ -75,7 +75,7 @@ export function RiskBadge({ percent }: { percent: number }) {
 
 export function NotificationBadge({ count }: { count: number }) {
   return (
-    <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 rounded-full bg-[rgb(var(--color-notify)/1)] px-2 text-[11px] font-semibold tabular-nums text-[var(--text-inverse)] shadow-[var(--shadow-soft)]">
+    <span className="inline-flex items-center justify-center min-w-[1.5rem] h-6 rounded-md bg-[rgb(var(--color-notify)/1)] px-2 text-xs font-medium tabular-nums text-[var(--text-inverse)]">
       {count}
     </span>
   );
