@@ -98,7 +98,7 @@ function BetsImportInner() {
   return (
     <AppShell>
       <Header title="รับไฟล์ข้อมูลการขาย" subtitle="นำเข้าข้อมูลโพยจากไฟล์หรือวางข้อความ" />
-      <main className="flex-1 overflow-auto p-5">
+      <main className="flex-1 overflow-auto ui-page-main">
         <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-5">
 
           {/* Left: input */}

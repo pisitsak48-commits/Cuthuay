@@ -40,15 +40,6 @@ import {
   findBlockedBetsInParsed,
 } from '@/lib/betKeyWarnings';
 import { buildWinningKeysFromResultData, groupTouchesWinningDraw } from '@/lib/drawWinning';
-import {
-  readPanelWidth,
-  writePanelWidth,
-  readPanelLock,
-  writePanelLock,
-  STORAGE_BETS_RIGHT_PANEL_W,
-  STORAGE_BETS_RIGHT_PANEL_LOCK,
-} from '@/lib/panelResize';
-
 /** ลำดับแสดงในโพยหน้ารับแทง — กระทบแทรก/สกอร์หลังบันทึกเท่านั้น (จำในเครื่อง) */
 type BetSheetSortOrder = 'newestFirst' | 'oldestFirst';
 const STORAGE_BETS_SHEET_SORT = 'cuthuay-bets-sheet-sort';
@@ -70,6 +61,8 @@ function writeBetSheetSort(order: BetSheetSortOrder) {
 
 /** โหมดตรวจด้วยเสียงบนตารางโพย — จำในเครื่อง */
 const STORAGE_BETS_VOICE_AUDIT = 'cuthuay-bets-voice-audit';
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 function readVoiceAuditMode(): boolean {
   if (typeof window === 'undefined') return false;
@@ -429,6 +422,33 @@ function parseBetTs(raw: string): Date {
   return new Date(s);
 }
 
+/** รูปแบบเวลาในตารางโพย — แสดงชั่วโมง:นาที:วินาที */
+const BET_TABLE_TIME_OPTS: Intl.DateTimeFormatOptions = {
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+};
+
+function formatBetTableTime(d: Date): string {
+  return d.toLocaleTimeString('th-TH', BET_TABLE_TIME_OPTS);
+}
+
+/** HH:mm:ss + .มิลลิวินาที ถ้า timestamp จาก DB มีเศษวินาที */
+function formatBetTableTimeFromRaw(raw: string, d: Date): string {
+  const base = Number.isNaN(d.getTime()) ? pgTimeFallback(raw, 8) : formatBetTableTime(d);
+  const frac = raw.match(/[T ]\d{2}:\d{2}:\d{2}\.(\d{1,6})/);
+  if (!frac) return base;
+  const ms = frac[1].padEnd(3, '0').slice(0, 3);
+  return `${base}.${ms}`;
+}
+
+function pgTimeFallback(raw: string, len: number): string {
+  const tIdx = raw.includes('T') ? raw.indexOf('T') + 1 : raw.indexOf(' ') + 1;
+  if (tIdx <= 0) return raw.slice(0, len);
+  return raw.slice(tIdx, tIdx + len);
+}
+
 /** เวลาคีย์ครั้งแรกในตาราง + ป้ายแก้ไขเมื่อมีการแก้โพยหลังคีย์ (ใช้ updated_at จาก DB) */
 function groupBetTimestamps(group: BetSheetGroup): {
   keyedAt: string;
@@ -444,9 +464,7 @@ function groupBetTimestamps(group: BetSheetGroup): {
 
   const keyedAt = bets.reduce((min, b) => (b.created_at < min ? b.created_at : min), bets[0].created_at);
   const dk = parseBetTs(keyedAt);
-  const timeShort = Number.isNaN(dk.getTime())
-    ? keyedAt.slice(11, 16)
-    : dk.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  const timeShort = formatBetTableTimeFromRaw(keyedAt, dk);
 
   const keyedTooltip = Number.isNaN(dk.getTime())
     ? `คีย์ครั้งแรก ${keyedAt}`
@@ -455,12 +473,11 @@ function groupBetTimestamps(group: BetSheetGroup): {
         day: 'numeric',
         month: 'short',
         year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
+        ...BET_TABLE_TIME_OPTS,
       })}`;
 
   const keyedSubtitle = Number.isNaN(dk.getTime())
-    ? keyedAt.slice(0, 16)
+    ? pgTimeFallback(keyedAt, 12)
     : `${dk.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })} ${timeShort}`;
 
   const hasUpdated = bets.some(
@@ -500,7 +517,7 @@ function groupBetTimestamps(group: BetSheetGroup): {
     month: 'short',
     year: 'numeric',
   });
-  const tipTime = de.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+  const tipTime = formatBetTableTimeFromRaw(editedMaxStr, de);
   const tip = `แก้ไขเมื่อ ${tipDate} ${tipTime}`;
   const short = sameCalendarDay
     ? tipTime
@@ -580,15 +597,6 @@ export default function BetsPage() {
   const [sumFs, setSumFs]             = useState(12);    // font-size px for the right summary panel
   /** ซูมทั้งหน้ารับแทง — ปุ่ม «ขนาด» A− / A+ ด้านล่างโพย */
   const [betsPageZoomPercent, setBetsPageZoomPercent] = useState(readBetsPageZoom);
-  /** แผงขวา (สรุปยอด) — ลากขอบซ้ายของแผงปรับความกว้าง บนจอ ≥xl */
-  const liveRightPanelWRef              = useRef(288);
-  const [rightPanelPx, setRightPanelPx] = useState(() => {
-    const w = readPanelWidth(STORAGE_BETS_RIGHT_PANEL_W, 288);
-    liveRightPanelWRef.current = w;
-    return w;
-  });
-  const [rightPanelLocked, setRightPanelLocked] = useState(() => readPanelLock(STORAGE_BETS_RIGHT_PANEL_LOCK));
-  const rightResizeDrag                 = useRef<{ startX: number; startW: number } | null>(null);
   const [soundOn, setSoundOn]         = useState(true);  // เปิด/ปิดเสียง TTS
   const [speechRate, setSpeechRate]   = useState(2.2);   // ความเร็วเสียงพูด
   /** พูดเลข–ยอดเมื่อโฟกัสแถว แล้วเลื่อนถัดไปหลังพูดจบ */
@@ -649,6 +657,9 @@ export default function BetsPage() {
   const imgInputRef = useRef<HTMLInputElement>(null);
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const tableScrollRef = useRef<HTMLDivElement>(null);
+  const moveDialogRef = useRef<HTMLDivElement>(null);
+  const csvDialogRef = useRef<HTMLDivElement>(null);
+  const lineDialogRef = useRef<HTMLDivElement>(null);
   /** รวมรีเฟรชจาก WebSocket หลังบันทึกเอง — กันสองรอบติดกันดีด scroll / กระพริบตาราง */
   const wsSilentFetchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isDragging     = useRef(false);
@@ -690,43 +701,55 @@ export default function BetsPage() {
   }, [lineImportToast]);
 
   useEffect(() => {
-    if (!lineModal) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+    const activeDialog = lineModal
+      ? lineDialogRef.current
+      : moveModal
+        ? moveDialogRef.current
+        : csvModalOpen
+          ? csvDialogRef.current
+          : null;
+    if (!activeDialog) return;
+
+    const focusable = activeDialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+    focusable[0]?.focus();
+
+    const closeActiveDialog = () => {
+      if (lineModal) {
         setLineModal(false);
         setImportResult(null);
+        return;
+      }
+      if (moveModal) {
+        setMoveModal(false);
+        return;
+      }
+      if (csvModalOpen) setCsvModalOpen(false);
+    };
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeActiveDialog();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const nodes = activeDialog.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!nodes.length) return;
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const current = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && current === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && current === last) {
+        e.preventDefault();
+        first.focus();
       }
     };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [lineModal]);
 
-  useEffect(() => {
-    liveRightPanelWRef.current = rightPanelPx;
-  }, [rightPanelPx]);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const d = rightResizeDrag.current;
-      if (!d) return;
-      const next = Math.min(580, Math.max(260, Math.round(d.startW - (e.clientX - d.startX))));
-      liveRightPanelWRef.current = next;
-      setRightPanelPx(next);
-    };
-    const onUp = () => {
-      const wasDrag = rightResizeDrag.current != null;
-      rightResizeDrag.current = null;
-      document.body.style.removeProperty('cursor');
-      document.body.style.removeProperty('user-select');
-      if (wasDrag) writePanelWidth(STORAGE_BETS_RIGHT_PANEL_W, liveRightPanelWRef.current);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, []);
+    activeDialog.addEventListener('keydown', onKeyDown);
+    return () => activeDialog.removeEventListener('keydown', onKeyDown);
+  }, [csvModalOpen, lineModal, moveModal]);
 
   const sheetGroupedRef = useRef<BetSheetGroup[]>([]);
   const scrollRowIntoView = (idx: number, block: ScrollLogicalPosition = 'nearest') => {
@@ -2184,16 +2207,16 @@ export default function BetsPage() {
   return (
     <AppShell>
       <div
-        className="flex flex-col h-full min-h-0 bg-surface-default overflow-hidden"
+        className="adapt-readable adapt-touch flex flex-col h-full min-h-0 bg-surface-default overflow-hidden"
         style={{ zoom: betsPageZoomPercent / 100 }}
       >
 
         {/* Top bar — พื้นขาวแยกจากแถบคีย์ด้านล่าง */}
-        <div className="flex items-center gap-3 px-4 py-2 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-soft)]">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-2 shrink-0 border-b border-[var(--color-border)] bg-[var(--color-card-bg)] shadow-[var(--shadow-soft)]">
           <span className="text-theme-text-secondary text-sm font-semibold">รับแทง</span>
           <div className="w-px h-4 bg-surface-300" />
           <select value={selectedRoundId} onChange={e => setSelectedRoundId(e.target.value)}
-            className="h-7 rounded bg-surface-200 border border-border px-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
+            className="ui-field bg-surface-200 border-border text-theme-text-primary">
             {roundsForPicker.length === 0
               ? <option value="">{showClosedRoundsInPicker ? '— ไม่มีงวด (หรือซ่อนหมด) —' : '— ไม่มีงวดที่เปิดรับ —'}</option>
               : roundsForPicker.map(r => {
@@ -2203,7 +2226,7 @@ export default function BetsPage() {
             }
           </select>
           {isAdmin && (
-            <label className="flex items-center gap-1.5 text-[11px] text-theme-text-muted cursor-pointer select-none shrink-0" title="เฉพาะผู้ดูแลระบบ — ดูโพยงวดที่ปิดรับหรือออกผลแล้ว">
+            <label className="flex items-center gap-1.5 text-sm text-theme-text-muted cursor-pointer select-none shrink-0" title="เฉพาะผู้ดูแลระบบ — ดูโพยงวดที่ปิดรับหรือออกผลแล้ว">
               <input
                 type="checkbox"
                 checked={roundPickerShowAll}
@@ -2213,7 +2236,7 @@ export default function BetsPage() {
               แสดงงวดปิด/ออกผล
             </label>
           )}
-          <a href="/rounds" className="text-xs text-profit hover:underline">+ เริ่มงวดใหม่</a>
+          <a href="/rounds" className="text-sm text-profit hover:underline">+ เริ่มงวดใหม่</a>
           <div className="flex-1" />
           <span
             className={`text-xs text-accent min-w-[6.25rem] text-right tabular-nums transition-opacity duration-150 ${isSaving ? 'opacity-100 animate-pulse' : 'opacity-0 pointer-events-none select-none'}`}
@@ -2224,11 +2247,9 @@ export default function BetsPage() {
         </div>
 
         <div
-          className="bets-main-split"
-          style={{ '--bets-right-panel-px': `${rightPanelPx}px` } as React.CSSProperties}
+          className="app-page-split"
         >
-          <div className="bets-main-split-inner">
-          <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
+          <div className="app-page-split-main flex flex-col min-w-0 min-h-0 overflow-hidden">
 
             {/* Warning: no customer selected */}
             {!selectedCustomerId && (
@@ -2240,20 +2261,19 @@ export default function BetsPage() {
             )}
 
             {/* ช่องคีย์ — premium entry tray */}
-            <div className="flex min-w-0 max-w-full items-stretch gap-2.5 border-b border-[var(--color-border)] bg-gradient-to-b from-[var(--gray-100)] to-[var(--gray-50)] px-3 py-3 shrink-0 select-none z-[1] overflow-x-auto">
+            <div className="flex min-w-0 max-w-full items-stretch gap-2.5 border-b border-[var(--color-border)] bg-white px-3 py-3 shrink-0 select-none z-[1] overflow-x-auto">
               {/* ── ช่องเลข ── */}
               <div
                 style={{ width: numWidth, minWidth: 100, maxWidth: 400 }}
                 className={[
-                  'relative flex flex-col items-center justify-center rounded-2xl px-4 py-2.5 shrink-0 overflow-hidden',
+                  'relative flex flex-col items-center justify-center rounded-2xl px-4 py-3 shrink-0 overflow-hidden',
                   'transition-all duration-150 ease-out',
                   activeField === 'num'
-                    ? 'bg-white shadow-[0_0_0_2px_var(--color-accent),0_4px_16px_rgba(74,144,226,0.18)] border border-[var(--color-accent)]'
-                    : 'bg-white shadow-[0_2px_8px_rgba(15,23,42,0.07)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50',
+                    ? 'bg-white ring-2 ring-[var(--color-accent)] border border-[var(--color-accent)]'
+                    : 'bg-white border border-[var(--color-border)] hover:border-[var(--color-border-strong)]',
                 ].join(' ')}
               >
-                <div className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl transition-all duration-150 ${activeField === 'num' ? 'bg-gradient-to-r from-[var(--primary-400)] via-[var(--color-accent)] to-[var(--primary-400)]' : 'bg-transparent'}`} />
-                <span className={`text-[10px] font-bold mb-1.5 tracking-[0.22em] uppercase transition-colors duration-150 ${activeField === 'num' ? 'text-[var(--color-accent)]' : 'text-theme-text-muted'}`}>เลข</span>
+                <span className={`text-sm font-medium mb-1.5 transition-colors duration-150 ${activeField === 'num' ? 'text-[var(--color-accent)]' : 'text-theme-text-muted'}`}>เลข</span>
                 <input ref={numRef} value={numInput} onChange={e => onNumChange(e.target.value)}
                   onKeyDown={onNumKeyDown}
                   onFocus={() => {
@@ -2274,11 +2294,10 @@ export default function BetsPage() {
                 'relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl px-3 py-2.5 sm:px-6',
                 'transition-all duration-150 ease-out',
                 activeField === 'amt'
-                  ? 'bg-white shadow-[0_0_0_2px_var(--color-accent),0_4px_16px_rgba(74,144,226,0.18)] border border-[var(--color-accent)]'
-                  : 'bg-white shadow-[0_2px_8px_rgba(15,23,42,0.07)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50',
+                  ? 'bg-white ring-2 ring-[var(--color-accent)] border border-[var(--color-accent)]'
+                  : 'bg-white border border-[var(--color-border)] hover:border-[var(--color-border-strong)]',
               ].join(' ')}>
-                <div className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl transition-all duration-150 ${activeField === 'amt' ? 'bg-gradient-to-r from-[var(--primary-400)] via-[var(--color-accent)] to-[var(--primary-400)]' : 'bg-transparent'}`} />
-                <span className={`text-[10px] font-bold mb-1.5 tracking-[0.22em] uppercase transition-colors duration-150 ${activeField === 'amt' ? 'text-[var(--color-accent)]' : 'text-theme-text-muted'}`}>ราคา</span>
+                <span className={`text-sm font-medium mb-1.5 transition-colors duration-150 ${activeField === 'amt' ? 'text-[var(--color-accent)]' : 'text-theme-text-muted'}`}>ราคา</span>
                 <input ref={amtRef} value={amtInput} onChange={e => onAmtChange(e.target.value)}
                   onKeyDown={onAmtKeyDown}
                   onFocus={() => {
@@ -2304,31 +2323,31 @@ export default function BetsPage() {
                 </div>
                 {/* Mode + klap badges */}
                 <div className="absolute top-2.5 right-3 flex gap-1.5 items-center">
-                  {inputMode === 'run'    && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold">วิ่ง</span>}
-                  {inputMode === '2digit' && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold">2 ตัว</span>}
-                  {inputMode === '3digit' && <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--color-badge-success-bg)] text-[var(--color-badge-success-text)] border border-[var(--color-badge-success-border)] font-semibold">3 ตัว</span>}
+                  {inputMode === 'run'    && <span className="text-sm px-2 py-1 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold">วิ่ง</span>}
+                  {inputMode === '2digit' && <span className="text-sm px-2 py-1 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold">2 ตัว</span>}
+                  {inputMode === '3digit' && <span className="text-sm px-2 py-1 rounded-full bg-[var(--color-badge-success-bg)] text-[var(--color-badge-success-text)] border border-[var(--color-badge-success-border)] font-semibold">3 ตัว</span>}
                   {isKlap && (() => {
                     const v = amtInput.trim();
                     const isKlapTote = inputMode === '3digit' && v.startsWith('*') && v.endsWith('-') && !v.slice(1).includes('*');
                     const isKlapBoth = inputMode === '3digit' && v.endsWith('-') && !isKlapTote && !!v.slice(0,-1).match(/^\d+\*\d+$/);
                     const label = isKlapBoth ? 'กลับบน+โต็ด' : isKlapTote ? 'กลับโต็ด' : 'กลับ';
-                    return <span className="text-[10px] px-2 py-0.5 rounded-full border bg-[var(--color-badge-warning-bg)] text-[var(--color-badge-warning-text)] border-[var(--color-badge-warning-border)] font-semibold">{label}</span>;
+                    return <span className="text-sm px-2 py-1 rounded-full border bg-[var(--color-badge-warning-bg)] text-[var(--color-badge-warning-text)] border-[var(--color-badge-warning-border)] font-semibold">{label}</span>;
                   })()}
                 </div>
               </div>
               {/* ── Toolbar ── */}
               <div className="flex shrink-0 flex-col justify-center gap-2 border-l border-[var(--color-border)]/60 py-0.5 pl-2.5">
                 {/* Font size + clear */}
-                <div className="flex items-center gap-1 rounded-xl border border-[var(--color-border)] bg-white px-1.5 py-1.5 shadow-[0_1px_4px_rgba(15,23,42,0.06)]">
+                <div className="flex items-center gap-1 rounded-xl border border-[var(--color-border)] bg-white px-2 py-2 shadow-[0_1px_4px_rgba(15,23,42,0.06)]">
                   <button type="button" title="ลดขนาดตัวเลขในช่องคีย์เลข–ราคา"
-                    className="btn-toolbar-glow btn-toolbar-muted !h-7 !min-w-[1.75rem] !px-0 !text-[10px] rounded-lg font-bold"
+                    className="btn-toolbar-glow btn-toolbar-muted ui-control !px-0 !min-w-10 rounded-lg font-bold"
                     onClick={() => setInputFs(s => Math.max(24, s - 8))}>A−</button>
                   <button type="button" title="ขยายขนาดตัวเลขในช่องคีย์เลข–ราคา"
-                    className="btn-toolbar-glow btn-fintech-search !h-7 !min-w-[1.75rem] !px-0 !text-[10px] rounded-lg font-bold"
+                    className="btn-toolbar-glow btn-fintech-search ui-control !px-0 !min-w-10 rounded-lg font-bold"
                     onClick={() => setInputFs(s => Math.min(80, s + 8))}>A+</button>
                   <div className="w-px h-4 bg-[var(--color-border-muted)] mx-0.5 shrink-0" />
                   <button type="button" title="ล้างช่องเลข/ราคา"
-                    className="!h-7 !min-w-[1.75rem] !px-0 rounded-lg bg-gradient-to-b from-[var(--primary-100)] to-[var(--primary-200)] text-[11px] font-extrabold text-[var(--primary-700)] shadow-sm border border-[var(--primary-300)]/60 hover:from-[var(--primary-200)] hover:to-[var(--primary-300)] active:scale-[0.95] transition-all duration-100"
+                    className="ui-control !px-0 !min-w-10 rounded-lg border border-[var(--color-border)] bg-white font-bold text-[var(--primary-800)] hover:bg-[var(--bg-hover)] active:scale-[0.95] transition-colors duration-100"
                     onClick={() => {
                       lastCommittedAmtTemplateRef.current = '';
                       setNumInput('');
@@ -2343,7 +2362,7 @@ export default function BetsPage() {
 
             {/* Column headers — โทนแยกจากแถบคีย์ */}
             <div className="shrink-0 border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)]">
-              <table className="w-full table-fixed" style={{ fontSize: rowFs }}>
+              <table className="w-full min-w-[58rem] table-fixed" style={{ fontSize: rowFs }}>
                 <thead>
                   <tr>
                     <th className="text-center py-1.5 px-1 text-theme-text-muted w-7">
@@ -2361,12 +2380,17 @@ export default function BetsPage() {
                     ))}
                     <th
                       scope="col"
-                      tabIndex={0}
+                      aria-sort={betSheetSort === 'newestFirst' ? 'descending' : 'ascending'}
+                      className="text-left py-1.5 px-2 text-theme-text-muted w-[6.25rem] whitespace-normal"
+                    >
+                      <button
+                      type="button"
                       title={
                         betSheetSort === 'newestFirst'
                           ? 'คลิก: เรียงให้รายการล่าสุดอยู่ล่าง (ตามเวลา). เมื่อแก้โพยแล้ว คอลัมน์นี้จะโชว์เวลาแก้ไขเป็นหลัก และเวลาคีย์เดิมด้านล่าง'
                           : 'คลิก: เรียงให้รายการล่าสุดอยู่บน. เมื่อแก้โพยแล้ว คอลัมน์นี้จะโชว์เวลาแก้ไขเป็นหลัก และเวลาคีย์เดิมด้านล่าง'
                       }
+                      aria-label={`เรียงคอลัมน์เวลา ตอนนี้ ${betSheetSort === 'newestFirst' ? 'ล่าสุดบน' : 'ล่าสุดล่าง'}`}
                       onClick={() => {
                         setBetSheetSort(prev => {
                           const next = prev === 'newestFirst' ? 'oldestFirst' : 'newestFirst';
@@ -2374,22 +2398,14 @@ export default function BetsPage() {
                           return next;
                         });
                       }}
-                      onKeyDown={e => {
-                        if (e.key !== 'Enter' && e.key !== ' ') return;
-                        e.preventDefault();
-                        setBetSheetSort(prev => {
-                          const next = prev === 'newestFirst' ? 'oldestFirst' : 'newestFirst';
-                          writeBetSheetSort(next);
-                          return next;
-                        });
-                      }}
-                      className="text-left py-1.5 px-2 text-theme-text-muted w-[4.75rem] whitespace-normal cursor-pointer select-none hover:text-theme-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)] rounded-sm transition-colors">
+                      className="w-full text-left cursor-pointer select-none hover:text-theme-text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-accent-ring)] rounded-sm transition-colors">
                       <span className="inline-flex flex-col gap-0.5 leading-tight">
                         <span>เวลา</span>
                         <span className="text-[0.72em] font-semibold text-theme-text-secondary tracking-tight">
                           {betSheetSort === 'newestFirst' ? 'ล่าสุดบน' : 'ล่าสุดล่าง'}
                         </span>
                       </span>
+                      </button>
                     </th>
                     <th className="text-left py-1.5 px-2 text-theme-text-muted w-[5.25rem] max-w-[6rem]">ผู้คีย์</th>
                     <th className="text-left py-1.5 px-2 text-theme-text-muted w-20 min-w-0">ลูกค้า</th>
@@ -2401,7 +2417,7 @@ export default function BetsPage() {
 
             {/* Rows */}
             <div ref={tableScrollRef} data-bet-sheet-table className="flex-1 overflow-y-auto">
-              <table className="w-full table-fixed" style={{ fontSize: rowFs }}>
+              <table className="w-full min-w-[58rem] table-fixed" style={{ fontSize: rowFs }}>
                 <tbody>
                   {loading ? (
                     <tr><td colSpan={COL_TYPES.length + 7} className="py-6 text-center text-theme-text-muted">กำลังโหลด...</td></tr>
@@ -2489,7 +2505,7 @@ export default function BetsPage() {
                               <span className="text-[0.72em] font-bold text-[var(--color-badge-warning-text)] leading-none whitespace-nowrap">ถูก</span>
                             )}
                             {isRecentChanged && (
-                              <span className="text-[0.72em] font-bold uppercase tracking-tight text-theme-text-secondary leading-none whitespace-nowrap">ล่าสุด</span>
+                              <span className="text-xs font-medium text-theme-text-secondary leading-none whitespace-nowrap">ล่าสุด</span>
                             )}
                           </span>
                         </td>
@@ -2546,7 +2562,7 @@ export default function BetsPage() {
                           );
                         })}
                         <td
-                          className={`py-1 px-2 tracking-tight text-[0.92em] w-[4.75rem] align-top leading-snug ${
+                          className={`py-1 px-2 tracking-tight text-[0.92em] w-[6.25rem] tabular-nums align-top leading-snug ${
                             editBadge
                               ? 'text-theme-text-primary whitespace-normal'
                               : 'text-theme-text-muted whitespace-nowrap'
@@ -2636,7 +2652,7 @@ export default function BetsPage() {
                     type="button"
                     title="ปิดโหมดแก้ไข (Esc)"
                     onClick={() => exitEditMode({ clearInputs: true })}
-                    className="btn-toolbar-glow btn-toolbar-danger !h-8 px-3 text-xs font-semibold shrink-0"
+                    className="btn-toolbar-glow btn-toolbar-danger ui-control px-3 shrink-0"
                   >
                     <span>⊗</span><span>ปิดการแก้ไข</span>
                   </button>
@@ -2680,7 +2696,7 @@ export default function BetsPage() {
                 disabled={Boolean(editInlineKey) || selectedGroups.size !== 1}
                 title={editInlineKey ? 'ปิดโหมดแก้ไขก่อน' : 'ดับเบิ้ลคลิกแถวก็ได้'}
                 onClick={handleEditAction}
-                className="btn-toolbar-glow btn-fintech-search !h-8 px-3 text-xs gap-1 shrink-0"
+                className="btn-toolbar-glow btn-fintech-search ui-control px-3 gap-1 shrink-0"
               >
                 <span>✏</span><span>แก้ไข</span>
               </button>
@@ -2744,7 +2760,7 @@ export default function BetsPage() {
               <button
                 type="button"
                 title="ย่อทั้งหน้ารับแทง (แผงซ้าย + ขวา + แถบบน)"
-                className="btn-toolbar-glow btn-toolbar-muted !h-7 !min-w-[2rem] !px-2 !text-[11px] rounded-xl font-bold"
+                className="btn-toolbar-glow btn-toolbar-muted ui-control !px-2 rounded-xl font-bold"
                 onClick={() => {
                   setBetsPageZoomPercent((z) => {
                     const next = Math.max(75, z - 5);
@@ -2758,7 +2774,7 @@ export default function BetsPage() {
               <button
                 type="button"
                 title="ขยายทั้งหน้ารับแทง (แผงซ้าย + ขวา + แถบบน)"
-                className="btn-toolbar-glow btn-fintech-search !h-7 !min-w-[2rem] !px-2 !text-[11px] rounded-xl font-bold"
+                className="btn-toolbar-glow btn-fintech-search ui-control !px-2 rounded-xl font-bold"
                 onClick={() => {
                   setBetsPageZoomPercent((z) => {
                     const next = Math.min(155, z + 5);
@@ -2775,57 +2791,34 @@ export default function BetsPage() {
                   if (selectedGroups.size === sheetGrouped.length) setSelectedGroups(new Set());
                   else setSelectedGroups(new Set(sheetGrouped.map(g => groupKey(g))));
                 }}
-                className="btn-toolbar-glow btn-fintech-spark !h-7 !px-2.5 !text-[11px] rounded-xl font-semibold max-sm:max-w-[9rem] truncate"
+                className="btn-toolbar-glow btn-fintech-spark ui-control !px-3 rounded-xl font-semibold max-sm:max-w-[11rem] truncate"
               >
                 {selectedGroups.size === sheetGrouped.length && sheetGrouped.length > 0 ? 'ยกเลิกทั้งหมด' : 'เลือกทั้งหมด'}
               </button>
             </div>
           </div>
 
-          {/* แถบลากปรับความกว้างแผงสรุป (เฉพาะจอใหญ่ — เหมือนหน้าตัดส่ง) */}
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            title={
-              rightPanelLocked
-                ? 'ปลดล็อกความกว้าง (ปุ่ม 🔓 ที่หัวสรุปยอด) เพื่อลากปรับ'
-                : 'ลากซ้าย-ขวาเพื่อปรับความกว้าง · ปล่อยเมาส์แล้วจำค่าไว้'
-            }
-            onMouseDown={(e) => {
-              if (rightPanelLocked) return;
-              e.preventDefault();
-              rightResizeDrag.current = { startX: e.clientX, startW: rightPanelPx };
-              document.body.style.cursor = 'col-resize';
-              document.body.style.userSelect = 'none';
-            }}
-            className={cn(
-              'bets-split-resizer w-1.5 shrink-0 transition-colors select-none',
-              rightPanelLocked ? 'cursor-default opacity-50' : 'cursor-col-resize',
-              !rightPanelLocked && 'hover:bg-[var(--color-border-strong)] bg-border/90',
-            )}
-          />
-
-          {/* RIGHT: Summary Panel — glass stack สมดุลกับธีม */}
-          <div className="bets-right-shell flex flex-col min-h-0 min-w-0 overflow-y-auto overflow-x-hidden bg-[var(--color-bg-primary)]">
+          {/* แผงขวา: สรุปยอด / ลูกค้า / ค้นหา */}
+          <div className="app-page-split-aside flex flex-col min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
 
             {/* Customer navigator + แผ่น selector */}
             <div className="p-3 shrink-0">
               <div className="rounded-xl border border-[var(--color-border)] bg-[var(--color-card-bg-solid)] shadow-[var(--shadow-soft)] p-3 space-y-2.5">
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-theme-text-muted shrink-0 w-11">ลูกค้า</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-theme-text-muted shrink-0 w-12">ลูกค้า</span>
                   <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}
-                    className="flex-1 h-8 rounded-lg bg-[var(--color-input-bg)] border border-[var(--color-input-border)] px-2 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] min-w-0">
+                    className="ui-field flex-1 min-w-0 bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-theme-text-primary">
                     {customers.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
                   <button type="button" onClick={() => navigateCustomer(-1)}
-                    className="btn-toolbar-glow btn-toolbar-muted !h-8 !px-2.5 !text-[11px] rounded-xl font-semibold shrink-0">ขึ้น</button>
+                    className="btn-toolbar-glow btn-toolbar-muted ui-control !px-3 rounded-xl font-semibold shrink-0">ขึ้น</button>
                   <button type="button" onClick={() => navigateCustomer(1)}
-                    className="btn-toolbar-glow btn-fintech-search !h-8 !px-2.5 !text-[11px] rounded-xl font-semibold shrink-0">ลง</button>
+                    className="btn-toolbar-glow btn-fintech-search ui-control !px-3 rounded-xl font-semibold shrink-0">ลง</button>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-[11px] text-theme-text-muted shrink-0 w-11">แผ่น</span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-theme-text-muted shrink-0 w-12">แผ่น</span>
                   <select value={sheet} onChange={e => { setSheet(Number(e.target.value)); setSelectedGroups(new Set()); }}
-                    className="flex-1 h-8 rounded-lg bg-[var(--color-input-bg)] border border-[var(--color-input-border)] px-2 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]  tracking-tight">
+                    className="ui-field flex-1 min-w-0 bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-theme-text-primary tracking-tight">
                     {Array.from({ length: effectiveMaxSheets }, (_, i) => effectiveMaxSheets - i)
                       .map(n => (
                         <option key={n} value={n}>
@@ -2834,15 +2827,15 @@ export default function BetsPage() {
                       ))}
                   </select>
                   <button type="button" onClick={handleRemoveSheet}
-                    className="btn-toolbar-glow btn-toolbar-danger !h-8 !w-8 !min-w-[2rem] !p-0 flex items-center justify-center text-base font-bold rounded-xl shrink-0"
+                    className="btn-toolbar-glow btn-toolbar-danger ui-control !w-10 !min-w-10 !p-0 text-base font-bold rounded-xl shrink-0"
                     title="ลบแผ่น (ลบได้เมื่อไม่มีข้อมูล)">−</button>
                   <button type="button" onClick={handleAddSheet}
-                    className="btn-toolbar-glow btn-toolbar-profit !h-8 !w-8 !min-w-[2rem] !p-0 flex items-center justify-center text-base font-bold rounded-xl shrink-0"
+                    className="btn-toolbar-glow btn-toolbar-profit ui-control !w-10 !min-w-10 !p-0 text-base font-bold rounded-xl shrink-0"
                     title="เพิ่มแผ่นใหม่">+</button>
                 </div>
                 {isAdmin && (
                   <button type="button" onClick={() => setLineModal(true)}
-                    className="btn-primary-glow w-full !h-9 !text-xs !rounded-xl !font-semibold shadow-[var(--shadow-btn-primary)]">
+                    className="btn-primary-glow ui-control w-full !rounded-xl !font-semibold shadow-[var(--shadow-btn-primary)]">
                     รับข้อมูลไลน์
                   </button>
                 )}
@@ -2870,33 +2863,10 @@ export default function BetsPage() {
                 <div className="flex items-center justify-between gap-2 px-3 py-2.5 border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)] shrink-0">
                   <span className="text-xs font-semibold text-theme-text-secondary tracking-wider">สรุปยอด</span>
                   <div className="flex gap-1.5 shrink-0 items-center">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRightPanelLocked((v) => {
-                          const next = !v;
-                          writePanelLock(STORAGE_BETS_RIGHT_PANEL_LOCK, next);
-                          return next;
-                        });
-                      }}
-                      className={`text-[11px] w-7 h-7 rounded-lg border flex items-center justify-center transition-colors ${
-                        rightPanelLocked
-                          ? 'text-[var(--color-nav-active-fg)] [background:var(--color-nav-active-bg)] border-transparent shadow-sm hover:brightness-105'
-                          : 'text-theme-text-muted bg-[var(--color-surface)] border-[var(--color-border)] hover:bg-[var(--bg-hover)]'
-                      }`}
-                      title={
-                        rightPanelLocked
-                          ? 'ปลดล็อก — ลากขอบซ้ายของแผงสรุปเพื่อปรับความกว้าง'
-                          : 'ล็อกความกว้างแผง (ค่าที่ลากไว้จำเมื่อเปิดใหม่)'
-                      }
-                      aria-pressed={rightPanelLocked}
-                    >
-                      {rightPanelLocked ? '🔒' : '🔓'}
-                    </button>
                     <button type="button" title="ลดขนาดตารางสรุป" onClick={() => setSumFs(s => Math.max(9, s - 2))}
-                      className="btn-toolbar-glow btn-toolbar-muted !h-7 !min-w-[2rem] !px-0 !text-[11px] rounded-xl font-bold">A−</button>
+                      className="btn-toolbar-glow btn-toolbar-muted ui-control !px-0 !min-w-10 rounded-xl font-bold">A−</button>
                     <button type="button" title="ขยายขนาดตารางสรุป" onClick={() => setSumFs(s => Math.min(22, s + 2))}
-                      className="btn-toolbar-glow btn-fintech-search !h-7 !min-w-[2rem] !px-0 !text-[11px] rounded-xl font-bold">A+</button>
+                      className="btn-toolbar-glow btn-fintech-search ui-control !px-0 !min-w-10 rounded-xl font-bold">A+</button>
                   </div>
                 </div>
                 <div className="overflow-auto px-2 py-2 flex-1 min-h-0">
@@ -2949,7 +2919,7 @@ export default function BetsPage() {
                 >
                   <div className="mb-3 flex items-center gap-2">
                     <span className="h-[2px] flex-1 rounded-full bg-gradient-to-r from-transparent via-[color-mix(in_srgb,var(--chart-primary)_40%,transparent)] to-transparent" />
-                    <span className="whitespace-nowrap text-[10px] font-extrabold uppercase tracking-[0.2em] text-[color-mix(in_srgb,var(--chart-primary)_88%,var(--gray-600))]">
+                    <span className="whitespace-nowrap text-sm font-medium text-theme-text-secondary">
                       ควบคุมเสียง
                     </span>
                     <span className="h-[2px] flex-1 rounded-full bg-gradient-to-l from-transparent via-[color-mix(in_srgb,var(--chart-primary)_40%,transparent)] to-transparent" />
@@ -2958,7 +2928,7 @@ export default function BetsPage() {
                   <div
                     className={cn(
                       'rounded-2xl border border-[color-mix(in_srgb,var(--chart-primary)_18%,var(--color-border))]',
-                      'bg-[color-mix(in_srgb,var(--color-surface)_94%,transparent)] backdrop-blur-[10px]',
+                      'bg-[var(--color-card-bg)]',
                       'shadow-[0_12px_32px_-18px_rgba(15,23,42,0.42),inset_0_1px_0_rgba(255,255,255,0.72)]',
                       'p-2.5 space-y-3',
                     )}
@@ -2969,7 +2939,7 @@ export default function BetsPage() {
                       <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-[color-mix(in_srgb,var(--gray-900)_3.5%,var(--color-surface))] px-1.5 py-1 ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_10%,var(--color-border))] shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]">
                         <button type="button" title={soundOn ? 'ปิดเสียงพูด' : 'เปิดเสียงพูด'} onClick={() => setSoundOn(v => !v)}
                           className={cn(
-                            'flex !h-8 !min-w-[2rem] !px-0 items-center justify-center rounded-lg text-base shadow-sm transition-all duration-150 shrink-0',
+                            'ui-control !min-w-10 !px-0 rounded-lg text-base shadow-sm transition-all duration-150 shrink-0',
                             soundOn
                               ? 'bg-gradient-to-b from-[color-mix(in_srgb,var(--chart-primary)_22%,white)] to-[color-mix(in_srgb,var(--primary-100)_55%,white)] text-[var(--primary-800)] ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_28%,transparent)]'
                               : 'bg-[var(--color-surface)] text-theme-text-muted ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)]',
@@ -2980,7 +2950,7 @@ export default function BetsPage() {
                         <div className="mx-0.5 h-5 w-px shrink-0 bg-[var(--color-border-muted)]" />
                         <button type="button" title="ช้าลง" disabled={!soundOn}
                           onClick={() => setSpeechRate(r => Math.max(0.8, parseFloat((r - 0.2).toFixed(1))))}
-                          className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-[var(--color-surface)] text-sm font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35 shrink-0">
+                          className="ui-control !min-w-10 rounded-lg bg-[var(--color-surface)] font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35 shrink-0">
                           −
                         </button>
                         <span className={`min-w-[2.25rem] flex-1 text-center text-[11px] font-bold tabular-nums tracking-tight ${soundOn ? 'text-theme-text-primary' : 'text-theme-text-muted'}`}>
@@ -2988,7 +2958,7 @@ export default function BetsPage() {
                         </span>
                         <button type="button" title="เร็วขึ้น" disabled={!soundOn}
                           onClick={() => setSpeechRate(r => Math.min(3.0, parseFloat((r + 0.2).toFixed(1))))}
-                          className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] text-sm font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35 shrink-0">
+                          className="ui-control !min-w-10 rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35 shrink-0">
                           +
                         </button>
                       </div>
@@ -3012,7 +2982,7 @@ export default function BetsPage() {
                         });
                       }}
                       className={cn(
-                        'relative w-full overflow-hidden rounded-xl !h-10 !px-3 text-[12px] font-extrabold tracking-wide shadow-md transition-all duration-200 disabled:opacity-35',
+                        'ui-control relative w-full overflow-hidden rounded-xl !px-3 text-sm font-extrabold tracking-wide shadow-md transition-all duration-200 disabled:opacity-35',
                         voiceAuditMode
                           ? 'border border-transparent bg-gradient-to-r from-[var(--primary-600)] via-[var(--chart-primary)] to-[var(--primary-600)] text-white shadow-[0_8px_22px_-10px_color-mix(in_srgb,var(--chart-primary)_65%,transparent)] hover:brightness-[1.06]'
                           : 'border border-[color-mix(in_srgb,var(--chart-primary)_22%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface)_96%,var(--primary-50))] text-[var(--primary-800)] hover:bg-[color-mix(in_srgb,var(--primary-50)_75%,var(--color-surface))]',
@@ -3033,7 +3003,7 @@ export default function BetsPage() {
                                 return next;
                               });
                             }}
-                            className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-[var(--color-surface)] text-xs font-bold shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35">
+                            className="ui-control !min-w-10 rounded-lg bg-[var(--color-surface)] font-bold shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35">
                             −
                           </button>
                           <span className={`flex-1 text-center text-[11px] font-bold tabular-nums ${soundOn ? 'text-theme-text-primary' : 'text-theme-text-muted'}`}>{voiceAuditRate.toFixed(1)}</span>
@@ -3045,7 +3015,7 @@ export default function BetsPage() {
                                 return next;
                               });
                             }}
-                            className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] text-xs font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35">
+                            className="ui-control !min-w-10 rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35">
                             +
                           </button>
                         </div>
@@ -3083,7 +3053,7 @@ export default function BetsPage() {
                             title="ลบจุดจำและเริ่มอ่านจากแถวแรกใหม่"
                             disabled={!voiceAuditMode || sheetGrouped.length === 0}
                             onClick={voiceAuditResetReading}
-                            className="shrink-0 rounded-lg border border-[color-mix(in_srgb,var(--chart-primary)_25%,var(--color-border))] bg-[var(--color-surface)] px-2 py-1 text-[10px] font-bold text-[var(--chart-primary-dark)] shadow-sm transition-colors hover:bg-[color-mix(in_srgb,var(--primary-50)_80%,var(--color-surface))] disabled:opacity-35"
+                            className="ui-control shrink-0 rounded-lg border border-[color-mix(in_srgb,var(--chart-primary)_25%,var(--color-border))] bg-[var(--color-surface)] px-2 font-bold text-[var(--chart-primary-dark)] shadow-sm transition-colors hover:bg-[color-mix(in_srgb,var(--primary-50)_80%,var(--color-surface))] disabled:opacity-35"
                           >
                             เริ่มใหม่
                           </button>
@@ -3094,7 +3064,7 @@ export default function BetsPage() {
                             title="แถวก่อนหน้า"
                             disabled={!soundOn || sheetGrouped.length === 0 || focusedIdx === 0}
                             onClick={voiceAuditGoPrev}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
+                            className="ui-control !w-10 !min-w-10 !p-0 shrink-0 rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
                             aria-label="แถวก่อนหน้า"
                           >
                             ◀
@@ -3104,7 +3074,7 @@ export default function BetsPage() {
                             title="หยุดชั่วคราว"
                             disabled={!soundOn || focusedIdx < 0 || voiceAuditPaused}
                             onClick={voiceAuditHitPause}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
+                            className="ui-control !w-10 !min-w-10 !p-0 shrink-0 rounded-lg bg-[var(--color-surface)] text-base text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
                             aria-label="หยุดชั่วคราว"
                           >
                             ⏸
@@ -3114,7 +3084,7 @@ export default function BetsPage() {
                             title="เล่นต่อหรือพูดแถวนี้ใหม่"
                             disabled={!soundOn || focusedIdx < 0 || !voiceAuditPaused}
                             onClick={voiceAuditHitPlay}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-500)] to-[var(--chart-primary)] text-base text-white shadow-md ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_45%,transparent)] transition hover:brightness-[1.07] disabled:opacity-35"
+                            className="ui-control !w-10 !min-w-10 !p-0 shrink-0 rounded-lg bg-gradient-to-b from-[var(--primary-500)] to-[var(--chart-primary)] text-base text-white shadow-md ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_45%,transparent)] transition hover:brightness-[1.07] disabled:opacity-35"
                             aria-label="เล่นต่อ"
                           >
                             ▶
@@ -3128,7 +3098,7 @@ export default function BetsPage() {
                               (focusedIdx >= 0 && focusedIdx >= sheetGrouped.length - 1)
                             }
                             onClick={voiceAuditGoNext}
-                            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
+                            className="ui-control !w-10 !min-w-10 !p-0 shrink-0 rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
                             aria-label="แถวถัดไป"
                           >
                             »
@@ -3141,21 +3111,26 @@ export default function BetsPage() {
               </div>
             </div>
           </div>
-          </div>
         </div>
-      </div>
 
       {/* Move Sheet Modal */}
       {moveModal && (
-        <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={() => setMoveModal(false)}>
-          <div className="bg-surface-100 border border-border rounded-lg p-4 w-80 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
-            <div className="text-sm font-semibold text-theme-text-primary">ย้าย — {selectedGroups.size} รายการ</div>
+        <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={() => setMoveModal(false)} role="presentation">
+          <div
+            ref={moveDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="move-dialog-title"
+            className="bg-surface-100 border border-border rounded-lg p-4 w-80 flex flex-col gap-3"
+            onClick={e => e.stopPropagation()}
+          >
+            <div id="move-dialog-title" className="text-sm font-semibold text-theme-text-primary">ย้าย — {selectedGroups.size} รายการ</div>
 
             {/* Target customer */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-theme-text-secondary w-16 shrink-0">ลูกค้า</span>
-              <select value={moveTargetCustomerId} onChange={e => { setMoveTargetCustomerId(e.target.value); setMoveTarget(1); }}
-                className="flex-1 h-8 rounded bg-surface-default border border-border px-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
+              <select value={moveTargetCustomerId} onChange={e => { setMoveTargetCustomerId(e.target.value); setMoveTarget(1); }} aria-label="เลือกลูกค้าปลายทาง"
+                className="ui-field flex-1 bg-surface-default border-border text-theme-text-primary">
                 <option value="__same__">เดิม ({customers.find(c => c.id === selectedCustomerId)?.name ?? 'ไม่ระบุ'})</option>
                 {customers.filter(c => c.id !== selectedCustomerId).map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
@@ -3166,8 +3141,8 @@ export default function BetsPage() {
             {/* Target sheet */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-theme-text-secondary w-16 shrink-0">ย้ายไปแผ่น</span>
-              <select value={moveTarget} onChange={e => setMoveTarget(Number(e.target.value))}
-                className="flex-1 h-8 rounded bg-surface-default border border-border px-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
+              <select value={moveTarget} onChange={e => setMoveTarget(Number(e.target.value))} aria-label="เลือกแผ่นปลายทาง"
+                className="ui-field flex-1 bg-surface-default border-border text-theme-text-primary">
                 {(() => {
                   const tCustId = moveTargetCustomerId === '__same__' ? selectedCustomerId : moveTargetCustomerId;
                   const tCustBets =
@@ -3194,9 +3169,9 @@ export default function BetsPage() {
 
             <div className="flex gap-2 justify-end">
               <button onClick={() => setMoveModal(false)}
-                className="h-8 px-4 rounded bg-surface-200 text-theme-text-secondary hover:bg-surface-300 text-sm">ยกเลิก</button>
+                className="ui-control px-4 rounded bg-surface-200 text-theme-text-secondary hover:bg-surface-300">ยกเลิก</button>
               <button onClick={async () => { await moveSelectedGroups(moveTarget); }}
-                className="h-8 px-4 rounded bg-risk-medium/95 hover:bg-risk-medium/90 text-theme-btn-primary-fg text-sm font-semibold">ย้าย</button>
+                className="ui-control px-4 rounded bg-risk-medium/95 hover:bg-risk-medium/90 text-theme-btn-primary-fg font-semibold">ย้าย</button>
             </div>
           </div>
         </div>
@@ -3204,9 +3179,16 @@ export default function BetsPage() {
 
       {/* CSV Export Modal */}
       {csvModalOpen && (
-        <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={() => setCsvModalOpen(false)}>
-          <div className="bg-surface-100 border border-border rounded-lg p-4 w-96 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
-            <div className="text-sm font-semibold text-theme-text-primary">Export CSV ทุกแผ่น</div>
+        <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={() => setCsvModalOpen(false)} role="presentation">
+          <div
+            ref={csvDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="csv-dialog-title"
+            className="bg-surface-100 border border-border rounded-lg p-4 w-96 flex flex-col gap-3"
+            onClick={e => e.stopPropagation()}
+          >
+            <div id="csv-dialog-title" className="text-sm font-semibold text-theme-text-primary">Export CSV ทุกแผ่น</div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm text-theme-text-secondary cursor-pointer">
                 <input
@@ -3231,9 +3213,9 @@ export default function BetsPage() {
             </div>
             <div className="flex justify-end gap-2">
               <button onClick={() => setCsvModalOpen(false)}
-                className="h-8 px-4 rounded bg-surface-200 text-theme-text-secondary hover:bg-surface-300 text-sm">ยกเลิก</button>
+                className="ui-control px-4 rounded bg-surface-200 text-theme-text-secondary hover:bg-surface-300">ยกเลิก</button>
               <button onClick={() => void handleExportCsv()}
-                className="h-8 px-4 rounded bg-profit/95 hover:bg-profit/90 text-theme-btn-primary-fg text-sm font-semibold">ดาวน์โหลด</button>
+                className="ui-control px-4 rounded bg-profit/95 hover:bg-profit/90 text-theme-btn-primary-fg font-semibold">ดาวน์โหลด</button>
             </div>
           </div>
         </div>
@@ -3266,12 +3248,13 @@ export default function BetsPage() {
             aria-hidden={false}
           >
             <div
-              className="pointer-events-auto flex h-full max-h-[100dvh] w-full max-w-[min(100vw,720px)] flex-col border-y border-r border-[var(--color-border)] bg-[color-mix(in_srgb,var(--gray-50)_92%,var(--primary-50)_8%)] shadow-[var(--shadow-lift-hover)] sm:rounded-l-2xl overflow-hidden border-l-[3px] border-l-[var(--chart-primary)]"
+              ref={lineDialogRef}
+              className="pointer-events-auto flex h-full max-h-[100dvh] w-full max-w-[min(100vw,720px)] flex-col ui-surface overflow-hidden rounded-none border-y-0 border-r-0 sm:rounded-l-xl sm:rounded-r-none"
               role="dialog"
-              aria-modal="false"
+              aria-modal="true"
               aria-labelledby="line-import-title"
             >
-              <div className="shrink-0 px-4 sm:px-5 py-3.5 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_35%,white)] flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+              <div className="shrink-0 px-4 sm:px-5 py-3.5 border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)] flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
                 <div className="min-w-0 flex-1">
                   <h2 id="line-import-title" className="text-base font-semibold text-[var(--text-primary)] tracking-tight">รับข้อมูลไลน์</h2>
                   <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed max-w-[40rem]">
@@ -3291,7 +3274,7 @@ export default function BetsPage() {
                       setPdfDragOver(false);
                       setImportResult(null);
                     }}
-                    className="btn-toolbar-glow btn-toolbar-muted !h-9 px-4 text-sm rounded-xl"
+                    className="btn-toolbar-glow btn-toolbar-muted ui-control px-4 rounded-xl"
                   >
                     ปิด
                   </button>
@@ -3315,15 +3298,15 @@ export default function BetsPage() {
                     )}
                   </div>
 
-                  <div className="flex-1 min-h-[200px] lg:min-h-0 flex flex-col rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-soft)] overflow-hidden">
-                    <div className="shrink-0 border-b border-[color-mix(in_srgb,var(--chart-primary)_22%,var(--color-border))] bg-gradient-to-r from-[var(--primary-700)] via-[var(--primary-600)] to-[var(--primary-800)]">
+                  <div className="flex-1 min-h-[200px] lg:min-h-0 flex flex-col ui-surface overflow-hidden">
+                    <div className="shrink-0 border-b border-[var(--color-border)] bg-[var(--gray-100)]">
                       <table className="w-full table-fixed text-[11px] sm:text-xs">
                         <thead>
                           <tr>
-                            <th className="text-left py-2.5 px-2 text-[color-mix(in_srgb,var(--text-inverse)_88%,transparent)] font-semibold w-7">#</th>
-                            <th className="text-center py-2.5 px-2 text-[var(--text-inverse)] font-bold w-14 tracking-wide">เลข</th>
+                            <th className="text-left py-2.5 px-2 text-theme-text-secondary font-medium w-7">#</th>
+                            <th className="text-center py-2.5 px-2 text-theme-text-secondary font-semibold w-14">เลข</th>
                             {COL_TYPES.map(c => (
-                              <th key={c.key} className="text-right py-2.5 px-1.5 text-[color-mix(in_srgb,var(--text-inverse)_92%,transparent)] font-semibold">{c.label}</th>
+                              <th key={c.key} className="text-right py-2.5 px-1.5 text-theme-text-secondary font-medium">{c.label}</th>
                             ))}
                           </tr>
                         </thead>
@@ -3391,7 +3374,7 @@ export default function BetsPage() {
                           <select
                             value={selectedCustomerId}
                             onChange={(e) => setSelectedCustomerId(e.target.value)}
-                            className="flex-1 h-8 min-w-0 rounded-lg bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] px-2 text-xs text-[var(--chart-neutral-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)]"
+                            className="ui-field flex-1 min-w-0 bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] text-[var(--chart-neutral-dark)] focus:border-[var(--chart-primary)]"
                           >
                             {customers.map((c) => (
                               <option key={c.id} value={c.id}>{c.name}</option>
@@ -3400,14 +3383,14 @@ export default function BetsPage() {
                           <button
                             type="button"
                             onClick={() => navigateCustomer(-1)}
-                            className="btn-toolbar-glow btn-toolbar-muted !h-8 !px-2 !text-[10px] rounded-lg font-semibold shrink-0"
+                            className="btn-toolbar-glow btn-toolbar-muted ui-control !px-2 rounded-lg font-semibold shrink-0"
                           >
                             ขึ้น
                           </button>
                           <button
                             type="button"
                             onClick={() => navigateCustomer(1)}
-                            className="btn-toolbar-glow btn-fintech-search !h-8 !px-2 !text-[10px] rounded-lg font-semibold shrink-0"
+                            className="btn-toolbar-glow btn-fintech-search ui-control !px-2 rounded-lg font-semibold shrink-0"
                           >
                             ลง
                           </button>
@@ -3421,7 +3404,7 @@ export default function BetsPage() {
                               setSelectedGroups(new Set());
                             }}
                             disabled={!selectedCustomerId}
-                            className="flex-1 h-8 min-w-0 rounded-lg bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] px-2 text-xs text-[var(--chart-neutral-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)]  tracking-tight disabled:opacity-45"
+                            className="ui-field flex-1 min-w-0 bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] text-[var(--chart-neutral-dark)] focus:border-[var(--chart-primary)] tracking-tight disabled:opacity-45"
                           >
                             {Array.from({ length: effectiveMaxSheets }, (_, i) => effectiveMaxSheets - i).map((n) => (
                               <option key={n} value={n}>
@@ -3432,7 +3415,7 @@ export default function BetsPage() {
                           <button
                             type="button"
                             onClick={handleRemoveSheet}
-                            className="btn-toolbar-glow btn-toolbar-danger !h-8 !w-8 !min-w-[2rem] !p-0 flex items-center justify-center text-base font-bold rounded-lg shrink-0"
+                            className="btn-toolbar-glow btn-toolbar-danger ui-control !w-10 !min-w-10 !p-0 text-base font-bold rounded-lg shrink-0"
                             title="ลบแผ่น (ลบได้เมื่อไม่มีข้อมูล)"
                           >
                             −
@@ -3440,7 +3423,7 @@ export default function BetsPage() {
                           <button
                             type="button"
                             onClick={handleAddSheet}
-                            className="btn-toolbar-glow btn-toolbar-profit !h-8 !w-8 !min-w-[2rem] !p-0 flex items-center justify-center text-base font-bold rounded-lg shrink-0"
+                            className="btn-toolbar-glow btn-toolbar-profit ui-control !w-10 !min-w-10 !p-0 text-base font-bold rounded-lg shrink-0"
                             title="เพิ่มแผ่นใหม่"
                           >
                             +
@@ -3455,7 +3438,7 @@ export default function BetsPage() {
                       type="button"
                       onClick={() => setLineText(normalizeLinePasteText(lineText))}
                       disabled={!lineText.trim()}
-                      className="text-[11px] px-3 py-2 rounded-lg border border-[var(--chart-primary)]/35 bg-[var(--primary-50)] text-[var(--primary-800)] font-semibold hover:bg-[var(--primary-100)] hover:border-[var(--chart-primary)]/55 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 shrink-0"
+                      className="ui-control px-3 rounded-lg border border-[var(--chart-primary)]/35 bg-[var(--primary-50)] text-[var(--primary-800)] font-semibold hover:bg-[var(--primary-100)] hover:border-[var(--chart-primary)]/55 disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 shrink-0"
                     >
                       ตัดคำนำหน้าไลน์
                     </button>
@@ -3502,7 +3485,7 @@ export default function BetsPage() {
                       type="button"
                       onClick={handleLineImport}
                       disabled={!preview || preview.parsedCount === 0 || !selectedCustomerId || customers.length === 0}
-                      className="btn-primary-glow flex-1 min-w-0 !h-10 text-sm rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                      className="btn-primary-glow ui-control flex-1 min-w-0 rounded-xl font-semibold disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                     >
                       นำเข้า{preview && preview.parsedCount > 0 ? ` (${preview.parsedCount})` : ''}
                     </button>
@@ -3517,7 +3500,7 @@ export default function BetsPage() {
                       }}
                       disabled={!lineText.trim()}
                       title="ล้างข้อความในกล่อง (กรณี OCR ผิด)"
-                      className="shrink-0 px-3 !h-10 text-[11px] font-semibold rounded-xl border-2 border-[var(--chart-primary)] bg-[var(--primary-100)] text-[var(--primary-800)] hover:bg-[var(--primary-200)] hover:border-[var(--chart-primary-dark)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
+                      className="ui-control shrink-0 px-3 rounded-xl border-2 border-[var(--chart-primary)] bg-[var(--primary-100)] text-[var(--primary-800)] hover:bg-[var(--primary-200)] hover:border-[var(--chart-primary-dark)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors duration-200 shadow-sm"
                     >
                       เคลียร์
                     </button>
@@ -3542,7 +3525,7 @@ export default function BetsPage() {
                           /* noop */
                         }
                       }}
-                      className="rounded-lg border-2 border-[var(--chart-neutral-light)] bg-[var(--color-input-bg)] px-2 py-1.5 text-xs text-[var(--chart-neutral-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)]"
+                      className="ui-field border-2 border-[var(--chart-neutral-light)] bg-[var(--color-input-bg)] text-[var(--chart-neutral-dark)] focus:border-[var(--chart-primary)]"
                     >
                       <option value="auto">อัตโนมัติ — Paddle ก่อน แล้ว Google Vision (ประหยัดโควตา Vision; ปรับที่ API: OCR_IMAGE_AUTO_ORDER)</option>
                       <option value="google-vision">Google Cloud Vision เท่านั้น</option>
@@ -3636,7 +3619,7 @@ export default function BetsPage() {
           <button
             type="button"
             onClick={() => setLineImportToast(null)}
-            className="shrink-0 rounded-lg px-2 py-0.5 text-lg leading-none text-theme-text-muted hover:bg-[var(--bg-hover)] hover:text-theme-text-primary"
+            className="ui-control shrink-0 !w-10 !min-w-10 !p-0 text-lg leading-none text-theme-text-muted hover:bg-[var(--bg-hover)] hover:text-theme-text-primary"
             aria-label="ปิดการแจ้งเตือน"
           >
             ×
@@ -3689,6 +3672,8 @@ export default function BetsPage() {
         </div>
       </div>
 
+      </div>
+
     </AppShell>
   );
 }
@@ -3724,7 +3709,7 @@ function SearchPanel({
             else onSearch();
           }}
           placeholder="ค้นหาเลขตรงตัว..."
-          className="h-8 w-full min-w-0 flex-1 rounded-lg bg-[var(--color-input-bg)] border border-[var(--color-input-border)] px-2.5 text-sm text-theme-text-primary placeholder:text-theme-text-muted focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]  tracking-tight" />
+          className="ui-field w-full min-w-0 flex-1 bg-[var(--color-input-bg)] border-[var(--color-input-border)] text-theme-text-primary placeholder:text-theme-text-muted tracking-tight" />
         <div className="flex shrink-0 items-center justify-end gap-1.5 sm:justify-start">
           <button
             onClick={() => {
@@ -3732,12 +3717,12 @@ function SearchPanel({
               if (activeIndex >= 0) onNext();
               else onSearch();
             }}
-            className="btn-toolbar-glow btn-fintech-search h-7 shrink-0 px-3 text-xs">
+            className="btn-toolbar-glow btn-fintech-search ui-control shrink-0 px-3">
             ค้นหา
           </button>
           <button
             onClick={onClear}
-            className="btn-toolbar-glow btn-fintech-spark h-7 shrink-0 px-3 text-xs">
+            className="btn-toolbar-glow btn-fintech-spark ui-control shrink-0 px-3">
             เคลียร์
           </button>
         </div>

@@ -386,7 +386,7 @@ export default function SummaryComparePage() {
         variant="prominent"
       />
 
-      <main className="flex-1 overflow-auto p-5">
+      <main className="flex-1 overflow-auto ui-page-main">
         <div className="max-w-[1600px] mx-auto space-y-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3 justify-between">
             <div className="flex flex-wrap items-center gap-2">
@@ -459,8 +459,8 @@ export default function SummaryComparePage() {
                 raw: true,
               },
             ].map((k) => (
-              <Card key={k.label} className="p-4 rounded-2xl border border-[var(--color-border)]/70 shadow-[var(--shadow-soft)] bg-gradient-to-b from-white to-[var(--color-bg-primary)]">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-theme-text-muted">{k.label}</p>
+              <Card key={k.label} className="p-4 rounded-xl border border-[var(--color-border)] shadow-sm bg-white">
+                <p className="text-sm font-medium text-theme-text-muted">{k.label}</p>
                 <p className="text-xs text-theme-text-secondary mt-1">{k.sub}</p>
                 <p className={cn('text-xl font-bold tabular-nums mt-2 tracking-tight', k.cls)}>
                   {'raw' in k && k.raw ? k.value : typeof k.value === 'number' ? formatBaht(k.value) : k.value}
@@ -549,7 +549,7 @@ export default function SummaryComparePage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[980px]">
                 <thead className="bg-[var(--bg-glass-subtle)] border-b border-[var(--color-border)]">
-                  <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-theme-text-secondary">
+                  <tr className="text-left text-sm font-medium text-theme-text-secondary">
                     <th className="py-3 pl-4 pr-1 w-12 text-center">รายละเอียด</th>
                     <th className="py-3 pl-2 pr-3">งวด</th>
                     <th className="py-3 px-3 whitespace-nowrap">วันออก</th>
@@ -657,7 +657,7 @@ export default function SummaryComparePage() {
                               <td colSpan={9} className="p-0">
                                 <div className="p-4 sm:p-5 grid grid-cols-1 xl:grid-cols-2 gap-5 border-t border-[var(--color-border)]/50">
                                   <div className="min-w-0">
-                                    <p className="text-xs font-bold uppercase tracking-wide text-theme-text-secondary mb-2">รายลูกค้า · งวด {r.name}</p>
+                                    <p className="text-sm font-semibold text-theme-text-secondary mb-2">รายลูกค้า · งวด {r.name}</p>
                                     <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)]">
                                       {row.data.customers.length === 0 ? (
                                         <p className="p-4 text-xs text-theme-text-muted">ไม่มีข้อมูลลูกค้าในงวดนี้</p>
@@ -688,7 +688,7 @@ export default function SummaryComparePage() {
                                     </div>
                                   </div>
                                   <div className="min-w-0">
-                                    <p className="text-xs font-bold uppercase tracking-wide text-theme-text-secondary mb-2">รายเจ้ามือ · งวด {r.name}</p>
+                                    <p className="text-sm font-semibold text-theme-text-secondary mb-2">รายเจ้ามือ · งวด {r.name}</p>
                                     <div className="overflow-x-auto rounded-xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)]">
                                       {row.data.dealers.length === 0 ? (
                                         <p className="p-4 text-xs text-theme-text-muted">ไม่มีข้อมูลการส่งเจ้ามือในงวดนี้</p>
@@ -744,7 +744,7 @@ export default function SummaryComparePage() {
                   <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
                     <table className="w-full text-sm min-w-[520px]">
                       <thead className="sticky top-0 bg-[var(--bg-glass-subtle)] border-b border-[var(--color-border)] z-[1]">
-                        <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-theme-text-secondary">
+                        <tr className="text-left text-sm font-medium text-theme-text-secondary">
                           <th className="py-2.5 pl-5 pr-3">ลูกค้า</th>
                           <th className="py-2.5 px-3 text-right whitespace-nowrap">ยอดขายรวม</th>
                           <th className="py-2.5 px-3 text-right whitespace-nowrap">จ่ายรวม</th>
@@ -781,7 +781,7 @@ export default function SummaryComparePage() {
                   <div className="overflow-x-auto max-h-[28rem] overflow-y-auto">
                     <table className="w-full text-sm min-w-[520px]">
                       <thead className="sticky top-0 bg-[var(--bg-glass-subtle)] border-b border-[var(--color-border)] z-[1]">
-                        <tr className="text-left text-[11px] font-semibold uppercase tracking-wide text-theme-text-secondary">
+                        <tr className="text-left text-sm font-medium text-theme-text-secondary">
                           <th className="py-2.5 pl-5 pr-3">เจ้ามือ</th>
                           <th className="py-2.5 px-3 text-right whitespace-nowrap">ส่งรวม</th>
                           <th className="py-2.5 px-3 text-right whitespace-nowrap">จ่ายรวม</th>

@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, MotionConfig, useReducedMotion } from 'framer-motion';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { StatCard } from '@/components/ui/StatCard';
@@ -77,23 +77,14 @@ function CardHeader({
   accent?: 'blue' | 'green';
   trailing?: React.ReactNode;
 }) {
-  const dot = accent === 'green'
-    ? 'bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]'
-    : 'bg-blue-500 shadow-[0_0_6px_rgba(74,144,226,0.6)]';
   const iconBg = accent === 'green'
-    ? 'bg-emerald-500/10 text-emerald-600'
-    : 'bg-blue-500/10 text-blue-600';
+    ? 'bg-emerald-50 text-emerald-700'
+    : 'bg-blue-50 text-blue-700';
   return (
-    <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
+    <div className="ui-panel-head">
       <div className="flex items-center gap-3">
-        <div className={`rounded-xl p-2 ${iconBg}`}>{icon}</div>
-        <div>
-          <p className="text-sm font-bold text-theme-text-primary tracking-tight leading-tight">{title}</p>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot}`} />
-            <span className="text-[10px] text-theme-text-muted font-medium tracking-wide uppercase">Live</span>
-          </div>
-        </div>
+        <div className={`rounded-lg p-2 ${iconBg}`}>{icon}</div>
+        <p className="text-sm font-semibold text-theme-text-primary leading-tight">{title}</p>
       </div>
       {trailing}
     </div>
@@ -102,6 +93,7 @@ function CardHeader({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
+  const prefersReducedMotion = useReducedMotion();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [profitByRoundId, setProfitByRoundId] = useState<Record<string, RoundProfitExtra>>({});
@@ -186,12 +178,16 @@ export default function DashboardPage() {
   const totalRevenue = parseFloat(String(stats?.active_bets?.total_revenue ?? 0));
   const totalBets   = parseInt(String(stats?.active_bets?.total_bets ?? 0));
   const totalRounds = stats?.recent_rounds?.length ?? 0;
+  const entranceTransition = prefersReducedMotion
+    ? { duration: 0 }
+    : { duration: 0.18, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
 
   return (
-    <AppShell>
+    <MotionConfig reducedMotion="user">
+      <AppShell>
       <Header title="Dashboard" subtitle="ภาพรวมระบบรับแทงหวย" />
 
-      <main className="flex-1 space-y-5 px-4 pb-6 sm:px-6 sm:pb-8 pt-4">
+      <main className="adapt-readable adapt-touch ui-page-main">
 
         {/* ── KPI row ── */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -236,13 +232,13 @@ export default function DashboardPage() {
 
         {yearProfitBanner && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.22, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-2xl border border-[var(--color-border)]/70 bg-gradient-to-r from-[var(--color-card-bg-solid)] via-white to-[var(--bg-glass-subtle)] shadow-[var(--shadow-soft)] px-4 py-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 6 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={entranceTransition}
+            className="ui-surface px-5 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
           >
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted">สรุปกำไรรวมทั้งปี (งวดที่ออกผลแล้ว)</p>
+              <p className="text-sm font-medium text-theme-text-muted">สรุปกำไรรวมทั้งปี (งวดที่ออกผลแล้ว)</p>
               <p className="text-sm font-bold text-theme-text-primary mt-0.5">
                 พ.ศ. {yearProfitBanner.beYear}
                 <span className="font-normal text-theme-text-muted font-medium ml-2">
@@ -259,13 +255,13 @@ export default function DashboardPage() {
         {/* ── Charts row ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={entranceTransition}
             className="glass-card overflow-hidden flex flex-col"
           >
             <CardHeader icon={<IconTrend />} title="ยอดขาย · กำไร · % เทียบขาย" accent="blue" />
-            <div className="p-4 flex-1">
+            <div className="p-5 flex-1">
               <ProfitLossChart
                 rounds={stats?.recent_rounds ?? []}
                 profitByRoundId={profitByRoundId}
@@ -275,13 +271,13 @@ export default function DashboardPage() {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
+            initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+            transition={entranceTransition}
             className="glass-card overflow-hidden flex flex-col"
           >
             <CardHeader icon={<IconRisk />} title="ยอดขายเทียบกำไรต่องวด" accent="green" />
-            <div className="p-4 flex-1">
+            <div className="p-5 flex-1">
               <RiskDistributionChart rounds={stats?.recent_rounds ?? []} profitByRoundId={profitByRoundId} />
             </div>
           </motion.div>
@@ -289,9 +285,9 @@ export default function DashboardPage() {
 
         {/* ── Recent rounds ── */}
         <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          initial={prefersReducedMotion ? false : { opacity: 0, y: 10 }}
+          animate={prefersReducedMotion ? undefined : { opacity: 1, y: 0 }}
+          transition={entranceTransition}
           className="glass-card overflow-hidden"
         >
           <CardHeader
@@ -328,7 +324,7 @@ export default function DashboardPage() {
                     ].map((h) => (
                       <th
                         key={h.label}
-                        className={`py-2.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-theme-text-secondary ${h.cls}`}
+                        className={`py-2.5 px-3 text-sm font-medium text-theme-text-secondary ${h.cls}`}
                       >
                         {h.label}
                       </th>
@@ -339,9 +335,9 @@ export default function DashboardPage() {
                   {stats.recent_rounds.map((round: Round, i: number) => (
                     <motion.tr
                       key={round.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + i * 0.04, duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                      initial={prefersReducedMotion ? false : { opacity: 0, x: -4 }}
+                      animate={prefersReducedMotion ? undefined : { opacity: 1, x: 0 }}
+                      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.14, ease: [0.22, 1, 0.36, 1] }}
                       className={`table-row-hover border-b border-[var(--color-border)]/60 last:border-b-0 ${
                         i % 2 === 0 ? '' : 'bg-[var(--bg-glass-subtle)]/50'
                       }`}
@@ -383,5 +379,6 @@ export default function DashboardPage() {
 
       </main>
     </AppShell>
+    </MotionConfig>
   );
 }

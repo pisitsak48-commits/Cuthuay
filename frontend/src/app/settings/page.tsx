@@ -136,7 +136,7 @@ export default function SettingsPage() {
   return (
     <AppShell>
       <Header title="ตั้งค่าระบบ" subtitle="ปรับการตั้งค่าทั่วไปและอัตราจ่าย" />
-      <main className="flex-1 overflow-auto p-5">
+      <main className="flex-1 overflow-auto ui-page-main">
         <div className="max-w-3xl mx-auto space-y-5">
 
           {/* Tabs */}

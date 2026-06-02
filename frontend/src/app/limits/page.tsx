@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef, useId, type RefObject } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { roundsApi, limitsApi, customersApi, dealersApi } from '@/lib/api';
@@ -28,6 +28,72 @@ const BET_TYPES: BetType[] = [
   '2digit_top', '2digit_bottom',
   '1digit_top', '1digit_bottom',
 ];
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function useOverlayDialogA11y(
+  open: boolean,
+  onClose: () => void,
+  dialogRef: RefObject<HTMLDivElement | null>,
+) {
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+
+    const raf = requestAnimationFrame(() => {
+      const el = dialogRef.current;
+      if (!el) return;
+      el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)[0]?.focus();
+    });
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const el = dialogRef.current;
+      if (!el) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const nodes = el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!nodes.length) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const current = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey && current === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && current === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    const el = dialogRef.current;
+    el?.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      el?.removeEventListener('keydown', onKeyDown);
+
+      const prev = previouslyFocusedRef.current;
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
+        prev.focus();
+      }
+    };
+  }, [open, onClose, dialogRef]);
+}
 
 /**
  * คอลัมน์ราคา / % — ให้ 2 ตัวและ 3 ตัวอ่านสอดคล้องกัน:
@@ -545,6 +611,10 @@ interface CopyFromDealerModalProps {
 }
 
 function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone }: CopyFromDealerModalProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogTitleId = useId();
+  useOverlayDialogA11y(true, onClose, dialogRef);
+
   const [allCustomers, setAllCustomers] = useState(true);
   const [selectedCust, setSelectedCust] = useState<Set<string>>(new Set());
   const [busy, setBusy] = useState(false);
@@ -588,18 +658,27 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4"
+      role="presentation"
+      onClick={onClose}
+    >
       <div
-        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-2xl flex flex-col max-h-[90vh]"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={dialogTitleId}
+        tabIndex={-1}
+        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-2xl flex flex-col max-h-[90vh] outline-none"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-5 py-3 border-b border-border flex items-center justify-between shrink-0">
           <div>
-            <h3 className="font-bold text-theme-text-primary text-sm">คัดลอกเลขอั้นจากเจ้ามือ</h3>
+            <h3 id={dialogTitleId} className="font-bold text-theme-text-primary text-sm">คัดลอกเลขอั้นจากเจ้ามือ</h3>
             <p className="text-xs text-theme-text-muted mt-0.5">{dealerLimits.length} รายการ — เลือกว่าจะใช้กับลูกค้าใด</p>
           </div>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-lg leading-none">✕</button>
+          <button type="button" onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-lg leading-none" aria-label="ปิด">✕</button>
         </div>
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
@@ -819,7 +898,7 @@ export default function LimitsPage() {
     <AppShell>
       <Header title="เลขอั้น" subtitle="ตั้งค่าเลขต้องห้ามและอัตราพิเศษ" />
 
-      <main className="flex-1 p-6 flex flex-col gap-6 min-h-0">
+      <main className="adapt-readable adapt-touch ui-page-main flex flex-col gap-5 min-h-0 overflow-auto">
         {/* Top bar: round selector + tabs */}
         <div className="flex items-center gap-4 flex-wrap">
           <select
@@ -833,23 +912,23 @@ export default function LimitsPage() {
             ))}
           </select>
 
-          <div className="inline-flex flex-1 min-w-[280px] max-w-md rounded-full bg-gray-100 p-1 gap-1 shadow-sm">
+          <div className="inline-flex flex-1 min-w-[280px] max-w-md border-b border-[var(--color-border)] gap-0">
             <button
               onClick={() => setTab('customer')}
-              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
+              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 tab === 'customer'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-white/90'
+                  ? 'bg-white border-[var(--primary-600)] text-[var(--primary-600)]'
+                  : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               อั้นเลขลูกค้า
             </button>
             <button
               onClick={() => setTab('dealer')}
-              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
+              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
                 tab === 'dealer'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-white/90'
+                  ? 'bg-white border-[var(--primary-600)] text-[var(--primary-600)]'
+                  : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
               เลขอั้นเจ้ามือ

@@ -40,36 +40,6 @@
     text-rendering: optimizeLegibility;
   }
 
-  body::before,
-  body::after {
-    content: '';
-    position: fixed;
-    pointer-events: none;
-    z-index: -1;
-    border-radius: 9999px;
-    filter: blur(2px);
-  }
-
-  body::before {
-    width: 18rem;
-    height: 18rem;
-    top: -8rem;
-    left: 52%;
-    background: rgba(255, 255, 255, 0.55);
-    box-shadow:
-      -46vw 18vh 0 -7rem rgba(74, 144, 226, 0.12),
-      34vw 72vh 0 -8rem rgba(255, 255, 255, 0.4);
-  }
-
-  body::after {
-    width: 14rem;
-    height: 14rem;
-    right: -6rem;
-    bottom: 12%;
-    background: rgba(191, 219, 254, 0.35);
-    box-shadow: -88vw -4vh 0 -6rem rgba(74, 144, 226, 0.1);
-  }
-
   h1, h2, h3, h4, h5, h6 {
     font-weight: var(--font-weight-heading);
     letter-spacing: -0.01em;
@@ -198,25 +168,65 @@
   }
 
   .glass-card {
-    @apply rounded-2xl transition-[transform,box-shadow,background-color,backdrop-filter] duration-[200ms];
-    transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: rgb(255 255 255);
-    box-shadow: var(--color-card-shadow);
-    border: none;
-    backdrop-filter: blur(var(--blur-glass-strong)) saturate(1.18);
-    -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(1.18);
+    @apply rounded-xl border border-[var(--color-border)] bg-white shadow-sm;
+    background: var(--color-card-bg);
+    box-shadow: var(--shadow-soft);
+  }
+
+  /** Enterprise polish — surfaces, type, controls (no decorative effects) */
+  .ui-surface {
+    @apply rounded-xl border border-[var(--color-border)] bg-white shadow-sm;
+  }
+
+  .ui-panel-head {
+    @apply flex items-center justify-between gap-3 px-5 py-4 border-b border-[var(--color-border)];
+  }
+
+  .ui-label {
+    @apply text-sm font-medium text-theme-text-secondary;
+  }
+
+  .ui-section-title {
+    @apply text-base font-semibold text-theme-text-primary tracking-tight;
+  }
+
+  .ui-table-th {
+    @apply py-2.5 px-3 text-sm font-medium text-theme-text-secondary;
+  }
+
+  .ui-page-main {
+    @apply flex-1 space-y-5 px-4 pb-6 pt-4 sm:px-5 sm:pb-6;
+  }
+
+  .ui-field {
+    @apply block w-full h-10 min-h-10 rounded-lg px-3 text-sm border border-[var(--color-border)] bg-white text-theme-text-primary transition-colors duration-150;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-[var(--color-accent)];
+    @apply disabled:opacity-40 disabled:cursor-not-allowed;
+  }
+
+  .ui-control,
+  .btn-primary-glow,
+  .btn-toolbar-glow,
+  .btn-toolbar-amber,
+  .btn-toolbar-muted,
+  .btn-toolbar-danger,
+  .btn-toolbar-profit,
+  .btn-fintech-search,
+  .btn-fintech-spark,
+  .btn-fintech-range,
+  .btn-fintech-rose {
+    @apply inline-flex items-center justify-center gap-1.5 h-10 min-h-10 px-3 rounded-lg text-sm font-medium transition-colors duration-150 select-none;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400;
+    @apply disabled:opacity-40 disabled:cursor-not-allowed;
   }
 
   .glow-hover {
-    @apply transition-all duration-[200ms];
-    transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
+    @apply transition-colors duration-150;
   }
 
   .glow-hover:hover {
-    box-shadow: var(--shadow-hover);
-    border-color: var(--color-border-strong);
     background-color: var(--bg-hover);
-    transform: translateY(-2px);
+    border-color: var(--color-border-strong);
   }
 
   .stat-number {
@@ -239,7 +249,7 @@
 
   /** แผงสรุปข้าง (ลูกค้า/เจ้ามือ): ไม่มีเส้นตาราง แค่คั่นแถวแบบอ่อน */
   .summary-side-stack {
-    @apply rounded-2xl bg-white overflow-hidden shadow-sm backdrop-blur-[16px];
+    @apply rounded-xl border border-[var(--color-border)] bg-white overflow-hidden shadow-sm;
   }
 
   .summary-side-row {
@@ -251,13 +261,13 @@
   }
 
   .summary-type-grid-h {
-    @apply grid gap-x-2 gap-y-1 px-3 py-2.5 text-[0.8125rem] font-semibold text-theme-text-secondary;
+    @apply grid gap-x-2 gap-y-1 px-3 py-2.5 text-sm font-medium text-theme-text-secondary;
     /* ให้ชื่อประเภทไม่ล้นชนตัวเลข และให้ช่องตัวเลข 6-7 หลักยังพอดีในการ์ดแคบ */
     grid-template-columns: minmax(4.25rem, 0.95fr) repeat(3, minmax(4.35rem, 1fr));
   }
 
   .summary-type-grid-r {
-    @apply grid gap-x-2 gap-y-1 px-3 py-2 text-[0.8125rem] text-theme-text-secondary transition-colors duration-[220ms];
+    @apply grid gap-x-2 gap-y-1 px-3 py-2.5 text-sm text-theme-text-secondary transition-colors duration-150;
     grid-template-columns: minmax(4.25rem, 0.95fr) repeat(3, minmax(4.35rem, 1fr));
   }
 
@@ -277,34 +287,17 @@
     background: var(--bg-hover);
   }
 
-  .neon-card {
-    @apply rounded-2xl p-6 transition-[transform,box-shadow,backdrop-filter] duration-[200ms];
-    transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: rgb(255 255 255);
-    box-shadow: var(--color-card-shadow);
-    border: none;
-    backdrop-filter: blur(var(--blur-glass-strong)) saturate(1.18);
-    -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(1.18);
-  }
-
+  .neon-card,
   .glass-panel {
-    @apply rounded-2xl p-6 transition-[transform,box-shadow,backdrop-filter] duration-[200ms];
-    transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: rgb(255 255 255);
-    box-shadow: var(--color-card-shadow);
-    border: none;
-    backdrop-filter: blur(var(--blur-glass-strong)) saturate(1.18);
-    -webkit-backdrop-filter: blur(var(--blur-glass-strong)) saturate(1.18);
+    @apply rounded-xl border border-[var(--color-border)] bg-white p-5 shadow-sm;
   }
 
   /** Optional dark contrast card (pass className from parent) */
   .card-spotlight {
     background: var(--color-spotlight-bg);
     color: var(--color-spotlight-fg);
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.18);
-    backdrop-filter: blur(var(--blur-glass-strong));
-    -webkit-backdrop-filter: blur(var(--blur-glass-strong));
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    box-shadow: var(--shadow-soft);
   }
 
   .card-spotlight .text-theme-text-primary {
@@ -317,18 +310,14 @@
   }
 
   .glow-button {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-all duration-[200ms] ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed select-none;
-    transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: linear-gradient(to right, rgb(59 130 246), rgb(37 99 235));
-    color: white;
-    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
-    border: none;
+    @apply ui-control px-4 text-white;
+    background: var(--color-accent);
+    border: 1px solid var(--color-accent-hover);
+    box-shadow: none;
   }
 
   .glow-button:hover:not(:disabled) {
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.12), 0 4px 6px -4px rgb(0 0 0 / 0.08);
-    transform: translateY(-2px);
-    filter: brightness(1.02);
+    background: var(--color-accent-hover);
   }
 
   .glow-button:active:not(:disabled) {
@@ -336,170 +325,105 @@
   }
 
   .btn-primary-glow {
-    @apply inline-flex items-center justify-center gap-1.5 font-semibold rounded-full transition-all duration-[200ms] select-none text-white border-0;
-    transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: linear-gradient(to right, rgb(59 130 246), rgb(37 99 235));
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.08),
-      0 2px 4px -2px rgb(0 0 0 / 0.06);
-    @apply hover:shadow-md hover:-translate-y-0.5;
-    @apply active:translate-y-0;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400;
-    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md;
-  }
-
-  .btn-toolbar-glow {
-    @apply inline-flex items-center justify-center gap-1 h-7 px-3 rounded-full text-xs font-semibold transition-all duration-[200ms] select-none text-white border-0;
-    transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: linear-gradient(to right, rgb(59 130 246), rgb(37 99 235));
-    box-shadow:
-      0 4px 6px -1px rgb(0 0 0 / 0.08),
-      0 2px 4px -2px rgb(0 0 0 / 0.06);
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400;
-    @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0;
-  }
-
-  .btn-toolbar-glow:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow:
-      0 10px 15px -3px rgb(0 0 0 / 0.12),
-      0 4px 6px -4px rgb(0 0 0 / 0.08);
-    filter: brightness(1.02);
-  }
-
-  .btn-toolbar-glow:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  .btn-toolbar-glow:disabled {
+    @apply text-white;
+    background: var(--color-accent);
+    border: 1px solid var(--color-accent-hover);
     box-shadow: none;
   }
 
-  .btn-toolbar-amber {
-    background: rgb(255 255 255);
+  .btn-primary-glow:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
+
+  .btn-toolbar-glow {
+    @apply text-white;
+    background: var(--color-accent);
+    border: 1px solid var(--color-accent-hover);
+    box-shadow: none;
+  }
+
+  .btn-toolbar-glow:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
+
+  .btn-toolbar-amber,
+  .btn-toolbar-muted,
+  .btn-fintech-search,
+  .btn-fintech-spark,
+  .btn-fintech-range {
+    background: var(--color-card-bg);
     color: var(--color-text-primary);
-    border: none;
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
+    border: 1px solid var(--color-border);
+    box-shadow: none;
   }
 
-  .btn-toolbar-amber:hover:not(:disabled) {
-    background: var(--gray-100);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
+  .btn-toolbar-amber:hover:not(:disabled),
+  .btn-toolbar-muted:hover:not(:disabled),
+  .btn-fintech-search:hover:not(:disabled),
+  .btn-fintech-spark:hover:not(:disabled),
+  .btn-fintech-range:hover:not(:disabled) {
+    background: var(--bg-hover);
+    border-color: var(--color-border-strong);
   }
 
-  .btn-toolbar-danger {
+  .btn-toolbar-danger,
+  .btn-fintech-rose {
     background: var(--color-card-bg);
     color: var(--color-semantic-danger-muted);
-    border: 1px solid rgba(239, 68, 68, 0.45);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    box-shadow: none;
   }
 
-  .btn-toolbar-danger:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.06);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
+  .btn-toolbar-danger:hover:not(:disabled),
+  .btn-fintech-rose:hover:not(:disabled) {
+    background: rgba(239, 68, 68, 0.05);
+    border-color: rgba(239, 68, 68, 0.45);
   }
 
   .btn-toolbar-profit {
     background: var(--color-card-bg);
     color: var(--color-semantic-success-muted);
-    border: 1px solid rgba(34, 197, 94, 0.45);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    box-shadow: none;
   }
 
   .btn-toolbar-profit:hover:not(:disabled) {
-    background: rgba(34, 197, 94, 0.06);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
-  }
-
-  .btn-toolbar-muted {
-    color: var(--color-text-primary);
-    background: var(--color-card-bg);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
-  }
-
-  .btn-toolbar-muted:hover:not(:disabled) {
-    background: var(--bg-hover);
-    border-color: var(--color-border-strong);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
-  }
-
-  .btn-fintech-search {
-    background: var(--color-card-bg);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
-  }
-
-  .btn-fintech-search:hover:not(:disabled) {
-    background: var(--bg-hover);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
-  }
-
-  .btn-fintech-spark {
-    background: var(--bg-glass-subtle);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
-  }
-
-  .btn-fintech-spark:hover:not(:disabled) {
-    background: var(--bg-hover);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
-  }
-
-  .btn-fintech-range {
-    background: var(--color-card-bg);
-    color: var(--color-text-primary);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
-  }
-
-  .btn-fintech-range:hover:not(:disabled) {
-    background: var(--bg-hover);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
-  }
-
-  .btn-fintech-rose {
-    background: var(--color-card-bg);
-    color: var(--color-semantic-danger-muted);
-    border: 1px solid rgba(239, 68, 68, 0.45);
-    box-shadow: var(--shadow-soft);
-    backdrop-filter: blur(var(--blur-glass));
-    -webkit-backdrop-filter: blur(var(--blur-glass));
-  }
-
-  .btn-fintech-rose:hover:not(:disabled) {
-    background: rgba(239, 68, 68, 0.06);
-    box-shadow: var(--shadow-hover);
-    transform: translateY(-2px);
+    background: rgba(34, 197, 94, 0.05);
+    border-color: rgba(34, 197, 94, 0.45);
   }
 
   .notification-badge {
-    @apply inline-flex items-center justify-center min-w-[1.5rem] h-6 rounded-full px-2 text-[11px] font-semibold text-[var(--text-inverse)];
+    @apply inline-flex items-center justify-center min-w-[1.5rem] h-6 rounded-full px-2 text-xs font-medium text-[var(--text-inverse)];
     background-color: rgb(var(--color-risk-high) / 1);
     box-shadow: var(--shadow-soft);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *, *::before, *::after {
+    animation: none !important;
+    transition-duration: 1ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  .glow-hover:hover,
+  .glow-button:hover:not(:disabled),
+  .btn-toolbar-glow:hover:not(:disabled),
+  .btn-toolbar-amber:hover:not(:disabled),
+  .btn-toolbar-danger:hover:not(:disabled),
+  .btn-toolbar-profit:hover:not(:disabled),
+  .btn-toolbar-muted:hover:not(:disabled),
+  .btn-fintech-search:hover:not(:disabled),
+  .btn-fintech-spark:hover:not(:disabled),
+  .btn-fintech-range:hover:not(:disabled),
+  .btn-fintech-rose:hover:not(:disabled) {
+    transform: none !important;
+    box-shadow: var(--shadow-soft) !important;
+    filter: none !important;
   }
 }
 
@@ -547,60 +471,87 @@
 }
 
 /**
- * หน้ารับแทง (/bets): แยกโพย | แผงขวาตามความกว้างคอนเทนต์จริง (หลัง sidebar)
- * ใช้ container query แทน ResizeObserver — กันรีเฟรชแล้ว flex-row ผิด/ทับซ้อน
+ * หน้ารับแทง / ตัดส่ง — แยกโซนหลัก | แผงขวา (สัดส่วนคงที่ ไม่ลากปรับ)
+ * - iPad / iPhone / touch: เรียงแนวตั้ง ไม่ทับกัน
+ * - จอใหญ่ + เมาส์: แผงขวากว้างคงที่ ~320px โซนหลักยืดเต็มที่เหลือ
  */
-.bets-main-split {
-  container-type: inline-size;
-  container-name: bets-split;
+.app-page-split {
   display: flex;
   flex-direction: column;
   flex: 1 1 0%;
   min-height: 0;
   min-width: 0;
-  overflow: hidden;
-}
-
-.bets-main-split-inner {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 0%;
-  min-height: 0;
-  min-width: 0;
-  overflow: hidden;
-}
-
-.bets-split-resizer {
-  display: none;
-}
-
-.bets-right-shell {
   width: 100%;
   max-width: 100%;
-  flex-shrink: 0;
-  border-top: 1px solid var(--color-border);
-  border-left: none;
+  overflow: hidden;
 }
 
-@container bets-split (min-width: 1260px) {
-  @media (hover: hover) and (pointer: fine) {
-    .bets-main-split-inner {
-      flex-direction: row;
-    }
+.app-page-split-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: hidden;
+}
 
-    .bets-split-resizer {
-      display: block;
-    }
+.app-page-split-aside {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  width: 100%;
+  max-width: 100%;
+  min-height: 0;
+  max-height: min(46dvh, 440px);
+  overflow: hidden;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg-primary);
+}
 
-    .bets-right-shell {
-      width: var(--bets-right-panel-px, 288px);
-      min-width: 260px;
-      max-width: min(100%, 580px);
-      border-top: none;
-      border-left: 1px solid var(--color-border);
-    }
+/* Responsive adaptation helpers: readable labels + touch-first controls */
+.adapt-readable :is([class*='text-[10px]'], [class*='text-[11px]'], .text-xs) {
+  font-size: 0.875rem !important;
+  line-height: 1.35 !important;
+}
+
+@media (pointer: coarse), (max-width: 1024px) {
+  .adapt-touch :is(button, a, select, input[type='button'], input[type='submit'], input[type='reset']) {
+    min-height: 44px;
+  }
+
+  .adapt-touch :is(button, a) {
+    min-width: 44px;
   }
 }
+
+/* จอใหญ่ + เมาส์เท่านั้น — ไม่ใช้แถวคู่บน iPad */
+@media (min-width: 1280px) and (hover: hover) and (pointer: fine) {
+  .app-page-split {
+    flex-direction: row;
+  }
+
+  .app-page-split-main {
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+
+  .app-page-split-aside {
+    flex: 0 0 320px;
+    width: 320px;
+    min-width: 280px;
+    max-width: 360px;
+    max-height: none;
+    border-top: none;
+    border-left: 1px solid var(--color-border);
+  }
+
+  .app-page-split-aside--cut {
+    flex: 0 0 360px;
+    width: 360px;
+    max-width: 400px;
+  }
+}
+
 
 /* ─── Print: show only #bet-receipt ────────────────────────────────────────── */
 @media print {

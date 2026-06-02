@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo, Suspense, startTransition } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo, useId, Suspense, startTransition } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
@@ -26,6 +26,9 @@ const BET_TYPE_LABELS: Record<string, string> = {
   '1digit_bottom': 'วิ่งล่าง',
 };
 const BET_TYPES = Object.keys(BET_TYPE_LABELS);
+
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** ตารางผลถูกฉลากลูกค้า — ความกว้างคงที่ทุกการ์ด ให้คอลัมน์เลขตรงแนวกันทุกลูกค้า */
 function WinsCustomerTableColGroup() {
@@ -154,7 +157,7 @@ function winBetTypeLabelClass(betType: string): string {
 /** แท็บรายลูกค้า / รายเจ้ามือ — พื้นทึบอ่านง่าย ลดฟุ้งแบบ glass */
 const SUMMARY_CD_SOLID = '!bg-[var(--color-card-bg-solid)] !backdrop-blur-none';
 const SUMMARY_CD_BAR =
-  'rounded-2xl border-0 bg-white backdrop-blur-none shadow-sm';
+  'rounded-xl border border-[var(--color-border)] bg-white shadow-sm';
 
 function fNum(v: number) { return Math.round(v).toLocaleString('th-TH'); }
 /** หัวรายงาน PDF — รูปแบบ 24/04/2026 */
@@ -384,9 +387,9 @@ function KpiCard({
   valueClass: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-border)]/65 bg-gradient-to-b from-white to-[var(--color-bg-primary)] shadow-[var(--shadow-soft)] px-4 py-3.5 flex flex-col justify-between gap-2 min-h-[5.75rem]">
+    <div className="ui-surface px-5 py-4 flex flex-col justify-between gap-2 min-h-[5.75rem]">
       <div className="min-w-0">
-        <span className={cn('text-[11px] sm:text-xs uppercase tracking-[0.12em] font-semibold block', labelClass)}>{label}</span>
+        <span className={cn('text-sm font-medium block', labelClass)}>{label}</span>
         {labelSecondary ? (
           <span className="text-sm font-semibold text-theme-text-primary mt-1 block">{labelSecondary}</span>
         ) : null}
@@ -412,13 +415,13 @@ function SummaryPrizeBar({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-[var(--color-border)]/70 bg-gradient-to-b from-white via-[var(--color-card-bg-solid)] to-[var(--bg-glass-subtle)] shadow-[var(--shadow-soft)] px-4 py-3 sm:px-5 sm:py-3.5 transition-opacity duration-200 ease-out',
+        'ui-surface px-5 py-4 transition-opacity duration-200 ease-out',
         loading && 'opacity-[0.62]',
       )}
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-4">
         <div className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-start lg:justify-center lg:min-w-[5.5rem] lg:border-r lg:border-[var(--color-border)]/80 lg:pr-4">
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-theme-text-muted">ผลรางวัล</span>
+          <span className="text-sm font-medium text-theme-text-muted">ผลรางวัล</span>
           <span className="hidden lg:inline text-[11px] text-theme-text-muted leading-snug">งวด {data.round.name}</span>
         </div>
 
@@ -452,13 +455,13 @@ function SummaryPrizeBar({
                       <div
                         key={r.label}
                         className={cn(
-                          'flex flex-col justify-center rounded-xl border px-2 py-1.5 shadow-sm shrink-0 backdrop-blur-[2px]',
+                          'flex flex-col justify-center rounded-xl border px-2 py-1.5 shadow-sm shrink-0',
                           vis.stripCard,
                           r.wide ? 'max-w-[11rem] sm:max-w-[13rem]' : 'min-w-[4rem]',
                           r.themeKey === 'prize_1st' && 'min-w-[6rem]',
                         )}
                       >
-                        <span className={cn('text-center text-[9px] font-bold uppercase leading-none tracking-wide', vis.label)}>
+                        <span className={cn('text-center text-xs font-medium leading-none', vis.label)}>
                           {r.label}
                         </span>
                         <span
@@ -763,7 +766,7 @@ function ProfitTab({ data }: { data: ProfitSummary }) {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_minmax(20rem,30rem)] 2xl:grid-cols-[minmax(0,1fr)_minmax(22rem,32rem)] gap-4 2xl:gap-6 items-start">
         <div className="space-y-4 min-w-0">
           {/* Sell / Send summary */}
-          <Card className="p-0 overflow-hidden rounded-2xl shadow-sm border-0">
+          <Card className="p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
             <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)]">
               <CardTitle size="lg">สรุปยอดขาย / ส่ง</CardTitle>
             </div>
@@ -802,7 +805,7 @@ function ProfitTab({ data }: { data: ProfitSummary }) {
           </Card>
 
           {/* Customer breakdown */}
-          <Card className="p-0 overflow-hidden rounded-2xl shadow-sm border-0">
+          <Card className="p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
             <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)]">
               <CardTitle size="lg">สรุปรายลูกค้า</CardTitle>
             </div>
@@ -844,7 +847,7 @@ function ProfitTab({ data }: { data: ProfitSummary }) {
 
           {/* Dealer breakdown */}
           {data.dealers.length > 0 && (
-            <Card className="p-0 overflow-hidden rounded-2xl shadow-sm border-0">
+            <Card className="p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
               <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)]">
                 <CardTitle size="lg">สรุปรายเจ้ามือ</CardTitle>
               </div>
@@ -887,7 +890,7 @@ function ProfitTab({ data }: { data: ProfitSummary }) {
         </div>
 
         <div className="max-xl:static xl:sticky xl:top-4 space-y-3 min-w-0 w-full">
-          <Card className="p-0 overflow-hidden rounded-2xl shadow-sm border-0">
+          <Card className="p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm">
             <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)] flex items-center justify-between gap-3">
               <CardTitle size="lg" className="min-w-0">แยกตามประเภทการขาย</CardTitle>
               <span className="text-xs text-theme-text-secondary font-medium shrink-0">ดูเร็ว</span>
@@ -951,7 +954,7 @@ function ProfitTab({ data }: { data: ProfitSummary }) {
             <button
               type="button"
               onClick={handlePrint}
-              className="flex-1 flex items-center justify-center gap-2 rounded-2xl border-0 bg-white text-theme-text-primary font-semibold text-sm py-3 px-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[background-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]"
+              className="flex-1 flex items-center justify-center gap-2 rounded-lg border border-[var(--color-border)] bg-white text-theme-text-primary font-medium text-sm h-10 px-4 hover:bg-[var(--bg-hover)] transition-colors duration-150"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
@@ -1184,7 +1187,7 @@ function CustomerTab({ data, roundId }: { data: ProfitSummary; roundId: string }
       {/* Wins view */}
       {reportType === 'wins' && (
         <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] gap-4 items-start">
-            <Card className={cn('p-0 overflow-hidden rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+            <Card className={cn('p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
             <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)]">
               <CardTitle size="lg">ผลถูกฉลาก — {selectedId ? (customer?.name ?? '...') : 'ลูกค้าทั้งหมด'}</CardTitle>
             </div>
@@ -1197,7 +1200,7 @@ function CustomerTab({ data, roundId }: { data: ProfitSummary; roundId: string }
                 {winsTargets.map(w => (
                   <Card
                     key={w.customer_id}
-                    className={cn('p-0 overflow-hidden rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}
+                    className={cn('p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}
                   >
                     <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)] flex items-center justify-between gap-3">
                       <CardTitle size="lg">{w.name}</CardTitle>
@@ -1255,7 +1258,7 @@ function CustomerTab({ data, roundId }: { data: ProfitSummary; roundId: string }
           </Card>
 
           <div className="max-2xl:static 2xl:sticky 2xl:top-4">
-            <Card className={cn('p-4 space-y-3 rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+            <Card className={cn('p-4 space-y-3 rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                 <CardTitle size="lg" className="shrink-0">{selectedId ? (customer?.name ?? 'ลูกค้า') : 'ลูกค้าทั้งหมด'}</CardTitle>
                 {formatRoundDrawDateLongThai(data.round.draw_date) ? (
@@ -1306,7 +1309,7 @@ function CustomerTab({ data, roundId }: { data: ProfitSummary; roundId: string }
           <div className="space-y-4 min-w-0">
             {customerTargets.map(c => (
               <div key={c.customer_id} className="flex gap-4 items-start">
-              <Card className={cn('p-0 overflow-hidden flex-1 rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+              <Card className={cn('p-0 overflow-hidden flex-1 rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
                 <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)] flex items-center justify-between">
                   <CardTitle size="lg">{c.name}</CardTitle>
                   <span className="text-sm font-medium text-theme-text-secondary" title="อัตราหักคอมจากยอดขายตามที่ตั้งในลูกค้า">
@@ -1412,7 +1415,7 @@ function CustomerTab({ data, roundId }: { data: ProfitSummary; roundId: string }
           </div>
 
           <div className="max-2xl:static 2xl:sticky 2xl:top-4">
-            <Card className={cn('p-4 space-y-3 rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+            <Card className={cn('p-4 space-y-3 rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                 <CardTitle size="lg" className="shrink-0">{selectedId ? (customer?.name ?? 'ลูกค้า') : 'ลูกค้าทั้งหมด'}</CardTitle>
                 {formatRoundDrawDateLongThai(data.round.draw_date) ? (
@@ -1706,7 +1709,7 @@ function DealerTab({ data, roundId }: { data: ProfitSummary; roundId: string }) 
 
       {reportType === 'wins' && (
         <div className="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_minmax(280px,380px)] gap-4 items-start">
-            <Card className={cn('p-0 overflow-hidden rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+            <Card className={cn('p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
               <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)]">
             <CardTitle size="lg">ผลถูกฉลากเจ้ามือ — {selectedId ? (selectedDealer?.name ?? '') : 'ทุกเจ้ามือ'}</CardTitle>
           </div>
@@ -1719,7 +1722,7 @@ function DealerTab({ data, roundId }: { data: ProfitSummary; roundId: string }) 
               {selectedWinsDealers.map(d => (
                 <Card
                   key={d.dealer_id}
-                  className={cn('p-0 overflow-hidden rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}
+                  className={cn('p-0 overflow-hidden rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}
                 >
                   <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)] flex items-center justify-between gap-3">
                     <CardTitle size="lg">{d.name}</CardTitle>
@@ -1774,7 +1777,7 @@ function DealerTab({ data, roundId }: { data: ProfitSummary; roundId: string }) 
           )}
         </Card>
         <div className="max-2xl:static 2xl:sticky 2xl:top-4">
-          <Card className={cn('p-4 space-y-3 rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+          <Card className={cn('p-4 space-y-3 rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
             <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
               <CardTitle size="lg" className="shrink-0">{selectedId ? (selectedDealer?.name ?? 'เจ้ามือ') : 'เจ้ามือทั้งหมด'}</CardTitle>
               {formatRoundDrawDateLongThai(data.round.draw_date) ? (
@@ -1824,7 +1827,7 @@ function DealerTab({ data, roundId }: { data: ProfitSummary; roundId: string }) 
           <div className="space-y-4 min-w-0">
             {dealerTargets.map(d => (
               <div key={d.dealer_id} className="flex gap-4 items-start">
-                <Card className={cn('p-0 overflow-hidden flex-1 rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+                <Card className={cn('p-0 overflow-hidden flex-1 rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
                   <div className="px-5 pt-4 pb-3 border-b border-[var(--color-border)] flex items-center justify-between">
                     <CardTitle size="lg">{d.name}</CardTitle>
                     <span className="text-sm font-medium text-theme-text-secondary">สรุปยอดส่ง</span>
@@ -1967,7 +1970,7 @@ function DealerTab({ data, roundId }: { data: ProfitSummary; roundId: string }) 
           </div>
 
           <div className="max-2xl:static 2xl:sticky 2xl:top-4">
-            <Card className={cn('p-4 space-y-3 rounded-2xl shadow-sm border-0', SUMMARY_CD_SOLID)}>
+            <Card className={cn('p-4 space-y-3 rounded-xl border border-[var(--color-border)] shadow-sm', SUMMARY_CD_SOLID)}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between sm:gap-3">
                 <CardTitle size="lg" className="shrink-0">{selectedId ? (selectedDealer?.name ?? 'เจ้ามือ') : 'เจ้ามือทั้งหมด'}</CardTitle>
                 {formatRoundDrawDateLongThai(data.round.draw_date) ? (
@@ -2088,6 +2091,9 @@ function SummaryPageInner() {
 
   // ─── Result modal state ────────────────────────────────────────────────────
   const [showResultModal, setShowResultModal] = useState(false);
+  const resultDialogRef = useRef<HTMLDivElement>(null);
+  const resultDialogPreviouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const resultDialogTitleId = useId();
   const [rPrize1st, setRPrize1st] = useState('');
   const [rBot3, setRBot3] = useState<[string,string,string,string]>(['','','','']);
   const [rBot2, setRBot2] = useState('');
@@ -2111,6 +2117,64 @@ function SummaryPageInner() {
     setResultError('');
     setShowResultModal(true);
   }, [data]);
+
+  const closeResultModal = useCallback(() => setShowResultModal(false), []);
+
+  useEffect(() => {
+    if (!showResultModal) return;
+
+    resultDialogPreviouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+
+    const el = resultDialogRef.current;
+    if (!el) return;
+
+    const focusInitial = () => {
+      const preferred = el.querySelector<HTMLElement>('[data-result-dialog-initial-focus]');
+      const focusable = el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      (preferred ?? focusable[0])?.focus();
+    };
+
+    const raf = requestAnimationFrame(focusInitial);
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeResultModal();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const nodes = el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!nodes.length) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const current = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey && current === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && current === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    el.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      el.removeEventListener('keydown', onKeyDown);
+
+      const prev = resultDialogPreviouslyFocusedRef.current;
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
+        prev.focus();
+      }
+    };
+  }, [showResultModal, closeResultModal]);
 
   const autoOpenResultDone = useRef(false);
   useEffect(() => {
@@ -2173,8 +2237,8 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
-      dotClass: 'bg-white',
+        'bg-white border-b-2 border-[var(--primary-600)] text-[var(--primary-600)] font-semibold',
+      dotClass: 'bg-[var(--primary-600)]',
     },
     {
       key: 'customer',
@@ -2185,8 +2249,8 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
-      dotClass: 'bg-white',
+        'bg-white border-b-2 border-[var(--primary-600)] text-[var(--primary-600)] font-semibold',
+      dotClass: 'bg-[var(--primary-600)]',
     },
     {
       key: 'dealer',
@@ -2197,8 +2261,8 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
-      dotClass: 'bg-white',
+        'bg-white border-b-2 border-[var(--primary-600)] text-[var(--primary-600)] font-semibold',
+      dotClass: 'bg-[var(--primary-600)]',
     },
   ] as const;
 
@@ -2209,7 +2273,7 @@ function SummaryPageInner() {
         subtitle={`${APP_BRAND_NAME} · สรุปผลกำไร-ขาดทุน หลังออกผลสลาก`}
         variant="prominent"
       />
-      <main className="flex-1 overflow-auto p-5">
+      <main className="adapt-readable adapt-touch flex-1 overflow-auto ui-page-main">
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="flex justify-end -mt-1 mb-1">
             <Link
@@ -2275,13 +2339,13 @@ function SummaryPageInner() {
               )}
             >
               {/* Tab bar */}
-              <div className="rounded-2xl border-0 bg-gray-100 p-1.5 flex gap-1.5 shadow-sm">
+              <div className="flex gap-0 border-b border-[var(--color-border)]">
                 {tabs.map(t => (
                   <button key={t.key} onClick={() => setTab(t.key)}
-                    className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold rounded-full transition-[color,background-color,box-shadow,border-color] duration-200 ${
+                    className={`flex-1 flex items-center justify-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition-colors -mb-px ${
                       tab === t.key
                         ? t.activeClass
-                        : 'text-gray-600 hover:text-gray-900 hover:bg-white/90'
+                        : 'bg-transparent border-b-2 border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}>
                     <span className="w-3.5 h-3.5 shrink-0 flex items-center justify-center" aria-hidden>
                       {tab === t.key ? (
@@ -2312,11 +2376,17 @@ function SummaryPageInner() {
       {/* ─── Result Modal ──────────────────────────────────────────────────── */}
       {showResultModal && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45 backdrop-blur-[3px]"
-          onClick={() => setShowResultModal(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/45"
+          role="presentation"
+          onClick={closeResultModal}
         >
           <div
-            className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-border)]/80 bg-[var(--color-card-bg-solid)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.28)] ring-1 ring-black/[0.04]"
+            ref={resultDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={resultDialogTitleId}
+            tabIndex={-1}
+            className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-border)]/80 bg-[var(--color-card-bg-solid)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.28)] ring-1 ring-black/[0.04] outline-none"
             onClick={e => e.stopPropagation()}
           >
             <div className="relative px-6 pt-6 pb-5 border-b border-[var(--color-border)]/90 bg-gradient-to-br from-[var(--color-card-bg-solid)] via-white to-[var(--bg-glass-subtle)]">
@@ -2329,15 +2399,15 @@ function SummaryPageInner() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                       </svg>
                     </span>
-                    <span className="text-lg font-bold text-theme-text-primary tracking-tight">
+                    <h2 id={resultDialogTitleId} className="text-lg font-bold text-theme-text-primary tracking-tight">
                       {data?.round.result_data ? 'แก้ไขผลสลาก' : 'ใส่ผลสลาก'}
-                    </span>
+                    </h2>
                   </div>
                   <p className="text-sm text-theme-text-muted pl-10 -mt-0.5">งวด <span className="font-semibold text-theme-text-secondary">{data?.round.name}</span></p>
                 </div>
                 <button
                   type="button"
-                  onClick={() => setShowResultModal(false)}
+                  onClick={closeResultModal}
                   className="shrink-0 rounded-xl p-2 text-theme-text-muted hover:text-theme-text-primary hover:bg-[var(--bg-hover)] transition-colors"
                   aria-label="ปิด"
                 >
@@ -2350,7 +2420,7 @@ function SummaryPageInner() {
 
             <div className="px-6 py-5 space-y-5 bg-gradient-to-b from-[var(--color-bg-primary)] to-[var(--color-card-bg-solid)]/30 max-h-[min(78vh,calc(100vh-8rem))] overflow-y-auto">
               <section className="rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-secondary mb-2 block">
+                <label className="text-sm font-medium text-theme-text-secondary mb-2 block">
                   รางวัลที่ 1 <span className="text-loss normal-case tracking-normal">*</span>
                   <span className="ml-1.5 font-normal text-theme-text-muted normal-case tracking-normal">(6 หลัก)</span>
                 </label>
@@ -2359,13 +2429,13 @@ function SummaryPageInner() {
                   value={rPrize1st}
                   onChange={e => setRPrize1st(e.target.value.replace(/\D/g,'').slice(0,6))}
                   placeholder="เช่น 536077"
-                  autoFocus
+                  data-result-dialog-initial-focus
                   className="w-full h-12 rounded-xl bg-[var(--color-input-bg)] border-2 border-[var(--color-input-border)] px-4 text-2xl tracking-[0.35em] font-bold text-theme-text-primary text-center sm:text-left sm:tracking-[0.28em] placeholder:text-theme-text-muted/70 focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--color-border-strong)] shadow-inner"
                 />
               </section>
 
               <section className="rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-secondary mb-2 block">
+                <label className="text-sm font-medium text-theme-text-secondary mb-2 block">
                   3 ตัวล่าง <span className="font-normal text-theme-text-muted normal-case">(สูงสุด 4 ชุด)</span>
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
@@ -2385,7 +2455,7 @@ function SummaryPageInner() {
               </section>
 
               <section className="rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">
-                <label className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-secondary mb-2 block">
+                <label className="text-sm font-medium text-theme-text-secondary mb-2 block">
                   2 ตัวล่าง <span className="text-loss normal-case tracking-normal">*</span>
                   <span className="ml-1.5 font-normal text-theme-text-muted normal-case tracking-normal">(2 หลัก)</span>
                 </label>
@@ -2407,7 +2477,7 @@ function SummaryPageInner() {
 
               {rTop3 && (
                 <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/95 via-teal-50/40 to-[var(--color-bg-primary)] px-4 py-3.5 shadow-sm">
-                  <div className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-800/80 mb-2">สรุปจากเลขรางวัลที่ 1</div>
+                  <div className="text-sm font-medium text-emerald-800/80 mb-2">สรุปจากเลขรางวัลที่ 1</div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:text-sm">
                     <div className="text-theme-text-muted">3 ตัวบน <span className="text-profit font-bold tabular-nums ml-1">{rTop3}</span></div>
                     <div className="text-theme-text-muted">2 ตัวบน <span className="text-profit font-bold tabular-nums ml-1">{rTop2}</span></div>
@@ -2459,7 +2529,7 @@ function SummaryPageInner() {
                 )}
                 <button
                   type="button"
-                  onClick={() => setShowResultModal(false)}
+                  onClick={closeResultModal}
                   className="btn-toolbar-glow btn-toolbar-muted px-4 py-3 text-sm rounded-2xl !h-auto font-semibold"
                 >
                   ยกเลิก

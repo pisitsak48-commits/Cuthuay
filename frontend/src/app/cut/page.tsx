@@ -1,7 +1,7 @@
 'use client';
-import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo, Suspense } from 'react';
+import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo, useId, Suspense, type RefObject } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, MotionConfig, useReducedMotion } from 'framer-motion';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   Cell, CartesianGrid, Customized,
@@ -15,14 +15,6 @@ import { roundsApi, cutApi, dealersApi } from '@/lib/api';
 import { filterRoundsForSummaryCutPicker } from '@/lib/roundPickerFilter';
 import { cn, formatBaht } from '@/lib/utils';
 import { useAuthStore } from '@/store/useStore';
-import {
-  readPanelWidth,
-  writePanelWidth,
-  readPanelLock,
-  writePanelLock,
-  STORAGE_CUT_RIGHT_PANEL_W,
-  STORAGE_CUT_RIGHT_PANEL_LOCK,
-} from '@/lib/panelResize';
 import { buildPrintSlipBrandStrip, buildSendSlipSheetsHtml, getSendSlipLayout, openPrintPreview } from '@/lib/printPreview';
 import { downloadHtmlAsPng } from '@/lib/htmlToPng';
 import { PRINT_ROOT_INLINE_STYLE } from '@/lib/printTypography';
@@ -31,9 +23,6 @@ import {
   Round, BetType, BET_TYPE_LABELS, Dealer,
   RangeSimResponse, RangeSimRow, RiskReport, SendBatch,
 } from '@/types';
-
-/** แยกคอลัมน์กราฟ | รายการส่งเมื่อกล่อง layout กว้างพอ (วัดจริงหลัง sidebar) */
-const CUT_LAYOUT_SPLIT_MIN_PX = 1260;
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 const BET_TYPE_ORDER: BetType[] = [
@@ -47,6 +36,75 @@ const BET_TYPE_SHORT: Record<BetType, string> = {
 };
 /** ขั้น % นำของยอดสูงสุด — 0.5 ละเอียดสุดในรายการ (201 แถว), สูตร backend เดิม */
 const STEP_OPTIONS = [0.5, 1, 2.5, 5] as const;
+const FOCUSABLE_SELECTOR =
+  'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+function useOverlayDialogA11y(
+  open: boolean,
+  onClose: () => void,
+  dialogRef: RefObject<HTMLDivElement | null>,
+) {
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+
+    const raf = requestAnimationFrame(() => {
+      const el = dialogRef.current;
+      if (!el) return;
+      el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)[0]?.focus();
+    });
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      const el = dialogRef.current;
+      if (!el) return;
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const nodes = el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!nodes.length) {
+        e.preventDefault();
+        return;
+      }
+
+      const first = nodes[0]!;
+      const last = nodes[nodes.length - 1]!;
+      const current = document.activeElement as HTMLElement | null;
+
+      if (e.shiftKey && current === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && current === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+
+    const el = dialogRef.current;
+    el?.addEventListener('keydown', onKeyDown);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      el?.removeEventListener('keydown', onKeyDown);
+
+      const prev = previouslyFocusedRef.current;
+      if (prev && typeof prev.focus === 'function' && document.contains(prev)) {
+        prev.focus();
+      }
+    };
+  }, [open, onClose, dialogRef]);
+}
+
+function formatSendBatchDate(iso: string): string {
+  return new Date(iso).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit' });
+}
 
 // ─── Chart types ─────────────────────────────────────────────────────────────
 interface ChartBar {
@@ -71,12 +129,12 @@ function ThresholdPerNumberPill({ amount }: { amount: number }) {
   if (amount <= 0) return null;
   return (
     <span
-      className="inline-flex items-baseline gap-1 rounded-lg [background:var(--color-nav-active-bg)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-nav-active-fg)] shadow-[0_4px_14px_rgba(53,122,189,0.28)] ring-1 ring-white/25 tabular-nums tracking-tight"
+      className="inline-flex items-baseline gap-1 rounded-lg [background:var(--color-nav-active-bg)] px-3 py-1.5 text-sm font-semibold text-[var(--color-nav-active-fg)] shadow-[0_4px_14px_rgba(53,122,189,0.28)] ring-1 ring-white/25 tabular-nums tracking-tight"
       title="ยอดเก็บต่อเลข (ขีดบนกราฟ)"
     >
-      <span className="text-[10px] font-semibold opacity-95">ขีด</span>
+      <span className="text-sm font-semibold opacity-95">ขีด</span>
       <span className="text-xs font-bold">{formatBaht(amount)}</span>
-      <span className="text-[10px] font-semibold opacity-90">บ/เลข</span>
+      <span className="text-sm font-semibold opacity-90">บ/เลข</span>
     </span>
   );
 }
@@ -288,21 +346,57 @@ function SearchDialog({ onClose, onConfirm }: {
 }) {
   const [mode, setMode] = useState<'manual' | 'pct_win' | 'max_payout'>('manual');
   const [value, setValue] = useState(0);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const opts = [
     { k: 'manual'     as const, label: 'กำหนดเองโดยตรง',    hint: 'บาท / เลข' },
     { k: 'pct_win'    as const, label: 'ค้นหา % ได้เสีย',   hint: '% ได้ ≥' },
     { k: 'max_payout' as const, label: 'ค้นหายอดจ่ายสูงสุด', hint: 'จ่ายสูงสุด ≤' },
   ];
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    const first = el.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    first?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const nodes = el.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
+      if (!nodes.length) return;
+      const firstNode = nodes[0]!;
+      const lastNode = nodes[nodes.length - 1]!;
+      const current = document.activeElement as HTMLElement | null;
+      if (e.shiftKey && current === firstNode) {
+        e.preventDefault();
+        lastNode.focus();
+      } else if (!e.shiftKey && current === lastNode) {
+        e.preventDefault();
+        firstNode.focus();
+      }
+    };
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4" role="presentation" onClick={onClose}>
       <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="cut-search-dialog-title"
         initial={{ scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)]">
-        <div className="border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_40%,white)] px-6 py-4">
-          <h3 className="font-semibold text-[var(--text-primary)] text-lg tracking-tight">ค้นหายอดตัด</h3>
+        className="w-full max-w-[400px] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)] px-6 py-4">
+          <h3 id="cut-search-dialog-title" className="font-semibold text-[var(--text-primary)] text-lg tracking-tight">ค้นหายอดตัด</h3>
           <p className="text-xs text-[var(--text-secondary)] mt-1">เลือกวิธีแล้วกรอกค่า — ระบบจะไฮไลต์แถวในตารางกำหนดช่วงให้</p>
         </div>
         <div className="space-y-3 px-6 py-5">
@@ -373,6 +467,7 @@ function PdfDialog({ roundName, betType, dealerName, threshold, cutItems, totalS
     betType,
   );
   const [pngBusy, setPngBusy] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   const now = new Date();
   const printDateStr = now.toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit', year: 'numeric' })
@@ -451,6 +546,21 @@ function PdfDialog({ roundName, betType, dealerName, threshold, cutItems, totalS
     }
   };
 
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    const first = el.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    first?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   // ── React preview of a single page ────────────────────────────────────────
   const PreviewPage = ({ pageIdx }: { pageIdx: number }) => {
     const start = pageIdx * ITEMS_PER_PAGE;
@@ -514,14 +624,21 @@ function PdfDialog({ roundName, betType, dealerName, threshold, cutItems, totalS
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4">
-      <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
-        className="bg-white border-0 rounded-2xl shadow-lg  w-full max-w-5xl max-h-[95vh] flex flex-col">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" role="presentation" onClick={onClose}>
+      <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pdf-dialog-title"
+        initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+        className="ui-surface w-full max-w-5xl max-h-[95vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
 
         {/* Dialog header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-[var(--bg-glass)] rounded-t-xl">
           <div>
-            <h3 className="font-semibold text-theme-text-primary">ตัวอย่างฟอร์มส่ง</h3>
+            <h3 id="pdf-dialog-title" className="font-semibold text-theme-text-primary">ตัวอย่างฟอร์มส่ง</h3>
             <p className="text-xs text-theme-text-muted mt-0.5">{BET_TYPE_SHORT[betType]} · {cutItems.length} รายการ · {totalPages} หน้า</p>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -568,6 +685,7 @@ function SmartCutDialog({
 }) {
   const [maxLossLimit, setMaxLossLimit] = useState(Math.round(totalRevenue * 0.5));
   const [minPctWin, setMinPctWin]       = useState(50);
+  const dialogRef = useRef<HTMLDivElement>(null);
   const resetConstraints = () => {
     setMaxLossLimit(Math.round(totalRevenue * 0.5));
     setMinPctWin(50);
@@ -583,6 +701,20 @@ function SmartCutDialog({
     r.pct_win >= minPctWin
   );
   const passLossOnly = working.filter(r => r.max_loss === null || Math.abs(r.max_loss) <= maxLossLimit);
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    const first = el.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    first?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
 
   const top5 = [...working]
     .sort((a, b) => {
@@ -673,15 +805,19 @@ function SmartCutDialog({
   return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4">
       <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="smart-cut-dialog-title"
         initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-        className="w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)]">
+        className="w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm">
 
         {/* Header */}
-        <div className="shrink-0 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_35%,white)] px-5 py-4">
+        <div className="shrink-0 border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)] px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-[var(--text-primary)] text-base tracking-tight">✨ ตัดอัจฉริยะ</h3>
+              <h3 id="smart-cut-dialog-title" className="font-bold text-[var(--text-primary)] text-base tracking-tight">✨ ตัดอัจฉริยะ</h3>
               <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed max-w-xl">วิเคราะห์จุดตัดที่เหมาะสมโดยอัตโนมัติ — ปรับเพดานเสียกับ % ได้ขั้นต่ำแล้วเลือกค่าที่แนะนำ</p>
             </div>
             <button type="button" onClick={onClose} className="shrink-0 flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] transition-colors text-lg leading-none" aria-label="ปิด">✕</button>
@@ -689,8 +825,8 @@ function SmartCutDialog({
         </div>
 
         {/* Explanation */}
-        <div className="shrink-0 border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--primary-50)_45%,var(--color-surface))] px-5 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--primary-800)] mb-1.5">หลักการคำนวณ</p>
+        <div className="shrink-0 border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)] px-5 py-3">
+          <p className="text-sm font-semibold text-[var(--primary-800)] mb-1.5">หลักการคำนวณ</p>
           <div className="flex flex-col gap-2 text-xs text-[var(--text-secondary)] leading-relaxed">
             <p><span className="font-semibold text-[var(--text-primary)]">เรียงแถว:</span> <span className="text-profit font-medium">ยอดได้สูงสุด</span> มากสุดก่อน · ถ้าเท่ากันดู <span className="text-loss font-medium">ยอดเสียสูงสุด</span> (ต่ำกว่าดีกว่า) · แล้วค่อย <span className="text-[var(--chart-primary)] font-medium">% ได้</span> — ชุดข้อมูลเดียวกับตารางกำหนดช่วง</p>
             <p><span className="font-semibold text-[var(--text-primary)]">กรอง:</span> <span className="text-loss/90">เพดานยอดเสีย</span> + <span className="text-profit">% ได้ ขั้นต่ำ</span> · แถวที่ผ่าน: <span className={`font-bold tabular-nums ${passAll.length > 0 ? 'text-profit' : 'text-loss'}`}>{passAll.length}</span><span className="text-[var(--text-muted)]">/{working.length}</span></p>
@@ -701,59 +837,59 @@ function SmartCutDialog({
           {/* Constraints */}
           <div className="px-5 py-4 border-b border-[var(--color-border)] space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">ตั้งค่าเงื่อนไข</p>
+              <p className="text-sm font-semibold text-[var(--text-secondary)]">ตั้งค่าเงื่อนไข</p>
               <button type="button" onClick={resetConstraints} className="h-8 rounded-lg border-2 border-[var(--chart-primary)] bg-[var(--primary-100)] px-3 text-[11px] font-semibold text-[var(--primary-800)] hover:bg-[var(--primary-200)] transition-colors">
                 รีเซ็ตเงื่อนไข
               </button>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[var(--text-secondary)]">เพดานยอดเสียที่รับได้ (บาท)</label>
+                <label className="text-sm font-medium text-[var(--text-secondary)]">เพดานยอดเสียที่รับได้ (บาท)</label>
                 <div className="flex items-center gap-2">
                   <input type="number" min={0} value={maxLossLimit}
                     onChange={e => setMaxLossLimit(Number(e.target.value) || 0)}
                     className="h-9 flex-1 rounded-lg border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm tabular-nums text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)]" />
-                  <span className="text-xs text-[var(--text-muted)] shrink-0 tabular-nums">≈{((maxLossLimit / Math.max(totalRevenue, 1)) * 100).toFixed(0)}%</span>
+                  <span className="text-sm text-[var(--text-muted)] shrink-0 tabular-nums">≈{((maxLossLimit / Math.max(totalRevenue, 1)) * 100).toFixed(0)}%</span>
                 </div>
                 <input type="range" min={0} max={totalRevenue} step={Math.ceil(totalRevenue / 100)}
                   value={Math.min(maxLossLimit, totalRevenue)}
                   onChange={e => setMaxLossLimit(Number(e.target.value))}
                   className="w-full h-2 rounded-full accent-[var(--chart-primary)]" />
-                <p className="text-[10px] text-[var(--text-muted)]">ยอดขาดทุนสูงสุดที่ยอมรับได้ถ้าเลขถูก</p>
+                <p className="text-sm text-[var(--text-muted)]">ยอดขาดทุนสูงสุดที่ยอมรับได้ถ้าเลขถูก</p>
               </div>
               <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[var(--text-secondary)]">% ได้กำไรขั้นต่ำ</label>
+                <label className="text-sm font-medium text-[var(--text-secondary)]">% ได้กำไรขั้นต่ำ</label>
                 <div className="flex items-center gap-2">
                   <input type="number" min={0} max={100} value={minPctWin}
                     onChange={e => setMinPctWin(Number(e.target.value) || 0)}
                     className="h-9 flex-1 rounded-lg border-2 border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-sm tabular-nums text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)]" />
-                  <span className="text-xs text-[var(--text-muted)] shrink-0">%</span>
+                  <span className="text-sm text-[var(--text-muted)] shrink-0">%</span>
                 </div>
                 <input type="range" min={0} max={100} step={5}
                   value={minPctWin}
                   onChange={e => setMinPctWin(Number(e.target.value))}
                   className="w-full h-2 rounded-full accent-[var(--chart-primary)]" />
-                <p className="text-[10px] text-[var(--text-muted)]">จาก 100 ผลที่เป็นไปต้องได้กำไรอย่างน้อยกี่ %</p>
+                <p className="text-sm text-[var(--text-muted)]">จาก 100 ผลที่เป็นไปต้องได้กำไรอย่างน้อยกี่ %</p>
               </div>
             </div>
           </div>
 
           {/* Suggestions */}
           <div className="px-5 py-4 space-y-3 border-b border-[var(--color-border)]">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">ผลการวิเคราะห์</p>
+            <p className="text-sm font-semibold text-[var(--text-secondary)]">ผลการวิเคราะห์</p>
             <SuggestionCard s={primary} />
             {secondary && <SuggestionCard s={secondary} />}
           </div>
 
           {/* Top 5 scoring table */}
           <div className="px-5 py-4">
-            <p className="text-[11px] font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-2">Top 5 แถว (เรียงได้สูง → เสียต่ำ → %ได้)</p>
+            <p className="text-sm font-semibold text-[var(--text-secondary)] mb-2">Top 5 แถว (เรียงได้สูง → เสียต่ำ → %ได้)</p>
             <div className="overflow-auto rounded-xl border border-[var(--color-border)] shadow-[var(--shadow-soft)]">
               <table className="w-full text-xs whitespace-nowrap">
-                <thead className="border-b border-[color-mix(in_srgb,var(--chart-primary)_28%,var(--color-border))] bg-gradient-to-r from-[var(--primary-700)] via-[var(--primary-600)] to-[var(--primary-800)]">
+                <thead className="border-b border-[var(--color-border)] bg-[var(--gray-100)]">
                   <tr>
                     {['#', 'ดัชนี', 'เก็บตัวละ', 'จำนวนเก็บ', '%ได้', '%เสีย', 'ได้สูงสุด', 'เสียสูงสุด', ''].map(h => (
-                      <th key={h} className="py-2.5 px-2.5 text-left text-[color-mix(in_srgb,var(--text-inverse)_92%,transparent)] font-semibold">{h}</th>
+                      <th key={h} className="py-2.5 px-2.5 text-left text-theme-text-secondary font-medium">{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -852,14 +988,34 @@ function SaveDealerModal({
 }) {
   const firstActiveDealerId = dealers.find(d => d.is_active)?.id ?? '';
   const [dealerId, setDealerId] = useState(initialDealerId || firstActiveDealerId);
+  const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDealerId(initialDealerId || dealers.find(d => d.is_active)?.id || '');
   }, [initialDealerId, dealers]);
 
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    const first = el.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    first?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose} role="presentation">
       <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="save-dealer-dialog-title"
         initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
         className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-md"
         onClick={(e) => e.stopPropagation()}>
@@ -867,7 +1023,7 @@ function SaveDealerModal({
         {/* Header */}
         <div className="px-5 py-4 border-b border-border flex items-center justify-between">
           <div>
-            <h3 className="font-bold text-theme-text-primary text-base">บันทึกส่ง</h3>
+            <h3 id="save-dealer-dialog-title" className="font-bold text-theme-text-primary text-base">บันทึกส่ง</h3>
             <p className="text-xs text-theme-text-muted mt-0.5">
               {betTypeLabel} · {cutItemsCount} รายการ · <span className=" tracking-tight text-[var(--color-accent-hover)]">{formatBaht(totalSend)}</span>
             </p>
@@ -877,7 +1033,7 @@ function SaveDealerModal({
 
         {/* Dealer list */}
         <div className="px-5 py-4 space-y-2 max-h-72 overflow-auto">
-          <p className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-3">เลือกเจ้ามือ</p>
+          <p className="text-sm font-medium text-theme-text-secondary mb-3">เลือกเจ้ามือ</p>
 
           {dealers.filter(d => d.is_active).map(dealer => {
             const rate = (dealer as any)[DEALER_RATE_KEYS[activeBetType]];
@@ -923,9 +1079,29 @@ function SendBatchItemsModal({
   batch: SendBatch;
   onClose: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const el = dialogRef.current;
+    if (!el) return;
+    const first = el.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
+    first?.focus();
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    el.addEventListener('keydown', onKeyDown);
+    return () => el.removeEventListener('keydown', onKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose} role="presentation">
       <motion.div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="sent-batch-dialog-title"
         initial={{ scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
@@ -934,7 +1110,7 @@ function SendBatchItemsModal({
       >
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-semibold text-theme-text-primary">เลขที่ส่งแล้ว</h3>
+            <h3 id="sent-batch-dialog-title" className="text-sm font-semibold text-theme-text-primary">เลขที่ส่งแล้ว</h3>
             <p className="text-[11px] text-theme-text-muted mt-0.5">
               {BET_TYPE_LABELS[batch.bet_type]} · {batch.dealer_name ?? '—'} · {formatBaht(batch.total)}
             </p>
@@ -970,6 +1146,7 @@ function SendBatchItemsModal({
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 function CutPageInner() {
+  const prefersReducedMotion = useReducedMotion();
   const searchParams = useSearchParams();
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
   /** ซ่อน archived และงวดเก่าตามวันออก — admin ติ๊กเพื่อโชว์ทั้งหมด */
@@ -1023,19 +1200,6 @@ function CutPageInner() {
   stagedCutsRef.current = stagedCuts;
   /** ยอดเก็บล่าสุดต่อประเภท — ใช้ตอนสลับแท็บเมื่อยังไม่มีในคิวรอส่ง */
   const lastManualByTypeRef                   = useRef<Partial<Record<BetType, number>>>({});
-  /** ความกว้างแผงขวา (รายการส่ง) — ลากขอบซ้ายของแผงเพื่อปรับ */
-  const liveRightPanelWRef                    = useRef(360);
-  const [rightPanelPx, setRightPanelPx]       = useState(() => {
-    const w = readPanelWidth(STORAGE_CUT_RIGHT_PANEL_W, 360);
-    liveRightPanelWRef.current = w;
-    return w;
-  });
-  const [rightPanelLocked, setRightPanelLocked] = useState(() => readPanelLock(STORAGE_CUT_RIGHT_PANEL_LOCK));
-  const rightResizeDrag                       = useRef<{ startX: number; startW: number } | null>(null);
-  const splitLayoutRef                        = useRef<HTMLDivElement>(null);
-  const [splitLayoutWide, setSplitLayoutWide] = useState(false);
-  const [prefersTouchUi, setPrefersTouchUi]   = useState(false);
-
   const totalSentAllBatches = useMemo(
     () => sendBatches.reduce((s, b) => s + Number(b.total), 0),
     [sendBatches],
@@ -1062,6 +1226,12 @@ function CutPageInner() {
   const [rangeTableOpen, setRangeTableOpen]   = useState(false);
   const [pendingRangeIdx, setPendingRangeIdx] = useState<number | null>(null);
 
+  const chartFullscreenDialogRef = useRef<HTMLDivElement>(null);
+  const rangeTableDialogRef = useRef<HTMLDivElement>(null);
+  const chartFullscreenTitleId = useId();
+  const rangeTableTitleId = useId();
+  const closeChartFullscreen = useCallback(() => setChartFullscreen(false), []);
+  const closeRangeTable = useCallback(() => setRangeTableOpen(false), []);
   // ── Fetch
   const fetchAll = useCallback(async () => {
     const [rRes, dRes] = await Promise.all([roundsApi.list(), dealersApi.list()]);
@@ -1112,51 +1282,6 @@ function CutPageInner() {
       return pool[0]?.id ?? '';
     });
   }, [rounds, roundsForPicker, roundFromUrl]);
-  useEffect(() => {
-    const el = splitLayoutRef.current;
-    if (!el || typeof ResizeObserver === 'undefined') return;
-    const ro = new ResizeObserver((entries) => {
-      const w = entries[0]?.contentRect.width ?? 0;
-      setSplitLayoutWide(w >= CUT_LAYOUT_SPLIT_MIN_PX);
-    });
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, []);
-  useEffect(() => {
-    const mq = window.matchMedia('(hover: none), (pointer: coarse)');
-    const sync = () => setPrefersTouchUi(mq.matches);
-    sync();
-    mq.addEventListener('change', sync);
-    return () => mq.removeEventListener('change', sync);
-  }, []);
-  const sideBySideLayout = splitLayoutWide && !prefersTouchUi;
-  useEffect(() => {
-    liveRightPanelWRef.current = rightPanelPx;
-  }, [rightPanelPx]);
-
-  useEffect(() => {
-    const onMove = (e: MouseEvent) => {
-      const d = rightResizeDrag.current;
-      if (!d) return;
-      /** ลากขอบไปทางซ้าย = แผงขวากว้างขึ้น (สอดคล้องทิศมือ) */
-      const next = Math.min(580, Math.max(260, Math.round(d.startW - (e.clientX - d.startX))));
-      liveRightPanelWRef.current = next;
-      setRightPanelPx(next);
-    };
-    const onUp = () => {
-      const wasDrag = rightResizeDrag.current != null;
-      rightResizeDrag.current = null;
-      document.body.style.removeProperty('cursor');
-      document.body.style.removeProperty('user-select');
-      if (wasDrag) writePanelWidth(STORAGE_CUT_RIGHT_PANEL_W, liveRightPanelWRef.current);
-    };
-    window.addEventListener('mousemove', onMove);
-    window.addEventListener('mouseup', onUp);
-    return () => {
-      window.removeEventListener('mousemove', onMove);
-      window.removeEventListener('mouseup', onUp);
-    };
-  }, []);
   useEffect(() => {
     fetchRoundDealer(); fetchRisk(); fetchSendBatches();
     setManualThreshold(null); setRangeResult(null); setSelectedRowIdx(null);
@@ -1369,6 +1494,9 @@ function CutPageInner() {
     [selectedRoundId, activeBetType, chartSortMode],
   );
   const avgLineMountKey = useMemo(() => `avg-${avgChartTotal.toFixed(2)}`, [avgChartTotal]);
+
+  useOverlayDialogA11y(chartFullscreen, closeChartFullscreen, chartFullscreenDialogRef);
+  useOverlayDialogA11y(rangeTableOpen, closeRangeTable, rangeTableDialogRef);
 
   // ── Click on bar chart: set threshold to the Y value clicked
   const handleChartClick = useCallback((data: any) => {
@@ -1690,16 +1818,17 @@ function CutPageInner() {
   const round = rounds.find(r => r.id === selectedRoundId);
 
   return (
-    <AppShell>
+    <MotionConfig reducedMotion="user" transition={prefersReducedMotion ? { duration: 0 } : undefined}>
+      <AppShell>
       <div className="h-full min-h-0 flex flex-col overflow-hidden min-w-0 w-full max-w-full">
       <Header title="ตัดหวย" subtitle={round ? `งวด ${round.name}` : 'เลือกงวดเพื่อเริ่ม'} />
 
-      <main className="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-full overflow-hidden">
+      <main className="adapt-readable adapt-touch flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-full overflow-hidden">
         {/* ── Top control bar (ความสูงสม่ำเสมอ h-9) ── */}
         <div className="relative flex flex-wrap gap-x-3 gap-y-2 items-center px-5 py-2.5 border-b border-border bg-surface-100/80 min-w-0 max-w-full">
           {/* Round */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1 h-auto sm:h-9 shrink-0">
-            <label className="text-[10px] font-semibold text-theme-text-muted uppercase tracking-wider whitespace-nowrap leading-none">งวด</label>
+            <label className="text-sm font-semibold text-theme-text-muted whitespace-nowrap leading-none">งวด</label>
             <select
               value={
                 roundsForPicker.some((r) => r.id === selectedRoundId)
@@ -1708,14 +1837,14 @@ function CutPageInner() {
               }
               onChange={(e) => setSelectedRoundId(e.target.value)}
               disabled={roundsForPicker.length === 0}
-              className="h-9 min-w-[9.5rem] rounded-lg bg-surface-200 border border-border px-2.5 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] disabled:opacity-50"
+              className="h-11 min-w-[10rem] rounded-lg bg-surface-200 border border-border px-3 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] disabled:opacity-50"
             >
               {roundsForPicker.map((r) => (
                 <option key={r.id} value={r.id}>{r.name}</option>
               ))}
             </select>
             {isAdmin && (
-              <label className="flex items-center gap-2 text-[11px] text-theme-text-muted cursor-pointer select-none whitespace-nowrap">
+              <label className="flex items-center gap-2 text-sm text-theme-text-muted cursor-pointer select-none whitespace-nowrap">
                 <input
                   type="checkbox"
                   checked={cutIncludeArchived}
@@ -1729,12 +1858,12 @@ function CutPageInner() {
 
           {/* Dealer */}
           <div className="flex items-center gap-2 h-9 shrink-0">
-            <label className="text-[10px] font-semibold text-theme-text-muted uppercase tracking-wider whitespace-nowrap leading-none">เจ้ามือ</label>
+            <label className="text-sm font-semibold text-theme-text-muted whitespace-nowrap leading-none">เจ้ามือ</label>
             <select
               value={selectedDealerId || dealers.find(d => d.is_active)?.id || ''}
               onChange={(e) => handleDealerChange(e.target.value)}
               disabled={!selectedRoundId}
-              className="h-9 min-w-[6.5rem] rounded-lg bg-surface-200 border border-border px-2.5 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] disabled:opacity-50">
+              className="h-11 min-w-[7rem] rounded-lg bg-surface-200 border border-border px-3 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] disabled:opacity-50">
               {dealers.filter(d => d.is_active).map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
           </div>
@@ -1745,7 +1874,7 @@ function CutPageInner() {
             const pct  = dealerParams.commissions[activeBetType];
             return rate != null ? (
               <div className="flex h-9 items-center gap-2 px-3 rounded-lg bg-surface-50 border border-[var(--color-border)] shrink-0">
-                <span className="text-[10px] font-medium text-risk-medium/85 whitespace-nowrap leading-none">อัตราจ่าย / %ลด</span>
+                <span className="text-sm font-medium text-risk-medium/85 whitespace-nowrap leading-none">อัตราจ่าย / %ลด</span>
                 <span className="text-sm  tracking-tight font-bold text-risk-medium ">{rate}</span>
                 <span className="text-theme-text-muted text-xs">/</span>
                 <span className="text-sm  tracking-tight text-theme-text-secondary ">{pct ?? 0}%</span>
@@ -1754,18 +1883,18 @@ function CutPageInner() {
           })()}
 
           {/* Bet type tabs */}
-          <div className="flex min-h-9 items-center gap-0.5 flex-wrap sm:flex-nowrap rounded-xl border border-border bg-surface-200/50 px-0.5 py-0.5 min-w-0 flex-1 sm:flex-initial">
+          <div className="flex min-h-9 items-center gap-0 flex-wrap sm:flex-nowrap border-b border-border min-w-0 flex-1 sm:flex-initial">
             {BET_TYPE_ORDER.map(bt => (
               <button key={bt} type="button" onClick={() => setActiveBetType(bt)}
-                className={`h-8 shrink-0 px-2.5 rounded-xl text-xs font-semibold transition-all duration-theme ${
+                className={`h-11 shrink-0 px-3 text-sm font-semibold transition-colors border-b-2 -mb-px ${
                   bt === activeBetType
-                    ? 'btn-primary-glow'
-                    : 'text-theme-text-secondary border border-transparent bg-transparent hover:text-theme-text-primary hover:bg-[var(--bg-glass-strong)] hover:-translate-y-0.5 hover:shadow-[var(--shadow-hover)] hover:border-[var(--color-border-strong)] active:translate-y-0'
+                    ? 'bg-white border-[var(--primary-600)] text-[var(--primary-600)]'
+                    : 'bg-transparent border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}>
                 <span className="inline-flex items-center gap-1.5">
                   {BET_TYPE_SHORT[bt]}
                   {sentBetTypeSet.has(bt) && (
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${bt === activeBetType ? 'bg-[color-mix(in_srgb,var(--text-inverse)_95%,transparent)] shadow-[var(--shadow-soft)]' : 'bg-profit'} shadow-[var(--shadow-soft)]`} title="มีประวัติส่งแล้ว" />
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${bt === activeBetType ? 'bg-[var(--primary-600)]' : 'bg-profit'}`} title="มีประวัติส่งแล้ว" />
                   )}
                 </span>
               </button>
@@ -1777,37 +1906,31 @@ function CutPageInner() {
               type="button"
               onClick={() => setSearchOpen(true)}
               disabled={!rangeResult?.rows.length}
-              className="btn-toolbar-glow btn-fintech-search h-9 min-w-[9rem] px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+              className="btn-toolbar-glow btn-fintech-search h-11 min-w-[9rem] px-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
               🔍 ค้นหายอดตัด
             </button>
             <button
               type="button"
               onClick={() => setSmartCutOpen(true)}
               disabled={!rangeResult?.rows.length}
-              className="btn-toolbar-glow btn-fintech-spark h-9 min-w-[7.5rem] px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+              className="btn-toolbar-glow btn-fintech-spark h-11 min-w-[7.5rem] px-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
               ✨ ตัดอัจฉริยะ
             </button>
             <button
               type="button"
               onClick={() => { setRangeTableOpen(true); setPendingRangeIdx(selectedRowIdx); }}
               disabled={!rangeResult?.rows.length}
-              className="btn-toolbar-glow btn-fintech-range h-9 min-w-[8.5rem] px-3 text-xs disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+              className="btn-toolbar-glow btn-fintech-range h-11 min-w-[8.5rem] px-3 text-sm disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
               📊 กำหนดเป็นช่วง
             </button>
           </div>
         </div>
 
-        {/* ── Main body: ซ้าย = กราฟ / ขวา = รายการส่ง (ลากขอบปรับความกว้างได้บนจอใหญ่) ── */}
-        <div
-          ref={splitLayoutRef}
-          className={cn(
-            'flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-full overflow-hidden',
-            sideBySideLayout && 'flex-row',
-          )}
-        >
+        {/* ── Main body: ซ้าย = กราฟ / ขวา = รายการส่ง (สัดส่วนคงที่ — มือถือ/iPad เรียงแนวตั้ง) ── */}
+        <div className="app-page-split flex-1">
 
-          {/* LEFT: Chart + table — เลื่อนแนวตั้งที่คอลัมน์; เลื่อนแนวนอนเฉพาะในกราฟ (ไม่ให้การ์ดสถิติยืดตามความกว้างกราฟ) */}
-          <div className="relative flex flex-col min-w-0 min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 gap-4">
+          {/* LEFT: Chart + table */}
+          <div className="app-page-split-main relative overflow-y-auto overflow-x-hidden p-4 gap-4 flex flex-col">
             {/* Committed threshold info banner */}
             {committedThreshold != null && (
               <div className="flex items-center gap-2 bg-[var(--color-badge-danger-bg)] border border-[var(--color-badge-danger-border)] rounded-lg px-3 py-2 text-xs shrink-0">
@@ -2025,7 +2148,7 @@ function CutPageInner() {
                           setKeepPerInputStr(String(manualThreshold));
                         }
                       }}
-                      className="w-24 h-7 rounded-md bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] px-2 text-sm text-[var(--chart-neutral-dark)] tracking-tight font-semibold text-right focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)]"
+                      className="ui-field w-24 min-w-0 rounded-md bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] text-[var(--chart-neutral-dark)] tracking-tight font-semibold text-right focus:border-[var(--chart-primary)]"
                     />
                   </div>
                   <span className="text-[10px] text-theme-text-muted shrink-0 order-3 max-sm:w-full max-sm:pl-0.5">
@@ -2035,7 +2158,7 @@ function CutPageInner() {
                     <button
                       type="button"
                       onClick={() => { setManualThreshold(null); setSelectedRowIdx(null); }}
-                      className="shrink-0 order-4 h-7 px-3 rounded-lg border-2 border-[var(--chart-primary)] bg-[var(--primary-100)] text-[var(--primary-800)] text-xs font-semibold shadow-sm hover:bg-[var(--primary-200)] hover:border-[var(--chart-primary-dark)] active:scale-[0.98] transition-[color,background-color,border-color,transform] duration-150"
+                      className="ui-control shrink-0 order-4 px-3 rounded-lg border-2 border-[var(--chart-primary)] bg-[var(--primary-100)] text-[var(--primary-800)] font-semibold shadow-sm hover:bg-[var(--primary-200)] hover:border-[var(--chart-primary-dark)] active:scale-[0.98] transition-[color,background-color,border-color,transform] duration-150"
                     >
                       รีเซ็ต
                     </button>
@@ -2220,30 +2343,30 @@ function CutPageInner() {
                 </div>
                 <div className="flex flex-wrap items-center gap-2 ml-auto">
                   <Button
-                    size="sm"
+                    size="md"
                     variant="ghost"
                     onClick={() => { setPdfOpen(true); }}
                     disabled={!cutItems.length}
-                    className="h-8 border border-border/60">
+                    className="ui-control border border-border/60">
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1 opacity-80">
                       <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
                     </svg>
                     พิมพ์
                   </Button>
                   <Button
-                    size="sm"
+                    size="md"
                     variant="ghost"
                     onClick={() => void handleDownloadPendingSlipPng()}
                     disabled={!cutItems.length || linePngBusy}
                     title="ดาวน์โหลด PNG (หลายหน้า = .zip แยกไฟล์ต่อหน้า) — แนบส่งไลน์"
-                    className="h-8 border-2 border-[var(--chart-primary)]/70 bg-[var(--chart-primary-soft)]/40 text-[var(--chart-neutral-dark)] font-semibold">
+                    className="ui-control border-2 border-[var(--chart-primary)]/70 bg-[var(--chart-primary-soft)]/40 text-[var(--chart-neutral-dark)] font-semibold">
                     {linePngBusy ? '…' : 'PNG ไลน์'}
                   </Button>
                   {(cutItems.length > 0 || manualThreshold !== null) && (
                     <button
                       type="button"
                       onClick={() => { setManualThreshold(null); setSelectedRowIdx(null); }}
-                      className="h-8 px-2.5 rounded-lg text-[11px] text-theme-text-muted hover:text-theme-text-secondary hover:bg-surface-300/50 transition-colors">
+                      className="ui-control px-2.5 rounded-lg text-theme-text-muted hover:text-theme-text-secondary hover:bg-surface-300/50 transition-colors">
                       ล้างเก็บ
                     </button>
                   )}
@@ -2254,7 +2377,7 @@ function CutPageInner() {
                         if (!confirm('ล้างรายการที่บันทึกรอส่งทั้งหมด?')) return;
                         setStagedCuts([]);
                       }}
-                      className="h-8 px-2.5 rounded-lg text-[11px] text-risk-medium/95 hover:text-risk-medium hover:bg-risk-medium/90/10 transition-colors">
+                      className="ui-control px-2.5 rounded-lg text-risk-medium/95 hover:text-risk-medium hover:bg-risk-medium/90/10 transition-colors">
                       ล้างคิว
                     </button>
                   )}
@@ -2263,44 +2386,12 @@ function CutPageInner() {
             )}
           </div>
 
-          {/* แถบลากปรับความกว้าง */}
-          <div
-            role="separator"
-            aria-orientation="vertical"
-            title={
-              rightPanelLocked
-                ? 'ปลดล็อกความกว้าง (ปุ่ม 🔓 ด้านบน) เพื่อลากปรับ'
-                : 'ลากซ้าย-ขวาเพื่อปรับความกว้าง · ปล่อยเมาส์แล้วจำค่าไว้'
-            }
-            onMouseDown={(e) => {
-              if (!sideBySideLayout || rightPanelLocked) return;
-              e.preventDefault();
-              rightResizeDrag.current = { startX: e.clientX, startW: rightPanelPx };
-              document.body.style.cursor = 'col-resize';
-              document.body.style.userSelect = 'none';
-            }}
-            className={cn(
-              'w-1.5 shrink-0 transition-colors select-none',
-              sideBySideLayout ? 'block' : 'hidden',
-              rightPanelLocked ? 'cursor-default opacity-50' : 'cursor-col-resize',
-              sideBySideLayout && !rightPanelLocked ? 'hover:bg-accent/35 bg-border/90' : 'bg-border/90',
-            )}
-          />
-
-          {/* RIGHT: รายการส่ง + รายการรอส่ง (โครงคล้ายโปรแกรมอ้างอิง) */}
-          <div
-            className={cn(
-              'flex flex-col min-h-0 min-w-0 overflow-hidden overflow-x-hidden bg-surface-100/50 border-border',
-              sideBySideLayout
-                ? 'border-t-0 border-l w-auto max-w-[min(100%,580px)] shrink-0'
-                : 'border-t w-full max-w-full shrink-0',
-            )}
-            style={sideBySideLayout ? { width: rightPanelPx, minWidth: 260, maxWidth: 580 } : undefined}
-          >
+          {/* RIGHT: รายการส่ง + รายการรอส่ง */}
+          <div className="app-page-split-aside app-page-split-aside--cut flex flex-col min-h-0 min-w-0 overflow-hidden bg-surface-100/50">
 
             <div className="flex flex-col min-h-0 flex-1 gap-3 p-3 overflow-hidden">
               {/* ── รายการส่ง ── */}
-              <div className="flex flex-col min-h-0 flex-[1.2] rounded-2xl border-0 bg-white overflow-hidden shadow-sm">
+              <div className="ui-surface flex flex-col min-h-0 flex-[1.2] overflow-hidden">
                 <div className="shrink-0 flex flex-wrap items-center justify-between gap-2 px-3 py-2 border-b border-border/60 bg-surface-200/20">
                   <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
                     <span className="text-sm font-bold text-theme-text-primary tracking-tight">รายการส่ง</span>
@@ -2329,29 +2420,6 @@ function CutPageInner() {
                     <button type="button" onClick={fetchSendBatches} className="text-theme-text-muted hover:text-theme-text-secondary transition-colors" title="รีเฟรช">
                       ↻
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setRightPanelLocked((v) => {
-                          const next = !v;
-                          writePanelLock(STORAGE_CUT_RIGHT_PANEL_LOCK, next);
-                          return next;
-                        });
-                      }}
-                      className={`text-[11px] px-1 rounded transition-colors ${
-                        rightPanelLocked
-                          ? 'text-theme-text-secondary hover:text-theme-text-primary'
-                          : 'text-theme-text-muted hover:text-theme-text-secondary'
-                      }`}
-                      title={
-                        rightPanelLocked
-                          ? 'ปลดล็อก — ลากขอบซ้ายของแผงนี้เพื่อปรับความกว้าง'
-                          : 'ล็อกความกว้าง — กันปรับสะดุด (ค่าที่ลากไว้ยังจำเมื่อเปิดใหม่)'
-                      }
-                      aria-pressed={rightPanelLocked}
-                    >
-                      {rightPanelLocked ? '🔒' : '🔓'}
-                    </button>
                   </div>
                 </div>
 
@@ -2374,8 +2442,6 @@ function CutPageInner() {
                           <th className="text-left py-2 px-1.5 text-theme-text-muted font-semibold">ประเภท</th>
                           <th className="text-left py-2 px-1.5 text-theme-text-muted font-semibold">ส่ง</th>
                           <th className="text-right py-2 px-1.5 text-theme-text-muted font-semibold whitespace-nowrap">จำนวนเงิน</th>
-                          <th className="text-right py-2 px-1.5 text-theme-text-muted font-semibold whitespace-nowrap">ผลตอบแทน</th>
-                          <th className="text-right py-2 px-1.5 text-theme-text-muted font-semibold whitespace-nowrap">วันที่ส่ง</th>
                           <th className="text-center py-2 px-1 w-8 text-theme-text-muted font-semibold">ดู</th>
                         </tr>
                       </thead>
@@ -2409,17 +2475,18 @@ function CutPageInner() {
                             </td>
                             <td className="py-1.5 px-1.5  tracking-tight text-theme-text-secondary text-center">{i + 1}</td>
                             <td className="py-1.5 px-1.5 text-theme-text-secondary leading-tight">
-                              {BET_TYPE_LABELS[b.bet_type as BetType] ?? b.bet_type}
+                              <div className="font-medium leading-snug">
+                                {BET_TYPE_LABELS[b.bet_type as BetType] ?? b.bet_type}
+                              </div>
+                              <div className="text-[10px] text-theme-text-muted tabular-nums mt-0.5" title="วันที่ส่ง">
+                                {formatSendBatchDate(b.created_at)}
+                              </div>
                             </td>
                             <td className="py-1.5 px-1.5 text-theme-text-primary font-medium leading-tight">
                               {b.dealer_name ?? <span className="text-theme-text-muted italic">—</span>}
                             </td>
                             <td className="py-1.5 px-1.5  tracking-tight text-[var(--color-accent-hover)] text-right font-semibold ">
                               {formatBaht(b.total)}
-                            </td>
-                            <td className="py-1.5 px-1.5  tracking-tight text-theme-text-muted text-right ">—</td>
-                            <td className="py-1.5 px-1.5 text-theme-text-muted text-right whitespace-nowrap">
-                              {new Date(b.created_at).toLocaleDateString('th-TH', { day: '2-digit', month: '2-digit' })}
                             </td>
                             <td className="py-1.5 px-0.5 text-center">
                               <button
@@ -2444,12 +2511,12 @@ function CutPageInner() {
                   )}
                 </div>
 
-                <div className="shrink-0 flex flex-nowrap items-center gap-2 p-2.5 border-t border-border/60 bg-surface-200/10 overflow-x-auto">
+                <div className="shrink-0 grid grid-cols-2 gap-2 p-2.5 border-t border-border/60 bg-surface-200/10">
                   <button
                     type="button"
                     onClick={() => void handleSaveBatch(selectedDealerId)}
                     disabled={!selectedRoundId || savingBatch || (stagedCuts.length === 0 && cutItems.length === 0)}
-                    className="btn-toolbar-glow btn-toolbar-profit !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1.5">
+                    className="btn-toolbar-glow btn-toolbar-profit ui-control w-full px-2 font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1.5">
                     {savingBatch ? (
                       <svg className="animate-spin h-3.5 w-3.5 shrink-0" fill="none" viewBox="0 0 24 24">
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
@@ -2460,21 +2527,21 @@ function CutPageInner() {
                   </button>
                   <button
                     type="button"
-                    className="btn-toolbar-glow btn-toolbar-danger !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-toolbar-glow btn-toolbar-danger ui-control w-full px-2 font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                     disabled={selectedBatchIds.size === 0 || deletingBatchId === 'all'}
                     onClick={() => void handleDeleteSendSelection()}>
                     ลบรายการส่ง
                   </button>
                   <button
                     type="button"
-                    className="btn-toolbar-glow btn-fintech-search !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-toolbar-glow btn-fintech-search ui-control w-full px-2 font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                     disabled={!sendBatches.length}
                     onClick={handlePrintSentBatches}>
                     พิมพ์รายการส่ง
                   </button>
                   <button
                     type="button"
-                    className="btn-toolbar-glow !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap border-2 border-[var(--chart-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-toolbar-glow ui-control w-full px-2 font-semibold whitespace-nowrap border-2 border-[var(--chart-primary)] disabled:opacity-40 disabled:cursor-not-allowed"
                     style={{ background: 'var(--chart-primary-soft)', color: 'var(--chart-neutral-dark)' }}
                     disabled={!sendBatches.length || linePngBusy}
                     title="ดาวน์โหลด PNG (หลายหน้า = .zip แยกไฟล์ต่อหน้า) — ชุดที่บันทึกส่งแล้ว"
@@ -2522,18 +2589,18 @@ function CutPageInner() {
                   )}
                 </div>
 
-                <div className="shrink-0 flex flex-nowrap items-center gap-2 p-2.5 border-t border-border/60 bg-surface-200/10 overflow-x-auto">
+                <div className="shrink-0 flex flex-wrap items-center gap-2 p-2.5 border-t border-border/60 bg-surface-200/10">
                   <button
                     type="button"
                     onClick={handleStageCurrentCuts}
                     disabled={!cutItems.length}
-                    className="btn-toolbar-glow btn-fintech-spark !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1">
+                    className="btn-toolbar-glow btn-fintech-spark ui-control shrink-0 px-3 font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed inline-flex items-center justify-center gap-1">
                     <span aria-hidden>⏳</span>
                     บันทึกรอส่ง
                   </button>
                   <button
                     type="button"
-                    className="btn-toolbar-glow btn-toolbar-danger !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-toolbar-glow btn-toolbar-danger ui-control shrink-0 px-3 font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                     disabled={!stagedCuts.length && !cutItems.length}
                     onClick={() => {
                       if (!confirm('ลบข้อมูลรอส่งและรีเซ็ตการตัดบนกราฟ?')) return;
@@ -2546,7 +2613,7 @@ function CutPageInner() {
                   </button>
                   <button
                     type="button"
-                    className="btn-toolbar-glow btn-toolbar-amber !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="btn-toolbar-glow btn-toolbar-amber ui-control shrink-0 px-3 font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
                     disabled={!stagedCuts.length}
                     onClick={() => {
                       if (!stagedCuts.length) return;
@@ -2637,19 +2704,25 @@ function CutPageInner() {
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 bg-[var(--color-backdrop-overlay)] flex items-center justify-center p-4"
-            onClick={() => setChartFullscreen(false)}>
+            role="presentation"
+            onClick={closeChartFullscreen}>
             <motion.div
+              ref={chartFullscreenDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={chartFullscreenTitleId}
+              tabIndex={-1}
               initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
-              className="border border-[var(--chart-neutral-light)] rounded-xl shadow-[var(--shadow-hover)] w-full max-w-[96vw] flex flex-col overflow-hidden bg-[var(--color-surface)]"
+              className="border border-[var(--chart-neutral-light)] rounded-xl shadow-[var(--shadow-hover)] w-full max-w-[96vw] flex flex-col overflow-hidden bg-[var(--color-surface)] outline-none"
               style={{ height: '90vh' }}
               onClick={e => e.stopPropagation()}>
               {/* Header */}
               <div className="px-5 py-3 border-b border-[var(--chart-neutral-light)] flex items-center justify-between shrink-0 bg-[var(--bg-glass-subtle)]">
-                <span className="font-semibold text-[var(--text-primary)] text-sm" style={{ fontFamily: 'var(--font-inter), var(--font-thai), system-ui, sans-serif' }}>{BET_TYPE_LABELS[activeBetType]} — การกระจายยอดแทง (เต็มจอ)</span>
+                <h2 id={chartFullscreenTitleId} className="font-semibold text-[var(--text-primary)] text-sm" style={{ fontFamily: 'var(--font-inter), var(--font-thai), system-ui, sans-serif' }}>{BET_TYPE_LABELS[activeBetType]} — การกระจายยอดแทง (เต็มจอ)</h2>
                 <div className="flex items-center gap-3 text-xs">
                   {activeThreshold > 0 && <ThresholdPerNumberPill amount={activeThreshold} />}
-                  <button onClick={() => setChartFullscreen(false)}
-                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-xl leading-none ml-2">✕</button>
+                  <button type="button" onClick={closeChartFullscreen}
+                    className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors text-xl leading-none ml-2" aria-label="ปิด">✕</button>
                 </div>
               </div>
               {/* Chart */}
@@ -2788,15 +2861,22 @@ function CutPageInner() {
         {rangeTableOpen && rangeResult && rangeResult.rows.length > 0 && (
           <motion.div
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-backdrop-overlay)]">
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[var(--color-backdrop-overlay)]"
+            role="presentation"
+            onClick={closeRangeTable}>
             <motion.div
+              ref={rangeTableDialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={rangeTableTitleId}
+              tabIndex={-1}
               initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
               transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)]"
+              className="w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-sm outline-none"
               onClick={e => e.stopPropagation()}>
-              <div className="px-4 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between shrink-0 bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_30%,white)]">
+              <div className="px-4 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between shrink-0 bg-[var(--bg-glass-subtle)]">
                 <div className="flex items-center gap-3 flex-wrap min-w-0">
-                  <span className="text-sm font-semibold text-[var(--text-primary)] tracking-tight">กำหนดช่วง</span>
+                  <h2 id={rangeTableTitleId} className="text-sm font-semibold text-[var(--text-primary)] tracking-tight">กำหนดช่วง</h2>
                   <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap">เปอร์เซ็นต์</span>
                   <span className="text-[11px] font-semibold text-[var(--primary-800)] whitespace-nowrap rounded-lg bg-[var(--primary-100)] px-2.5 py-1 border border-[var(--chart-primary)]/30">
                     ใช้ {stepPct}%
@@ -2833,13 +2913,13 @@ function CutPageInner() {
                       ล้าง ×
                     </button>
                   )}
-                  <button type="button" onClick={() => setRangeTableOpen(false)}
+                  <button type="button" onClick={closeRangeTable}
                     className="w-9 h-9 flex items-center justify-center rounded-xl border-2 border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-hover)] hover:border-[var(--color-border-strong)] transition-colors text-base leading-none" aria-label="ปิด">✕</button>
                 </div>
               </div>
               <div ref={tableBodyRef} className="overflow-auto flex-1 min-h-0 bg-[color-mix(in_srgb,var(--gray-50)_40%,var(--color-surface))]">
                 <table className="w-full text-xs whitespace-nowrap">
-                  <thead className="sticky top-0 z-10 border-b border-[color-mix(in_srgb,var(--chart-primary)_22%,var(--color-border))] bg-gradient-to-r from-[var(--primary-700)] via-[var(--primary-600)] to-[var(--primary-800)]">
+                  <thead className="sticky top-0 z-10 border-b border-[var(--color-border)] bg-[var(--gray-100)]">
                     <tr>
                       {[
                         'ลำดับ',
@@ -2854,7 +2934,7 @@ function CutPageInner() {
                         '% ได้',
                         '% เสีย',
                       ].map((h) => (
-                        <th key={h} className="py-2.5 px-2.5 text-left text-[color-mix(in_srgb,var(--text-inverse)_90%,transparent)] font-semibold">{h}</th>
+                        <th key={h} className="py-2.5 px-2.5 text-left text-theme-text-secondary font-medium">{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -2948,6 +3028,7 @@ function CutPageInner() {
       </AnimatePresence>
       </div>
     </AppShell>
+    </MotionConfig>
   );
 }
 

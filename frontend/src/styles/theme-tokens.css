@@ -26,8 +26,8 @@
   --font-weight-label: 500;
   --font-weight-heading: 600;
 
-  --blur-glass: 10px;
-  --blur-glass-strong: 16px;
+  --blur-glass: 4px;
+  --blur-glass-strong: 8px;
 
   /* ─── Primitives (canonical) ──────────────────────────────────────────── */
   --color-primary: #4a90e2;
@@ -86,15 +86,15 @@
   --gradient-page: #f5f7fb;
   --bg-main: #f5f7fb;
   --bg-card: #ffffff;
-  --bg-glass: rgba(255, 255, 255, 0.92);
-  --bg-glass-strong: rgba(255, 255, 255, 0.97);
-  --bg-glass-subtle: rgba(255, 255, 255, 0.72);
+  --bg-glass: #ffffff;
+  --bg-glass-strong: #ffffff;
+  --bg-glass-subtle: #f8fafc;
   --bg-hover: rgba(74, 144, 226, 0.09);
   --border-soft: #e2e8f0;
 
-  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-hover: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.06);
-  --shadow-lift-hover: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
+  --shadow-soft: 0 1px 2px 0 rgb(0 0 0 / 0.035);
+  --shadow-hover: 0 2px 4px -1px rgb(0 0 0 / 0.06), 0 1px 3px -2px rgb(0 0 0 / 0.04);
+  --shadow-lift-hover: 0 6px 10px -3px rgb(0 0 0 / 0.07), 0 2px 4px -3px rgb(0 0 0 / 0.05);
   --shadow-input-inner: inset 0 1px 2px rgba(15, 23, 42, 0.05);
   --accent-gradient: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
   --glow-shadow: 0 12px 32px rgba(53, 122, 189, 0.22);
@@ -103,10 +103,7 @@
   --color-bg-secondary: #ffffff;
   --color-bg-mid: rgba(255, 255, 255, 0.88);
   --color-bg-gradient: var(--gradient-page);
-  --color-bg-ambient:
-    radial-gradient(circle at 14% 12%, rgba(255, 255, 255, 0.95), transparent 18rem),
-    radial-gradient(circle at 82% 16%, rgba(74, 144, 226, 0.14), transparent 18rem),
-    radial-gradient(circle at 92% 86%, rgba(191, 219, 254, 0.35), transparent 16rem);
+  --color-bg-ambient: var(--gradient-page);
   --color-login-ambient:
     radial-gradient(ellipse 85% 55% at 50% -8%, rgba(74, 144, 226, 0.14), transparent 55%),
     radial-gradient(ellipse 70% 45% at 100% 100%, rgba(219, 234, 254, 0.6), transparent 52%),
@@ -136,8 +133,8 @@
   --gradient-btn-from: #5b9fef;
   --gradient-btn-via: #4a90e2;
   --gradient-btn-to: #357abd;
-  --shadow-btn-primary: 0 8px 22px rgba(53, 122, 189, 0.28);
-  --shadow-btn-primary-hover: 0 14px 32px rgba(53, 122, 189, 0.38);
+  --shadow-btn-primary: 0 4px 12px rgba(53, 122, 189, 0.22);
+  --shadow-btn-primary-hover: 0 8px 18px rgba(53, 122, 189, 0.28);
 
   --color-btn-primary-fg: #ffffff;
 
@@ -147,8 +144,8 @@
   --color-semantic-danger-muted: #e85555;
   --gradient-btn-danger: var(--color-semantic-danger);
   --shadow-btn-danger: var(--shadow-soft);
-  --shadow-btn-success: 0 8px 22px rgba(76, 175, 80, 0.22);
-  --shadow-btn-success-hover: 0 14px 30px rgba(76, 175, 80, 0.28);
+  --shadow-btn-success: 0 4px 12px rgba(76, 175, 80, 0.18);
+  --shadow-btn-success-hover: 0 8px 18px rgba(76, 175, 80, 0.24);
   --gradient-btn-success: var(--color-semantic-success);
 
   --color-input-bg: #f1f5f9;

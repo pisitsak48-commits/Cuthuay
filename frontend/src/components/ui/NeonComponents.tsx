@@ -10,9 +10,8 @@ interface NeonCardProps {
 export function NeonCard({ children, className, glow }: NeonCardProps) {
   return (
     <div className={cn(
-      'rounded-2xl border-0 p-6 transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
-      'bg-white shadow-sm',
-      glow && 'shadow-md',
+      'glass-panel p-5',
+      glow && 'shadow-sm',
       className,
     )}>
       {children}
@@ -26,15 +25,12 @@ interface GlowButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> 
 
 export function GlowButton({ variant = 'cyan', className, children, ...props }: GlowButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-[transform,box-shadow,opacity] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400 disabled:opacity-50 disabled:cursor-not-allowed';
+    'btn-primary-glow';
   const styles = {
-    cyan: 'border-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0',
-    purple:
-      'bg-white text-gray-900 border-0 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
-    pink:
-      'bg-gray-100 text-gray-900 border-0 shadow-sm hover:bg-gray-200/90 hover:-translate-y-0.5 active:translate-y-0',
-    ghost:
-      'bg-transparent border-0 text-gray-900 hover:bg-gray-100 hover:-translate-y-0.5 active:translate-y-0',
+    cyan: '',
+    purple: 'btn-toolbar-muted !text-[var(--color-text-primary)]',
+    pink: 'btn-toolbar-muted',
+    ghost: 'bg-transparent border-transparent shadow-none hover:bg-[var(--bg-hover)] !text-[var(--color-text-primary)]',
   };
   return (
     <button className={cn(base, styles[variant], className)} {...props}>
@@ -51,8 +47,7 @@ interface GlassPanelProps {
 export function GlassPanel({ children, className }: GlassPanelProps) {
   return (
     <div className={cn(
-      'rounded-2xl border-0 p-6 shadow-sm transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
-      'bg-white',
+      'glass-panel p-5',
       className,
     )}>
       {children}
