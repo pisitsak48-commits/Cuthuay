@@ -65,12 +65,29 @@ export function Sidebar() {
   const { user, logout } = useAuthStore();
   const sidebarExpanded = useSidebarStore((s) => s.sidebarExpanded);
   const toggleSidebar = useSidebarStore((s) => s.toggleSidebar);
+  const sidebarMobileOpen = useSidebarStore((s) => s.sidebarMobileOpen);
+  const setSidebarMobileOpen = useSidebarStore((s) => s.setSidebarMobileOpen);
 
   const isOperator = user?.role === 'operator';
-  const navGroups = useMemo(
-    () => (isOperator ? allNavGroups.filter((g) => g.label === 'รายการขาย') : allNavGroups),
-    [isOperator],
-  );
+  const isViewer = user?.role === 'viewer';
+  const navGroups = useMemo(() => {
+    if (isOperator) return allNavGroups.filter((g) => g.label === 'รายการขาย');
+    if (isViewer) {
+      return [
+        {
+          label: 'รายการขาย',
+          icon: <ReceiptIcon />,
+          items: [
+            { href: '/bets', label: 'ดูรายการขาย (อ่านอย่างเดียว)' },
+            { href: '/bets/search', label: 'ค้นหารายการขาย' },
+            { href: '/bets/all', label: 'แสดงรายการขายทั้งหมด' },
+          ],
+        },
+        allNavGroups.find((g) => g.label === 'รายการสรุปผล')!,
+      ];
+    }
+    return allNavGroups;
+  }, [isOperator, isViewer]);
 
   const activeGroupIndex = navGroups.findIndex((g) =>
     g.items.some((i) => navItemActive(pathname, i.href)),
@@ -82,7 +99,17 @@ export function Sidebar() {
   const [navFlyout, setNavFlyout] = useState<{ groupIndex: number; top: number; left: number } | null>(null);
   const navFlyoutRef = useRef<HTMLDivElement | null>(null);
   const toggle = (i: number) => setOpenGroups((prev) => ({ ...prev, [i]: !prev[i] }));
-  const expanded = sidebarExpanded;
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)');
+    setIsMobileViewport(mq.matches);
+    const fn = (e: MediaQueryListEvent) => setIsMobileViewport(e.matches);
+    mq.addEventListener('change', fn);
+    return () => mq.removeEventListener('change', fn);
+  }, []);
+  // On mobile, always show the fully-expanded layout (labels + icons) regardless
+  // of the desktop collapse-state preference.
+  const expanded = sidebarExpanded || isMobileViewport;
 
   useEffect(() => {
     if (!navFlyout) return;
@@ -98,13 +125,31 @@ export function Sidebar() {
 
   useEffect(() => {
     setNavFlyout(null);
-  }, [pathname, expanded]);
+    setSidebarMobileOpen(false);
+  }, [pathname, expanded, setSidebarMobileOpen]);
 
   return (
+    <>
+      {/* Mobile backdrop — closes drawer on tap, below sidebar, above content */}
+      {sidebarMobileOpen && typeof document !== 'undefined' && createPortal(
+        <div
+          aria-hidden
+          className="fixed inset-0 z-[39] bg-black/45 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarMobileOpen(false)}
+        />,
+        document.body,
+      )}
+
     <aside
       className={cn(
-        'fixed top-0 left-0 z-30 h-dvh max-h-dvh flex flex-col border-0 border-r-0 shadow-[4px_0_24px_-8px_rgba(15,23,42,0.08)] bg-white/95 backdrop-blur-[18px] transition-[width] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
-        expanded ? 'w-60' : 'w-[4.5rem]',
+        'fixed top-0 left-0 h-dvh max-h-dvh flex flex-col border-0 border-r-0 bg-white/95 backdrop-blur-[18px]',
+        'transition-[width,transform] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+        // Desktop: always visible, can be collapsed to icon-only
+        'md:z-30 md:translate-x-0 md:shadow-[4px_0_24px_-8px_rgba(15,23,42,0.08)]',
+        expanded ? 'md:w-60' : 'md:w-[4.5rem]',
+        // Mobile: always full-width expanded, slides in as drawer
+        'z-[40] w-64 shadow-[8px_0_32px_-4px_rgba(15,23,42,0.18)]',
+        sidebarMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
       )}
     >
       {/* Logo + collapse */}
@@ -124,13 +169,23 @@ export function Sidebar() {
         <button
           type="button"
           onClick={toggleSidebar}
+          aria-label={expanded ? 'ย่อเมนู' : 'ขยายเมนู'}
           title={expanded ? 'ย่อเมนู (แสดงไอคอน)' : 'ขยายเมนู'}
           className={cn(
-            'rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 backdrop-blur-[8px] transition-all duration-theme shrink-0',
+            'hidden md:flex rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 backdrop-blur-[8px] transition-all duration-theme shrink-0 items-center justify-center',
             !expanded && 'mx-auto',
           )}
         >
           {expanded ? <CollapseIcon /> : <ExpandIcon />}
+        </button>
+        {/* Mobile close button — only visible inside drawer */}
+        <button
+          type="button"
+          onClick={() => setSidebarMobileOpen(false)}
+          aria-label="ปิดเมนู"
+          className="md:hidden flex rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 backdrop-blur-[8px] transition-all duration-theme shrink-0 items-center justify-center"
+        >
+          <CloseIcon />
         </button>
       </div>
 
@@ -353,12 +408,13 @@ export function Sidebar() {
               <p className="text-[10px] text-theme-text-muted capitalize">{user?.role}</p>
             </div>
           )}
-          <button onClick={logout} className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] backdrop-blur-[8px] transition-all duration-theme" title="ออกจากระบบ">
+          <button onClick={logout} aria-label="ออกจากระบบ" className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] backdrop-blur-[8px] transition-all duration-theme" title="ออกจากระบบ">
             <LogoutIcon />
           </button>
         </div>
       </div>
     </aside>
+    </>
   );
 }
 
@@ -373,6 +429,14 @@ function ExpandIcon() {
   return (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <polyline points="9 6 15 12 9 18" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+function CloseIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <line x1="18" y1="6" x2="6" y2="18" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="6" y1="6" x2="18" y2="18" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

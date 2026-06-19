@@ -1,17 +1,26 @@
 'use client';
-import { useEffect, useState, useCallback, useMemo } from 'react';
+import dynamic from 'next/dynamic';
+import { useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { StatCard } from '@/components/ui/StatCard';
 import { RoundStatusBadge } from '@/components/ui/Badge';
-import { RiskDistributionChart } from '@/components/charts/RiskChart';
-import { ProfitLossChart, type RoundProfitExtra } from '@/components/charts/ProfitLossChart';
-import { reportsApi } from '@/lib/api';
+import type { RoundProfitExtra } from '@/components/charts/ProfitLossChart';
+import { useDashboardQuery } from '@/hooks/queries/useDashboardQuery';
 import { wsClient } from '@/lib/websocket';
 import { buddhistEraYearFromDrawDate, formatBaht } from '@/lib/utils';
-import { DashboardStats, Round } from '@/types';
+import { Round } from '@/types';
 import Link from 'next/link';
+
+const RiskDistributionChart = dynamic(
+  () => import('@/components/charts/RiskChart').then((m) => m.RiskDistributionChart),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-xl bg-[var(--color-surface-muted)]" /> },
+);
+const ProfitLossChart = dynamic(
+  () => import('@/components/charts/ProfitLossChart').then((m) => m.ProfitLossChart),
+  { ssr: false, loading: () => <div className="h-56 animate-pulse rounded-xl bg-[var(--color-surface-muted)]" /> },
+);
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 function IconLock() {
@@ -102,65 +111,13 @@ function CardHeader({
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [profitByRoundId, setProfitByRoundId] = useState<Record<string, RoundProfitExtra>>({});
-  const [profitExtrasLoading, setProfitExtrasLoading] = useState(false);
-
-  const fetchStats = useCallback(async () => {
-    try {
-      const res = await reportsApi.dashboard();
-      setStats(res.data);
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  const loadProfitExtras = useCallback(async (rounds: Round[]) => {
-    const drawn = rounds.filter((r) => r.status === 'drawn');
-    if (!drawn.length) {
-      setProfitByRoundId({});
-      return;
-    }
-    setProfitExtrasLoading(true);
-    try {
-      const settled = await Promise.allSettled(
-        drawn.map(async (r) => {
-          const res = await reportsApi.profitSummary(r.id);
-          const d = res.data as { profit: number; sell: { total: number } };
-          return [r.id, { profit: d.profit, sellTotal: d.sell.total }] as const;
-        }),
-      );
-      const map: Record<string, RoundProfitExtra> = {};
-      for (const s of settled) {
-        if (s.status === 'fulfilled' && s.value) {
-          const [id, v] = s.value;
-          map[id] = v;
-        }
-      }
-      setProfitByRoundId(map);
-    } catch {
-      setProfitByRoundId({});
-    } finally {
-      setProfitExtrasLoading(false);
-    }
-  }, []);
+  const { data: stats, isLoading: loading, refetch } = useDashboardQuery();
+  const profitByRoundId = (stats?.profit_by_round ?? {}) as Record<string, RoundProfitExtra>;
 
   useEffect(() => {
-    fetchStats();
-    const unsub = wsClient.on('*', () => fetchStats());
+    const unsub = wsClient.on('*', () => { void refetch(); });
     return () => unsub();
-  }, [fetchStats]);
-
-  useEffect(() => {
-    if (!stats?.recent_rounds?.length) {
-      setProfitByRoundId({});
-      return;
-    }
-    void loadProfitExtras(stats.recent_rounds);
-  }, [stats?.recent_rounds, loadProfitExtras]);
+  }, [refetch]);
 
   const yearProfitBanner = useMemo(() => {
     if (!stats?.recent_rounds?.length || !Object.keys(profitByRoundId).length) return null;
@@ -236,9 +193,9 @@ export default function DashboardPage() {
 
         {yearProfitBanner && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.22, delay: 0.12, ease: [0.22, 1, 0.36, 1] }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
             className="rounded-2xl border border-[var(--color-border)]/70 bg-gradient-to-r from-[var(--color-card-bg-solid)] via-white to-[var(--bg-glass-subtle)] shadow-[var(--shadow-soft)] px-4 py-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
           >
             <div className="min-w-0">
@@ -258,42 +215,27 @@ export default function DashboardPage() {
 
         {/* ── Charts row ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-card overflow-hidden flex flex-col"
-          >
+          <div className="glass-card overflow-hidden flex flex-col">
             <CardHeader icon={<IconTrend />} title="ยอดขาย · กำไร · % เทียบขาย" accent="blue" />
             <div className="p-4 flex-1">
               <ProfitLossChart
                 rounds={stats?.recent_rounds ?? []}
                 profitByRoundId={profitByRoundId}
-                loadingProfit={profitExtrasLoading}
+                loadingProfit={false}
               />
             </div>
-          </motion.div>
+          </div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.24, ease: [0.22, 1, 0.36, 1] }}
-            className="glass-card overflow-hidden flex flex-col"
-          >
+          <div className="glass-card overflow-hidden flex flex-col">
             <CardHeader icon={<IconRisk />} title="ยอดขายเทียบกำไรต่องวด" accent="green" />
             <div className="p-4 flex-1">
               <RiskDistributionChart rounds={stats?.recent_rounds ?? []} profitByRoundId={profitByRoundId} />
             </div>
-          </motion.div>
+          </div>
         </div>
 
         {/* ── Recent rounds ── */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
-          className="glass-card overflow-hidden"
-        >
+        <div className="glass-card overflow-hidden">
           <CardHeader
             icon={<IconCalendar />}
             title="งวดล่าสุด"
@@ -337,11 +279,8 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {stats.recent_rounds.map((round: Round, i: number) => (
-                    <motion.tr
+                    <tr
                       key={round.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.3 + i * 0.04, duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
                       className={`table-row-hover border-b border-[var(--color-border)]/60 last:border-b-0 ${
                         i % 2 === 0 ? '' : 'bg-[var(--bg-glass-subtle)]/50'
                       }`}
@@ -373,13 +312,13 @@ export default function DashboardPage() {
                           </button>
                         </Link>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           )}
-        </motion.div>
+        </div>
 
       </main>
     </AppShell>

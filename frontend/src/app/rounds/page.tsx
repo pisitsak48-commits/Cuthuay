@@ -1,37 +1,31 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { motion } from 'framer-motion';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { RoundStatusBadge } from '@/components/ui/Badge';
 import { roundsApi, type ImportPreviewResponse } from '@/lib/api';
+import { formatApiErrorMessage } from '@/lib/handleApiError';
+import { showApiError } from '@/lib/apiErrorToast';
+import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
+import { queryKeys } from '@/hooks/queries/queryKeys';
 import { Modal } from '@/components/ui/Modal';
 import { formatBaht } from '@/lib/utils';
 import { Round } from '@/types';
 import { useAuthStore } from '@/store/useStore';
 
 function formatRoundsBackupError(err: unknown): string {
-  const e = err as { message?: string; response?: { data?: unknown; status?: number } };
-  const msg = e?.message ?? '';
-  if (msg === 'Network Error' || /network/i.test(msg)) {
-    return 'Network Error — เรียก API ไม่ถึง ตรวจว่าเปิดเว็บที่พอร์ต 3000 และ CORS_ORIGIN บน backend ตรงกับ URL ที่เปิดเว็บ';
-  }
-  if (e?.response?.status === 403) return 'ไม่มีสิทธิ์ (ส่งออก/นำเข้า backup ต้องเป็น admin)';
-  const data = e?.response?.data;
-  if (data && typeof data === 'object' && data !== null && 'error' in data) {
-    return String((data as { error: string }).error);
-  }
-  return msg || 'เกิดข้อผิดพลาด';
+  return formatApiErrorMessage(err, 'เกิดข้อผิดพลาด');
 }
 
 export default function RoundsPage() {
   const router = useRouter();
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
-  const [rounds, setRounds] = useState<Round[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: rounds = [], isLoading: loading, refetch: fetchData } = useRoundsQuery();
   const [savingId, setSavingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [importMsg, setImportMsg] = useState<{ ok: boolean; msg: string } | null>(null);
@@ -52,17 +46,6 @@ export default function RoundsPage() {
   const [importSubmitting, setImportSubmitting] = useState(false);
   /** ค่าเริ่มต้น: แสดงเฉพาะงวดที่เปิดรับ — งวดปิด/ออกผล/ซ่อนไม่โชว์ */
   const [showAllRounds, setShowAllRounds] = useState(false);
-  const fetchData = useCallback(async () => {
-    try {
-      const rRes = await roundsApi.list();
-      setRounds(rRes.data.rounds);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchData(); }, [fetchData]);
-
   useEffect(() => {
     if (!isAdmin) setShowAllRounds(false);
   }, [isAdmin]);
@@ -76,9 +59,9 @@ export default function RoundsPage() {
     setSavingId(round.id);
     try {
       await roundsApi.updateStatus(round.id, status);
-      setRounds((prev) => prev.map((r) => (r.id === round.id ? { ...r, status: status as Round['status'] } : r)));
-    } catch (err: any) {
-      alert('เปลี่ยนสถานะไม่สำเร็จ: ' + (err?.response?.data?.message ?? err?.message ?? 'error'));
+      await queryClient.invalidateQueries({ queryKey: queryKeys.rounds });
+    } catch (err: unknown) {
+      showApiError(err, 'เปลี่ยนสถานะไม่สำเร็จ');
     } finally {
       setSavingId(null);
     }
@@ -112,9 +95,9 @@ export default function RoundsPage() {
     setDeletingId(round.id);
     try {
       await roundsApi.delete(round.id);
-      setRounds(prev => prev.filter(r => r.id !== round.id));
-    } catch (err: any) {
-      alert('ลบไม่สำเร็จ: ' + (err?.response?.data?.message ?? err?.message ?? 'error'));
+      await queryClient.invalidateQueries({ queryKey: queryKeys.rounds });
+    } catch (err: unknown) {
+      showApiError(err, 'ลบไม่สำเร็จ');
     } finally {
       setDeletingId(null);
     }
@@ -325,12 +308,9 @@ export default function RoundsPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {visibleRounds.map((round, i) => (
-                    <motion.tr
+                  {visibleRounds.map((round) => (
+                    <tr
                       key={round.id}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: i * 0.03 }}
                       className="border-b border-border/40 table-row-hover"
                     >
                       <td className="py-3 px-4 font-medium text-theme-text-primary">{round.name}</td>
@@ -373,7 +353,7 @@ export default function RoundsPage() {
                           {deletingId === round.id ? '…' : '✕'}
                         </button>
                       </td>
-                    </motion.tr>
+                    </tr>
                   ))}
                 </tbody>
               </table>

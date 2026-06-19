@@ -1,10 +1,11 @@
 @import '../styles/theme-tokens.css';
+@import '../styles/bundled-fonts.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Fonts: โหลดจาก Google Fonts ใน layout.tsx — ตัวแปรชื่อฟอนต์ใช้ที่นี่ */
+/* Fonts: bundled via @fontsource in styles/bundled-fonts.css */
 
 @layer base {
   * {
@@ -602,6 +603,36 @@
   }
 }
 
+/* ─── Touch targets: enforce 44×44px minimum on coarse-pointer (touch) devices ── */
+/*
+ * WCAG 2.5.5: buttons and interactive controls must present a 44×44px touch
+ * target on devices where the primary input is a finger (tablet, phone).
+ * We use min-height rather than height so larger buttons stay as-is.
+ * Toolbar micro-buttons (h-7 = 28px) are the primary offenders.
+ */
+@media (pointer: coarse) {
+  button,
+  [role="button"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Inline table CTAs use btn-primary-glow with py-1.5 (≈34px) — bump to 44 */
+  .btn-primary-glow,
+  .btn-toolbar-glow,
+  .btn-toolbar-amber,
+  .btn-toolbar-danger,
+  .btn-toolbar-profit,
+  .btn-toolbar-muted,
+  .btn-fintech-search,
+  .btn-fintech-spark,
+  .btn-fintech-range,
+  .btn-fintech-rose,
+  .glow-button {
+    min-height: 44px;
+  }
+}
+
 /* ─── Print: show only #bet-receipt ────────────────────────────────────────── */
 @media print {
   body > * { visibility: hidden !important; }
@@ -638,4 +669,25 @@
   #bet-receipt .receipt-title  { font-size: 16pt; font-weight: bold; text-align: center; }
   #bet-receipt .receipt-meta   { font-size: 9pt; margin-bottom: 4px; display: flex; justify-content: space-between; }
   #bet-receipt .receipt-footer { margin-top: 6px; font-size: 9pt; display: flex; justify-content: space-between; }
+}
+
+/* ─── Reduced motion: disable all animation for users who need it ─────────── */
+/*
+ * WCAG 2.3.3 / 2.3.1: users with vestibular disorders, photosensitivity,
+ * or other motion sensitivity must be able to suppress animations.
+ * This rule kills CSS transitions and animations; MotionConfig in ThemeProvider
+ * handles framer-motion components via reducedMotion="user".
+ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
+  }
+
+  /* Preserve functional scroll-behavior */
+  html {
+    scroll-behavior: auto;
+  }
 }
