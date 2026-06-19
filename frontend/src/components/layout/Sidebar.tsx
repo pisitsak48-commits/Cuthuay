@@ -311,7 +311,7 @@ export function Sidebar() {
                 </span>
                 <motion.span
                   animate={{ rotate: isOpen ? 180 : 0 }}
-                  transition={{ duration: 0.18 }}
+                  transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
                   className={cn('shrink-0 transition-colors duration-200 ease-out', groupActive ? 'text-[var(--color-nav-active-fg)]' : 'text-theme-text-muted')}
                 >
                   <ChevronIcon />
@@ -321,7 +321,7 @@ export function Sidebar() {
               <AnimatePresence initial={false}>
                 {isOpen && (
                   <motion.div key="c" initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease: 'easeInOut' }} className="overflow-hidden">
+                    exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }} className="overflow-hidden">
                     <div className="ml-4 pl-4 border-l border-[var(--color-border)] mt-1 mb-2 space-y-1">
                       {group.items.map((item, ii) => {
                         const active = navItemActive(pathname, item.href);
@@ -349,45 +349,50 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {navFlyout != null && typeof document !== 'undefined' && createPortal(
-        <motion.div
-          ref={navFlyoutRef}
-          role="menu"
-          initial={{ opacity: 0, x: -4 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -4 }}
-          transition={{ duration: 0.12 }}
-          style={{
-            position: 'fixed',
-            top: Math.max(8, navFlyout.top),
-            left: navFlyout.left,
-            zIndex: 10050,
-          }}
-          className="min-w-[220px] rounded-2xl border-0 bg-[var(--color-card-bg-solid)] shadow-md backdrop-blur-[18px] py-1.5"
-        >
-          <p className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-theme-text-muted border-b border-[var(--color-border)]">
-            {navGroups[navFlyout.groupIndex]?.label}
-          </p>
-          {navGroups[navFlyout.groupIndex]?.items.map((item, ii) => {
-            const active = navItemActive(pathname, item.href);
-            return (
-              <Link key={ii} href={item.href} onClick={() => setNavFlyout(null)}>
-                <span
-                  role="menuitem"
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-2.5 text-xs font-medium cursor-pointer transition-[color,background-color] duration-200 ease-out rounded-lg',
-                    active
-                      ? 'text-[var(--color-nav-active-fg)] [background:var(--color-nav-active-bg)] font-semibold'
-                      : 'text-[var(--color-nav-inactive)] hover:text-theme-text-primary hover:bg-[var(--color-nav-hover-bg)]',
-                  )}
-                >
-                  {active && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-nav-active-fg)] shrink-0" />}
-                  {item.label}
-                </span>
-              </Link>
-            );
-          })}
-        </motion.div>,
+      {typeof document !== 'undefined' && createPortal(
+        <AnimatePresence>
+          {navFlyout != null && (
+            <motion.div
+              key="nav-flyout"
+              ref={navFlyoutRef}
+              role="menu"
+              initial={{ opacity: 0, x: -4 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -4 }}
+              transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
+              style={{
+                position: 'fixed',
+                top: Math.max(8, navFlyout.top),
+                left: navFlyout.left,
+                zIndex: 10050,
+              }}
+              className="min-w-[220px] rounded-2xl border-0 bg-[var(--color-card-bg-solid)] shadow-md backdrop-blur-[18px] py-1.5"
+            >
+              <p className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-theme-text-muted border-b border-[var(--color-border)]">
+                {navGroups[navFlyout.groupIndex]?.label}
+              </p>
+              {navGroups[navFlyout.groupIndex]?.items.map((item, ii) => {
+                const active = navItemActive(pathname, item.href);
+                return (
+                  <Link key={ii} href={item.href} onClick={() => setNavFlyout(null)}>
+                    <span
+                      role="menuitem"
+                      className={cn(
+                        'flex items-center gap-2 px-3 py-2.5 text-xs font-medium cursor-pointer transition-[color,background-color] duration-200 ease-out rounded-lg',
+                        active
+                          ? 'text-[var(--color-nav-active-fg)] [background:var(--color-nav-active-bg)] font-semibold'
+                          : 'text-[var(--color-nav-inactive)] hover:text-theme-text-primary hover:bg-[var(--color-nav-hover-bg)]',
+                      )}
+                    >
+                      {active && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-nav-active-fg)] shrink-0" />}
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </motion.div>
+          )}
+        </AnimatePresence>,
         document.body,
       )}
 
