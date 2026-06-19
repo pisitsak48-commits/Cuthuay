@@ -12,7 +12,7 @@ export function Card({ children, className, hover, glow }: CardProps) {
   return (
     <div
       className={cn(
-        'rounded-2xl border-0 bg-white p-6 shadow-sm backdrop-blur-none transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+        'rounded-2xl border-0 bg-[var(--color-card-bg-solid)] p-6 shadow-sm backdrop-blur-none transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
         hover && 'hover:shadow-md hover:-translate-y-0.5 cursor-pointer',
         glow && 'shadow-md',
         className,

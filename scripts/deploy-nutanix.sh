@@ -21,8 +21,9 @@ if [[ -f "$SCRIPT_DIR/deploy.local.env" ]]; then
 fi
 
 export SERVER="${SERVER:-nutanix-linux@192.168.101.198}"
-# โฟลเดอร์บนเซิร์ฟ (ยังเป็น Cut Huay ที่รันอยู่) — ชื่อบน Mac เป็น AuraX ได้ ไม่ต้องตรงกัน
-_DEFAULT_REMOTE_PATH='/home/nutanix-linux/Cut Huay'
+
+# Production จริงบน Nutanix
+_DEFAULT_REMOTE_PATH='/home/nutanix-linux/Cut'
 export REMOTE_PATH="${REMOTE_PATH:-$_DEFAULT_REMOTE_PATH}"
 
 # ไม่ตั้ง LOCAL_PATH — sync จากโฟลเดอร์ที่รันสคริปต์ เช่น ~/AuraX

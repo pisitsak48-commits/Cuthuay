@@ -23,6 +23,11 @@ export const PRINT_FONT_HEAD_LINKS = `
   <link href="${PRINT_GOOGLE_FONTS_HREF}" rel="stylesheet" />
 `.trim();
 
+/** Returns font <link> tags for injection in iframe/srcdoc head */
+export function printFontHeadMarkup(): string {
+  return PRINT_FONT_HEAD_LINKS;
+}
+
 /**
  * Append Google Fonts link nodes under a host (used before html-to-image capture).
  */

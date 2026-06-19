@@ -11,17 +11,17 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ variant = 'primary', size = 'md', loading, disabled, className, children, ...props }, ref) => {
     const base =
-      'inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-[transform,box-shadow,background-color,border-color,opacity,filter] duration-[200ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400 disabled:opacity-40 disabled:cursor-not-allowed select-none';
+      'inline-flex items-center justify-center gap-2 font-semibold rounded-full transition-[transform,box-shadow,background-color,border-color,opacity,filter] duration-[200ms] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-accent)] disabled:opacity-40 disabled:cursor-not-allowed select-none';
     const ease = '[transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]';
 
     const variants = {
       primary: cn(
         ease,
-        'border-0 bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 hover:brightness-[1.02]',
+        'border-0 bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 hover:brightness-[1.02]',
       ),
       ghost: cn(
         ease,
-        'bg-white border-0 text-gray-900 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
+        'bg-[var(--color-card-bg-solid)] border-0 text-theme-text-primary shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
       ),
       danger: cn(
         ease,
@@ -33,7 +33,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       ),
       outline: cn(
         ease,
-        'bg-gray-100 border-0 text-gray-900 shadow-sm hover:bg-gray-200/90 hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
+        'bg-[var(--color-surface-muted)] border-0 text-theme-text-primary shadow-sm hover:bg-[var(--bg-hover)] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
       ),
     };
 

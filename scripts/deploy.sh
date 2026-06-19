@@ -44,6 +44,15 @@ fi
 
 RSYNC_DEST="${SERVER}:${REMOTE_PATH}/"
 
+echo ""
+echo "===================================="
+echo "🚀 AuraX Deploy"
+echo "------------------------------------"
+echo "Server      : $SERVER"
+echo "Remote Path : $REMOTE_PATH"
+echo "Local Path  : $LOCAL_PATH"
+echo "===================================="
+echo ""
 echo "===> AuraX deploy"
 echo "     Local:  ${LOCAL_PATH}/"
 echo "     Remote: ${RSYNC_DEST}"
@@ -119,6 +128,15 @@ if [[ "$ENSURE_ENV" == true ]] && [[ ! -f .env ]] && [[ -f scripts/nutanix.env.e
   cp scripts/nutanix.env.example .env
   echo "⚠️  สร้าง .env จาก scripts/nutanix.env.example — แก้ POSTGRES_PASSWORD และ JWT_SECRET"
 fi
+
+if [[ ! -f .env ]]; then
+  echo "❌ ไม่พบไฟล์ .env ใน $(pwd)"
+  exit 1
+fi
+
+echo "===> Validate docker compose"
+docker compose config >/dev/null
+echo "✅ docker compose config ผ่าน"
 
 DOWN_FLAGS=()
 if [[ "$RESET_VOLUMES" == true ]]; then

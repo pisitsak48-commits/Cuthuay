@@ -6,6 +6,25 @@ const backendInternal =
 const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@cuthuay/bet-parser'],
+  webpack: (config, { isServer, webpack }) => {
+    if (isServer) {
+      const externals = Array.isArray(config.externals) ? config.externals : [];
+      config.externals = [...externals, 'jspdf', 'canvg'];
+    }
+    // canvg ships core-js polyfills for old browsers — ignore them; modern browsers/Node don't need them
+    config.plugins.push(
+      new webpack.IgnorePlugin({
+        resourceRegExp: /^core-js\//,
+        contextRegExp: /canvg/,
+      })
+    );
+    // jspdf optionally references html2canvas — not used in our addImage flow
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      'html2canvas': false,
+    };
+    return config;
+  },
   async rewrites() {
     return [
       {

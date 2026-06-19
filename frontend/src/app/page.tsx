@@ -87,11 +87,11 @@ function CardHeader({
   trailing?: React.ReactNode;
 }) {
   const dot = accent === 'green'
-    ? 'bg-emerald-500 shadow-[0_0_6px_rgba(52,211,153,0.6)]'
-    : 'bg-blue-500 shadow-[0_0_6px_rgba(74,144,226,0.6)]';
+    ? 'bg-[var(--color-semantic-success)] shadow-[0_0_6px_rgba(76,175,80,0.6)]'
+    : 'bg-[var(--color-accent)] shadow-[0_0_6px_rgba(74,144,226,0.6)]';
   const iconBg = accent === 'green'
-    ? 'bg-emerald-500/10 text-emerald-600'
-    : 'bg-blue-500/10 text-blue-600';
+    ? 'bg-[var(--color-semantic-success)]/10 text-[var(--color-semantic-success)]'
+    : 'bg-[var(--color-accent)]/10 text-[var(--color-accent)]';
   return (
     <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border)]">
       <div className="flex items-center gap-3">

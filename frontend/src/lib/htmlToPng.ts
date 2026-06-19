@@ -91,6 +91,35 @@ export async function renderFragmentToPngDataUrl(
   }
 }
 
+/** renderFragmentToPngDataUrl wrapper that accepts an options object (used by cut/page) */
+export async function renderHtmlToPngDataUrl(opts: {
+  bodyHtml: string;
+  widthPx?: number;
+  pixelRatio?: number;
+}): Promise<string> {
+  return renderFragmentToPngDataUrl(opts.bodyHtml, opts.widthPx ?? 820, opts.pixelRatio ?? 2);
+}
+
+/** Trigger browser download of a data URL with a given filename */
+export function downloadDataUrlAsFile(dataUrl: string, filename: string): void {
+  triggerPngDownload(dataUrl, filename);
+}
+
+/** Download multiple PNG entries as a ZIP file */
+export async function downloadPngZip(
+  entries: Array<{ dataUrl: string; filename: string }>,
+  zipBase: string,
+): Promise<void> {
+  const zipEntries = await Promise.all(
+    entries.map(async ({ dataUrl, filename }) => {
+      const res = await fetch(dataUrl);
+      const content = await res.blob();
+      return { path: filename, content };
+    }),
+  );
+  await downloadZip(zipEntries, zipBase);
+}
+
 export async function downloadHtmlAsPng(opts: DownloadHtmlAsPngOpts): Promise<void> {
   const { bodyHtml, filenameBase, widthPx = 820, pixelRatio = 2 } = opts;
   const base = sanitizeFilenamePart(filenameBase, 80);
