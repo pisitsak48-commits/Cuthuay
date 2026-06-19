@@ -40,16 +40,57 @@ api.interceptors.response.use(
   },
 );
 
+// ─── Auth helpers ─────────────────────────────────────────────────────────────
+
+export function isCookieAuthEnabled(): boolean {
+  return process.env.NEXT_PUBLIC_COOKIE_AUTH_ENABLED === 'true';
+}
+
+export function persistAuthTokens(token: string, refreshToken?: string | null) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem('token', token);
+  if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
+  else localStorage.removeItem('refresh_token');
+}
+
+export function clearPersistedAuthTokens() {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('token');
+  localStorage.removeItem('refresh_token');
+}
+
+export async function ensureCsrfToken(): Promise<void> {
+  if (!isCookieAuthEnabled()) return;
+  const res = await api.get<{ csrf_token: string }>('/auth/csrf-token');
+  api.defaults.headers.common['X-CSRF-Token'] = res.data.csrf_token;
+}
+
+export function clearCsrfToken() {
+  delete api.defaults.headers.common['X-CSRF-Token'];
+}
+
+export async function restoreSessionFromCookies(): Promise<string | null> {
+  try {
+    const res = await api.post<{ access_token: string }>('/auth/refresh');
+    const token = res.data.access_token;
+    if (token) persistAuthTokens(token);
+    return token ?? null;
+  } catch {
+    return null;
+  }
+}
+
 // ─── Auth ──────────────────────────────────────────────────────────────────────
 export const authApi = {
   login: (username: string, password: string) =>
-    api.post<{ token: string; user: { id: string; username: string; role: string } }>(
+    api.post<{ token: string; access_token?: string; refresh_token?: string; user: { id: string; username: string; role: string } }>(
       '/auth/login', { username, password }),
+  logout: () => api.post('/auth/logout').catch(() => undefined),
   me: () => api.get('/auth/me'),
   setupStatus: () =>
     api.get<{ needs_first_user: boolean; user_count: number }>('/auth/setup-status'),
   bootstrap: (username: string, password: string) =>
-    api.post<{ token: string; user: { id: string; username: string; role: string } }>(
+    api.post<{ token: string; access_token?: string; refresh_token?: string; user: { id: string; username: string; role: string } }>(
       '/auth/bootstrap',
       { username, password },
     ),
