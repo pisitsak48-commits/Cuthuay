@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import { useQueryClient } from '@tanstack/react-query';
 import { roundsApi, betsApi, customersApi } from '@/lib/api';
 import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
@@ -223,6 +224,7 @@ function BetsPageContent() {
   const [recentChangedKey, setRecentChangedKey] = useState<string | null>(null);
   const [csvModalOpen, setCsvModalOpen] = useState(false);
   const [csvExportMode, setCsvExportMode] = useState<'separate' | 'combined'>('separate');
+  const csvDialogRef = useFocusTrap(csvModalOpen, () => setCsvModalOpen(false));
   const [slipPdfExporting, setSlipPdfExporting] = useState(false);
   /** เลขปิดรับของงวด (all + ลูกค้าที่เลือก) — ตรวจก่อนยิง API */
   const [blockedLimitKeys, setBlockedLimitKeys] = useState<Set<string>>(new Set());
@@ -1608,7 +1610,7 @@ function BetsPageContent() {
       {/* CSV Export Modal */}
       {csvModalOpen && (
         <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={() => setCsvModalOpen(false)}>
-          <div role="dialog" aria-modal="true" aria-label="Export CSV ทุกแผ่น" className="bg-surface-100 border border-border rounded-lg p-4 w-96 flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+          <div ref={csvDialogRef} role="dialog" aria-modal="true" aria-label="Export CSV ทุกแผ่น" tabIndex={-1} className="bg-surface-100 border border-border rounded-lg p-4 w-96 flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
             <div className="text-sm font-semibold text-theme-text-primary">Export CSV ทุกแผ่น</div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm text-theme-text-secondary cursor-pointer">

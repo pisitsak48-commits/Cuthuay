@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import type { BetType, Dealer, SendBatch } from '@/types';
 import { BET_TYPE_LABELS } from '@/types';
 import { formatBaht } from '@/lib/utils';
@@ -37,6 +38,7 @@ export function SaveDealerModal({
   onClose: () => void;
   onConfirm: (dealerId: string) => void;
 }) {
+  const panelRef = useFocusTrap(true, onClose);
   const firstActiveDealerId = dealers.find(d => d.is_active)?.id ?? '';
   const [dealerId, setDealerId] = useState(initialDealerId || firstActiveDealerId);
 
@@ -47,9 +49,11 @@ export function SaveDealerModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose}>
       <motion.div
+        ref={panelRef}
         initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
         role="dialog" aria-modal="true" aria-labelledby="send-confirm-title"
-        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-md"
+        tabIndex={-1}
+        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-md focus:outline-none"
         onClick={(e) => e.stopPropagation()}>
 
         {/* Header */}
@@ -111,14 +115,17 @@ export function SendBatchItemsModal({
   batch: SendBatch;
   onClose: () => void;
 }) {
+  const panelRef = useFocusTrap(true, onClose);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose}>
       <motion.div
+        ref={panelRef}
         initial={{ scale: 0.96, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
         role="dialog" aria-modal="true" aria-labelledby="sent-numbers-title"
-        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-lg max-h-[78vh] flex flex-col"
+        tabIndex={-1}
+        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-lg max-h-[78vh] flex flex-col focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3 border-b border-border flex items-center justify-between">

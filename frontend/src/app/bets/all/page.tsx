@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
@@ -135,6 +136,7 @@ function buildBetTableHtml(
 
 // ─── Threshold Settings Modal ─────────────────────────────────────────────────
 function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Threshold[]; onChange: (t: Threshold[]) => void; onClose: () => void }) {
+  const panelRef = useFocusTrap(true, onClose);
   const nextId = useRef(Math.max(0, ...thresholds.map(t => t.id)) + 1);
   // local draft amounts (string) to allow free typing without mid-sort jumps
   const [draftAmounts, setDraftAmounts] = useState<Record<number, string>>(() =>
@@ -164,7 +166,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
 
   return (
     <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={onClose}>
-      <div role="dialog" aria-modal="true" aria-labelledby="alert-color-title" className="bg-white border-0 rounded-2xl shadow-md p-6 w-[380px] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="alert-color-title" tabIndex={-1} className="bg-[var(--color-card-bg-solid)] border-0 rounded-2xl shadow-md p-6 w-[380px] flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
             <div id="alert-color-title" className="text-sm font-semibold text-theme-text-primary">ตั้งค่าสีแจ้งเตือนยอดขาย</div>

@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
@@ -562,11 +563,7 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [onClose]);
+  const panelRef = useFocusTrap(true, onClose);
 
   const toggleCust = (id: string) =>
     setSelectedCust(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
@@ -610,8 +607,10 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4" onClick={onClose}>
       <div
+        ref={panelRef}
         role="dialog" aria-modal="true" aria-labelledby="copy-limits-title"
-        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-2xl flex flex-col max-h-[90vh]"
+        tabIndex={-1}
+        className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-2xl flex flex-col max-h-[90vh] focus:outline-none"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}

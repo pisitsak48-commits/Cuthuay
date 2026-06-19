@@ -1,7 +1,8 @@
 'use client';
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 
 interface ModalProps {
   open: boolean;
@@ -19,43 +20,9 @@ const sizeMap = {
   xl: 'max-w-4xl',
 };
 
-const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
-
 export function Modal({ open, onClose, title, children, className, size = 'md' }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const panel = panelRef.current;
-    if (!panel) return;
-
-    const prev = document.activeElement as HTMLElement | null;
-
-    const focusable = panel.querySelectorAll<HTMLElement>(FOCUSABLE);
-    (focusable[0] ?? panel).focus();
-
-    function handleKeyDown(e: KeyboardEvent) {
-      if (!panel) return;
-      if (e.key === 'Escape') { onClose(); return; }
-      if (e.key !== 'Tab') return;
-      const els = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
-      if (!els.length) { e.preventDefault(); return; }
-      const first = els[0];
-      const last = els[els.length - 1];
-      if (e.shiftKey) {
-        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
-      } else {
-        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      prev?.focus();
-    };
-  }, [open, onClose]);
+  const panelRef = useFocusTrap(open, onClose);
 
   return (
     <AnimatePresence>
@@ -85,7 +52,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
             className={cn(
               'relative z-10 w-full rounded-2xl border-0',
               'shadow-lg p-6 backdrop-blur-none',
-              'bg-white focus:outline-none',
+              'bg-[var(--color-card-bg-solid)] focus:outline-none',
               sizeMap[size],
               className,
             )}
