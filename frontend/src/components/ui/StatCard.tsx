@@ -5,18 +5,18 @@ import { cn, formatBaht, formatPercent } from '@/lib/utils';
 type AccentKey = 'blue' | 'green' | 'amber' | 'rose' | 'violet';
 
 const accentLine: Record<AccentKey, string> = {
-  blue:   'bg-gradient-to-r from-blue-400  to-blue-600',
-  green:  'bg-gradient-to-r from-emerald-400 to-emerald-600',
-  amber:  'bg-gradient-to-r from-amber-400 to-orange-500',
-  rose:   'bg-gradient-to-r from-rose-400  to-red-500',
-  violet: 'bg-gradient-to-r from-violet-400 to-violet-600',
+  blue:   'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)]',
+  green:  'bg-gradient-to-r from-[var(--color-semantic-success)] to-[var(--color-semantic-success-muted)]',
+  amber:  'bg-gradient-to-r from-[var(--color-semantic-warning)] to-[var(--color-semantic-warning-muted)]',
+  rose:   'bg-gradient-to-r from-[var(--color-semantic-danger)] to-[var(--color-semantic-danger-muted)]',
+  violet: 'bg-gradient-to-r from-[var(--gray-600)] to-[var(--gray-700)]',
 };
 const accentIconBg: Record<AccentKey, string> = {
-  blue:   'bg-blue-500',
-  green:  'bg-emerald-500',
-  amber:  'bg-amber-500',
-  rose:   'bg-rose-500',
-  violet: 'bg-violet-500',
+  blue:   'bg-[var(--color-accent)]',
+  green:  'bg-[var(--color-semantic-success)]',
+  amber:  'bg-[var(--color-semantic-warning)]',
+  rose:   'bg-[var(--color-semantic-danger)]',
+  violet: 'bg-[var(--gray-600)]',
 };
 
 interface StatCardProps {
@@ -55,7 +55,7 @@ export function StatCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.22, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'rounded-2xl border-0 bg-white shadow-sm overflow-hidden',
+        'rounded-2xl border-0 bg-[var(--color-card-bg-solid)] shadow-sm overflow-hidden',
         'transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
         'hover:shadow-md hover:-translate-y-0.5',
         className,

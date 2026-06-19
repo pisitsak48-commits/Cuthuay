@@ -159,6 +159,8 @@
 
   --color-semantic-success: #4caf50;
   --color-semantic-success-muted: #3d8b40;
+  --color-semantic-warning: #f59e0b;
+  --color-semantic-warning-muted: #d97706;
   --color-semantic-danger: #ff6b6b;
   --color-semantic-danger-muted: #e85555;
   --gradient-btn-danger: var(--color-semantic-danger);
