@@ -1,9 +1,10 @@
 'use client';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
-import { roundsApi, betsApi, customersApi } from '@/lib/api';
-import { Round, Customer } from '@/types';
+import { betsApi, customersApi } from '@/lib/api';
+import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
+import { Customer } from '@/types';
 import { useRouter } from 'next/navigation';
 import { useAuthStore } from '@/store/useStore';
 
@@ -72,8 +73,12 @@ function Sel({
 export default function BetsSearchPage() {
   const router = useRouter();
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
+  const { data: roundsFull = [] } = useRoundsQuery();
+  const rounds = useMemo(
+    () => (isAdmin ? roundsFull : roundsFull.filter((x) => x.status === 'open')),
+    [roundsFull, isAdmin],
+  );
 
-  const [rounds, setRounds]       = useState<Round[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [roundId, setRoundId]     = useState('');
 
@@ -96,17 +101,17 @@ export default function BetsSearchPage() {
   const [error, setError]       = useState('');
 
   useEffect(() => {
-    Promise.all([roundsApi.list(), customersApi.list()]).then(([r, c]) => {
-      const full: Round[] = r.data.rounds ?? [];
-      const rl = isAdmin ? full : full.filter((x) => x.status === 'open');
-      setRounds(rl);
-      setRoundId((prev) => {
-        if (prev && rl.some((x) => x.id === prev)) return prev;
-        return rl[0]?.id ?? '';
-      });
+    setRoundId((prev) => {
+      if (prev && rounds.some((x) => x.id === prev)) return prev;
+      return rounds[0]?.id ?? '';
+    });
+  }, [rounds]);
+
+  useEffect(() => {
+    customersApi.list().then((c) => {
       setCustomers(c.data.customers ?? []);
     }).catch(() => {});
-  }, [isAdmin]);
+  }, []);
 
   const doSearch = useCallback(async () => {
     if (!roundId) { setError('กรุณาเลือกงวด'); return; }

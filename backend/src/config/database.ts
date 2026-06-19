@@ -1,8 +1,8 @@
 import { Pool, PoolClient, types } from 'pg';
 import { env } from './env';
 
-// Parse NUMERIC / DECIMAL (OID 1700) as float instead of string
-types.setTypeParser(1700, (val: string) => parseFloat(val));
+// Return NUMERIC / DECIMAL (OID 1700) as string — use moneyToNumber() at calculation boundaries
+types.setTypeParser(1700, (val: string) => val);
 // Return timestamps as raw strings to preserve microsecond precision
 types.setTypeParser(1114, (val: string) => val); // timestamp
 types.setTypeParser(1184, (val: string) => val); // timestamptz

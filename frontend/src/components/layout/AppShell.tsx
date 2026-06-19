@@ -106,7 +106,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           )}
         >
           {/* Mobile-only top bar — shows hamburger + brand name */}
-          <div className="md:hidden sticky top-0 z-[28] flex items-center gap-3 px-4 h-14 bg-white/95 backdrop-blur-md border-b border-[var(--color-border)] shrink-0">
+          <div className="md:hidden sticky top-0 z-[28] flex items-center gap-3 px-4 h-14 bg-[var(--color-sidebar-bg)] backdrop-blur-md border-b border-[var(--color-border)] shrink-0">
             <button
               type="button"
               onClick={toggleSidebarMobile}

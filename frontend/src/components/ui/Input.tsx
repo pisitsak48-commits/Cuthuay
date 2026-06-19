@@ -12,7 +12,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[0.24em] text-theme-text-secondary">
+          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[var(--tracking-label-caps)] text-theme-text-secondary">
             {label}
           </label>
         )}
@@ -20,11 +20,11 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={id}
           className={cn(
-            'h-11 w-full rounded-full px-4 py-2 border-0 bg-gray-100 text-gray-900 placeholder:text-gray-500',
-            'focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-0',
+            'h-11 w-full rounded-full px-4 py-2 border-0 bg-[var(--color-surface-muted)] text-theme-text-primary placeholder:text-theme-text-muted',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
             'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
-            error && 'ring-2 ring-red-400 focus:ring-red-400',
+            error && 'ring-2 ring-[var(--color-semantic-danger)] focus:ring-[var(--color-semantic-danger)]',
             className,
           )}
           {...props}
@@ -46,7 +46,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[0.24em] text-theme-text-secondary">
+          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[var(--tracking-label-caps)] text-theme-text-secondary">
             {label}
           </label>
         )}
@@ -54,11 +54,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={id}
           className={cn(
-            'h-11 w-full rounded-full px-4 py-2 border-0 text-sm bg-gray-100 text-gray-900',
-            'focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-0',
+            'h-11 w-full rounded-full px-4 py-2 border-0 text-sm bg-[var(--color-surface-muted)] text-theme-text-primary',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
             'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
-            error && 'ring-2 ring-red-400',
+            error && 'ring-2 ring-[var(--color-semantic-danger)]',
             className,
           )}
           {...props}
@@ -82,7 +82,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     return (
       <div className="flex flex-col gap-1">
         {label && (
-          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[0.24em] text-theme-text-secondary">
+          <label htmlFor={id} className="text-xs font-semibold uppercase tracking-[var(--tracking-label-caps)] text-theme-text-secondary">
             {label}
           </label>
         )}
@@ -90,10 +90,10 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={id}
           className={cn(
-            'w-full rounded-2xl px-4 py-3 border-0 text-sm resize-y min-h-[80px] bg-gray-100 text-gray-900 placeholder:text-gray-500',
-            'focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-0',
+            'w-full rounded-2xl px-4 py-3 border-0 text-sm resize-y min-h-[80px] bg-[var(--color-surface-muted)] text-theme-text-primary placeholder:text-theme-text-muted',
+            'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
             'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
-            error && 'ring-2 ring-red-400',
+            error && 'ring-2 ring-[var(--color-semantic-danger)]',
             className,
           )}
           {...props}

@@ -135,7 +135,7 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
+        'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
       dotClass: 'bg-white',
     },
     {
@@ -147,7 +147,7 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
+        'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
       dotClass: 'bg-white',
     },
     {
@@ -159,7 +159,7 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
+        'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
       dotClass: 'bg-white',
     },
   ] as const;
@@ -183,7 +183,7 @@ function SummaryPageInner() {
           </div>
 
           {/* เลือกงวด + ดึงข้อมูล */}
-          <div className="rounded-2xl border border-[var(--color-border)]/60 bg-white shadow-[var(--shadow-soft)] px-3 py-2.5 sm:py-3 flex flex-col gap-2">
+          <div className="rounded-2xl border border-[var(--color-border)]/60 bg-[var(--color-card-bg-solid)] shadow-[var(--shadow-soft)] px-3 py-2.5 sm:py-3 flex flex-col gap-2">
             <div
               className={cn(
                 'flex flex-wrap items-center gap-2 sm:gap-3 transition-opacity duration-200 ease-out',
@@ -369,8 +369,8 @@ function SummaryPageInner() {
               </section>
 
               {rTop3 && (
-                <div className="rounded-2xl border border-emerald-200/70 bg-gradient-to-br from-emerald-50/95 via-teal-50/40 to-[var(--color-bg-primary)] px-4 py-3.5 shadow-sm">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-800/80 mb-2">สรุปจากเลขรางวัลที่ 1</div>
+                <div className="rounded-2xl border border-[var(--color-semantic-success)]/30 bg-[var(--color-semantic-success)]/[0.05] px-4 py-3.5 shadow-sm">
+                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-semantic-success)] mb-2">สรุปจากเลขรางวัลที่ 1</div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:text-sm">
                     <div className="text-theme-text-muted">3 ตัวบน <span className="text-profit font-bold tabular-nums ml-1">{rTop3}</span></div>
                     <div className="text-theme-text-muted">2 ตัวบน <span className="text-profit font-bold tabular-nums ml-1">{rTop2}</span></div>

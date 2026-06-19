@@ -1,11 +1,14 @@
 'use client';
 
 function wsBaseUrl(): string {
+  const configured = process.env.NEXT_PUBLIC_WS_URL?.replace(/\/$/, '');
   if (typeof window !== 'undefined') {
+    if (configured) return configured;
     const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    return `${proto}//${window.location.hostname}:4000`;
+    const port = process.env.NEXT_PUBLIC_WS_PORT ?? '4000';
+    return `${proto}//${window.location.hostname}:${port}`;
   }
-  return process.env.NEXT_PUBLIC_WS_URL ?? 'ws://127.0.0.1:4000';
+  return configured ?? 'ws://127.0.0.1:4000';
 }
 
 export type WsMessage = {
@@ -26,7 +29,8 @@ class RealtimeClient {
     if (this.ws?.readyState === WebSocket.OPEN) return;
     this.intentionalClose = false;
 
-    this.ws = new WebSocket(`${wsBaseUrl()}/ws?token=${encodeURIComponent(token)}`);
+    // Send JWT via subprotocol (not URL) to reduce leak risk in logs/proxies.
+    this.ws = new WebSocket(`${wsBaseUrl()}/ws`, ['cuthuay.v1', `auth.jwt.${token}`]);
 
     this.ws.onopen = () => {
       console.debug('[WS] connected');

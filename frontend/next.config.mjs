@@ -5,6 +5,7 @@ const backendInternal =
 
 const nextConfig = {
   reactStrictMode: true,
+  transpilePackages: ['@cuthuay/bet-parser'],
   async rewrites() {
     return [
       {

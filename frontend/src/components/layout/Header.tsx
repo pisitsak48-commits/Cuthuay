@@ -18,7 +18,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
   const prominent = variant === 'prominent';
 
   return (
-    <header className="flex items-center justify-between px-6 py-5 border-0 bg-white shadow-sm rounded-2xl mx-4 mt-4 backdrop-blur-none transition-[background-color,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]">
+    <header className="flex items-center justify-between px-6 py-5 border-0 bg-[var(--color-card-bg-solid)] shadow-sm rounded-2xl mx-4 mt-4 backdrop-blur-none transition-[background-color,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]">
       <div>
         <h1
           className={cn(

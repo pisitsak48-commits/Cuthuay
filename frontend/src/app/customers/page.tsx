@@ -282,7 +282,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                     className={`cursor-pointer border-b border-[var(--color-border)]/50 last:border-b-0 transition-colors duration-100 ${
                       edit?.id === c.id
                         ? 'bg-[var(--color-badge-info-bg)]'
-                        : rowIdx % 2 === 0 ? 'bg-white hover:bg-[var(--bg-hover)]' : 'bg-[var(--bg-glass-subtle)]/60 hover:bg-[var(--bg-hover)]'
+                        : rowIdx % 2 === 0 ? 'bg-[var(--color-card-bg-solid)] hover:bg-[var(--bg-hover)]' : 'bg-[var(--bg-glass-subtle)]/60 hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     <td className="py-2 px-4 font-semibold text-theme-text-primary">
@@ -541,7 +541,7 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                     className={`cursor-pointer border-b border-[var(--color-border)]/50 last:border-b-0 transition-colors duration-100 ${
                       edit?.id === d.id
                         ? 'bg-[var(--color-badge-info-bg)]'
-                        : rowIdx % 2 === 0 ? 'bg-white hover:bg-[var(--bg-hover)]' : 'bg-[var(--bg-glass-subtle)]/60 hover:bg-[var(--bg-hover)]'
+                        : rowIdx % 2 === 0 ? 'bg-[var(--color-card-bg-solid)] hover:bg-[var(--bg-hover)]' : 'bg-[var(--bg-glass-subtle)]/60 hover:bg-[var(--bg-hover)]'
                     }`}
                   >
                     <td className="py-2 px-4 font-semibold text-theme-text-primary">
@@ -688,8 +688,8 @@ function ContactsPageInner() {
                 onClick={() => switchTab(t.key)}
                 className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all duration-150 leading-none ${
                   tab === t.key
-                    ? 'bg-white shadow-sm text-theme-text-primary'
-                    : 'text-theme-text-muted hover:text-theme-text-secondary hover:bg-white/40'
+                    ? 'bg-[var(--color-card-bg-solid)] shadow-sm text-theme-text-primary'
+                    : 'text-theme-text-muted hover:text-theme-text-secondary hover:bg-[var(--color-card-bg-solid)]/40'
                 }`}
               >
                 {t.label}

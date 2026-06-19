@@ -512,8 +512,12 @@ router.delete(
       // Cascade: delete bets, send_batches, etc. handled by DB FK or here manually
       await query('DELETE FROM send_batches WHERE round_id = $1', [id]);
       await query('DELETE FROM bets WHERE round_id = $1', [id]);
-      const result = await query<RoundRow>('DELETE FROM rounds WHERE id = $1 RETURNING id', [id]);
+      const result = await query<RoundRow>('DELETE FROM rounds WHERE id = $1 RETURNING id, name', [id]);
       if (!result.rows[0]) throw createError('Round not found', 404);
+      await query(
+        'INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)',
+        [req.user!.sub, 'round_deleted', { round_id: id, name: result.rows[0].name }, req.ip],
+      );
       res.json({ ok: true, id });
     } catch (err) {
       next(err);
@@ -859,6 +863,10 @@ router.post(
           message: r.message ?? 'งวดนี้มีอยู่แล้วในระบบ',
         });
       }
+      await query(
+        'INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)',
+        [req.user!.sub, 'round_imported', { round_id: r.round_id, bet_count: r.bet_count }, req.ip],
+      );
       res.json({ ok: true, round_id: r.round_id, imported: true, bet_count: r.bet_count });
     } catch (err) {
       next(err);

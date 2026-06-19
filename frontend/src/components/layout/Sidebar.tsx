@@ -142,7 +142,7 @@ export function Sidebar() {
 
     <aside
       className={cn(
-        'fixed top-0 left-0 h-dvh max-h-dvh flex flex-col border-0 border-r-0 bg-white/95 backdrop-blur-[18px]',
+        'fixed top-0 left-0 h-dvh max-h-dvh flex flex-col border-0 border-r-0 bg-[var(--color-sidebar-bg)] backdrop-blur-[18px]',
         'transition-[width,transform] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
         // Desktop: always visible, can be collapsed to icon-only
         'md:z-30 md:translate-x-0 md:shadow-[4px_0_24px_-8px_rgba(15,23,42,0.08)]',
@@ -153,7 +153,7 @@ export function Sidebar() {
       )}
     >
       {/* Logo + collapse */}
-      <div className={cn('flex items-center border-b border-gray-100 shrink-0', expanded ? 'gap-3 px-5 py-5' : 'flex-col gap-2 px-2 py-4')}>
+      <div className={cn('flex items-center border-b border-[var(--color-border)] shrink-0', expanded ? 'gap-3 px-5 py-5' : 'flex-col gap-2 px-2 py-4')}>
         <div
           className="w-9 h-9 rounded-3xl border border-accent/20 flex items-center justify-center shadow-[var(--color-nav-active-shadow)] shrink-0"
           style={{ background: 'var(--gradient-sidebar-logo)' }}
@@ -163,7 +163,7 @@ export function Sidebar() {
         {expanded && (
           <div className="flex-1 min-w-0">
             <span className="text-sm font-semibold text-theme-text-primary tracking-[0.04em]">{APP_BRAND_NAME}</span>
-            <p className="text-[10px] text-theme-text-muted leading-none mt-0.5">Risk Manager</p>
+            <p className="text-[11px] text-theme-text-muted leading-none mt-0.5">Risk Manager</p>
           </div>
         )}
         <button
@@ -363,9 +363,9 @@ export function Sidebar() {
             left: navFlyout.left,
             zIndex: 10050,
           }}
-          className="min-w-[220px] rounded-2xl border-0 bg-white shadow-md backdrop-blur-[18px] py-1.5"
+          className="min-w-[220px] rounded-2xl border-0 bg-[var(--color-card-bg-solid)] shadow-md backdrop-blur-[18px] py-1.5"
         >
-          <p className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-theme-text-muted border-b border-gray-100">
+          <p className="px-3 py-1.5 text-[11px] uppercase tracking-wider text-theme-text-muted border-b border-[var(--color-border)]">
             {navGroups[navFlyout.groupIndex]?.label}
           </p>
           {navGroups[navFlyout.groupIndex]?.items.map((item, ii) => {
@@ -373,6 +373,7 @@ export function Sidebar() {
             return (
               <Link key={ii} href={item.href} onClick={() => setNavFlyout(null)}>
                 <span
+                  role="menuitem"
                   className={cn(
                     'flex items-center gap-2 px-3 py-2.5 text-xs font-medium cursor-pointer transition-[color,background-color] duration-200 ease-out rounded-lg',
                     active
@@ -391,9 +392,9 @@ export function Sidebar() {
       )}
 
       {/* User */}
-      <div className="border-t border-gray-100 px-4 py-4 shrink-0">
+      <div className="border-t border-[var(--color-border)] px-4 py-4 shrink-0">
         <div className={cn(
-          'flex items-center rounded-2xl bg-white border-0 shadow-sm backdrop-blur-[18px]',
+          'flex items-center rounded-2xl bg-[var(--color-card-bg-solid)] border-0 shadow-sm backdrop-blur-[18px]',
           expanded ? 'gap-3 px-3 py-3' : 'flex-col gap-2 px-2 py-3',
         )}>
           <div
@@ -405,7 +406,7 @@ export function Sidebar() {
           {expanded && (
             <div className="flex-1 min-w-0">
               <p className="text-xs font-semibold text-theme-text-primary truncate">{user?.username}</p>
-              <p className="text-[10px] text-theme-text-muted capitalize">{user?.role}</p>
+              <p className="text-[11px] text-theme-text-muted capitalize">{user?.role}</p>
             </div>
           )}
           <button onClick={logout} aria-label="ออกจากระบบ" className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] backdrop-blur-[8px] transition-all duration-theme" title="ออกจากระบบ">

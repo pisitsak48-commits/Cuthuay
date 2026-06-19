@@ -26,10 +26,24 @@ const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
   JWT_SECRET: z.string().min(32),
   JWT_EXPIRES_IN: z.string().default('8h'),
+  JWT_REFRESH_SECRET: z.string().min(32).optional(),
+  REFRESH_EXPIRES_IN: z.string().default('7d'),
   CORS_ORIGIN: z.string().default('http://localhost:3000'),
   REPORTS_DIR: z.string().default('./reports'),
-  /** Messaging API — ตั้งค่าเมื่อใช้ webhook รับข้อความจากบอทในกลุ่มไลน์ */
-  LINE_CHANNEL_SECRET: z.string().optional(),
+  /** Phase 6: dual bearer + httpOnly cookie when true (requires HTTPS in production). */
+  COOKIE_AUTH_ENABLED: z.coerce.boolean().default(false),
+  /** Phase 2: require X-CSRF-Token on mutations when true (also requires COOKIE_AUTH_ENABLED). */
+  CSRF_ENABLED: z.coerce.boolean().default(false),
+  /** Override Secure cookie flag — default true in production; set false for HTTP LAN pilot only. */
+  COOKIE_SECURE: z.preprocess(
+    (v) => (v === undefined || v === '' ? undefined : v),
+    z.coerce.boolean().optional(),
+  ),
+  /** PDPA audit_log retention purge — default off until business sign-off. */
+  PDPA_PURGE_ENABLED: z.coerce.boolean().default(false),
+  AUDIT_LOG_RETENTION_DAYS: z.coerce.number().int().positive().default(90),
+  /** When true (default), purge script only reports counts — no DELETE. */
+  PDPA_PURGE_DRY_RUN: z.coerce.boolean().default(true),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -58,4 +72,17 @@ if (parsed.data.NODE_ENV !== 'production') {
   );
 }
 
-export const env = parsed.data;
+const INSECURE_JWT_SECRETS = new Set([
+  'supersecretkey_change_in_production',
+  'change_this_to_a_very_long_random_string_min_64_chars',
+]);
+
+if (parsed.data.NODE_ENV === 'production' && INSECURE_JWT_SECRETS.has(parsed.data.JWT_SECRET)) {
+  console.error('❌ JWT_SECRET must not use default/example value in production');
+  process.exit(1);
+}
+
+export const env = {
+  ...parsed.data,
+  COOKIE_SECURE: parsed.data.COOKIE_SECURE ?? parsed.data.NODE_ENV === 'production',
+};

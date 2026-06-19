@@ -49,6 +49,7 @@
   --color-accent-dark: #1f2937;
   --color-bg: #f5f7fb;
   --color-surface: #ffffff;
+  --color-surface-muted: var(--color-input-bg); /* #f1f5f9 — defined below; CSS resolves lazily */
 
   /* Primary scale (blue) */
   --primary-50: #eff6ff;
@@ -90,8 +91,8 @@
 
   /* Typography */
   --text-primary: #1a1a1a;
-  --text-secondary: #7b8a9a;
-  --text-muted: #94a3b8;
+  --text-secondary: #5c6b7a; /* darkened from #7b8a9a → ≥4.5:1 on #f5f7fb (was 3.06:1) */
+  --text-muted: #60707f;     /* darkened from #94a3b8 → ≥4.5:1 on #f5f7fb (was 2.32:1) */
   --text-inverse: #ffffff;
   --text-accent: #1e40af;
 
@@ -169,7 +170,7 @@
   --color-input-bg: #f1f5f9;
   --color-input-border: transparent;
   --color-input-text: var(--text-primary);
-  --color-input-placeholder: var(--gray-400);
+  --color-input-placeholder: var(--text-muted); /* #60707f → ≥4.5:1 on input bg (was #94a3b8, 2.32:1) */
 
   --color-header-bg: rgba(255, 255, 255, 0.92);
   --color-header-border: #e2e8f0;
@@ -179,7 +180,7 @@
   --color-nav-hover-bg: rgba(74, 144, 226, 0.11);
   --color-nav-active-bg: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
   --color-nav-active-fg: #ffffff;
-  --color-nav-inactive: #7b8a9a;
+  --color-nav-inactive: #5c6b7a; /* darkened from #7b8a9a → matches text-secondary for AA on white sidebar */
   --color-nav-active-shadow: 0 12px 28px rgba(53, 122, 189, 0.3);
   --gradient-sidebar-logo: linear-gradient(145deg, #60a5fa, #357abd);
 

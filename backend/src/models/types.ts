@@ -18,6 +18,7 @@ export interface UserRow {
   username: string;
   password_hash: string;
   role: UserRole;
+  token_version?: number;
   is_active: boolean;
   created_at: Date;
   updated_at: Date;
@@ -136,6 +137,8 @@ export interface JwtPayload {
   sub: string;     // user id
   username: string;
   role: UserRole;
+  token_type?: 'access' | 'refresh';
+  tv?: number;     // token version (session versioning)
   iat: number;
   exp: number;
 }

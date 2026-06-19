@@ -6,15 +6,16 @@ import rateLimit from 'express-rate-limit';
 import { query, withTransaction } from '../config/database';
 import { env } from '../config/env';
 import { authenticate, authorize } from '../middleware/auth';
+import { issueCsrfToken } from '../middleware/csrf';
 import { UserRow } from '../models/types';
 
 const router = Router();
+const refreshSecret = env.JWT_REFRESH_SECRET ?? env.JWT_SECRET;
 
 const loginSchema = z.object({
   username: z.string().min(1).max(50),
   password: z.string().min(1),
 });
-
 const bootstrapSchema = z.object({
   username: z.string().min(1).max(50),
   password: z.string().min(6),
@@ -26,6 +27,103 @@ const bootstrapLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many bootstrap attempts, try again later.' },
+});
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, try again later.' },
+});
+
+const refreshLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many refresh attempts, try again later.', code: 'RATE_LIMITED' },
+});
+
+function issueAccessToken(user: { id: string; username: string; role: string; token_version?: number }): string {
+  return jwt.sign(
+    {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+      token_type: 'access',
+      tv: Number(user.token_version ?? 0),
+    },
+    env.JWT_SECRET,
+    { expiresIn: env.JWT_EXPIRES_IN as any },
+  );
+}
+
+function issueRefreshToken(user: { id: string; username: string; role: string; token_version?: number }): string {
+  return jwt.sign(
+    {
+      sub: user.id,
+      username: user.username,
+      role: user.role,
+      token_type: 'refresh',
+      tv: Number(user.token_version ?? 0),
+    },
+    refreshSecret,
+    { expiresIn: env.REFRESH_EXPIRES_IN as any },
+  );
+}
+
+function authTokenResponse(user: { id: string; username: string; role: string; token_version?: number }) {
+  const access_token = issueAccessToken(user);
+  const refresh_token = issueRefreshToken(user);
+  return {
+    // Backward compatibility
+    token: access_token,
+    access_token,
+    refresh_token,
+    user: { id: user.id, username: user.username, role: user.role },
+  };
+}
+
+function readRequestCookie(req: Request, name: string): string | undefined {
+  const raw = req.headers.cookie;
+  if (!raw) return undefined;
+  for (const part of raw.split(';')) {
+    const [k, ...rest] = part.trim().split('=');
+    if (k === name) return decodeURIComponent(rest.join('='));
+  }
+  return undefined;
+}
+
+function attachAuthCookies(
+  res: Response,
+  tokens: { access_token: string; refresh_token: string },
+): void {
+  if (!env.COOKIE_AUTH_ENABLED) return;
+  const secure = env.COOKIE_SECURE;
+  const common = { httpOnly: true as const, sameSite: 'lax' as const, secure };
+  res.cookie('access_token', tokens.access_token, { ...common, maxAge: 8 * 60 * 60 * 1000 });
+  res.cookie('refresh_token', tokens.refresh_token, { ...common, maxAge: 7 * 24 * 60 * 60 * 1000 });
+}
+
+function clearAuthCookies(res: Response): void {
+  if (!env.COOKIE_AUTH_ENABLED) return;
+  const secure = env.COOKIE_SECURE;
+  const common = { httpOnly: true as const, sameSite: 'lax' as const, secure };
+  res.clearCookie('access_token', common);
+  res.clearCookie('refresh_token', common);
+}
+
+function sendAuthResponse(res: Response, user: { id: string; username: string; role: string; token_version?: number }, status = 200) {
+  const body = authTokenResponse(user);
+  attachAuthCookies(res, body);
+  res.status(status).json(body);
+}
+
+// GET /api/auth/csrf — issue double-submit token (cookie + body)
+router.get('/csrf', (_req, res) => {
+  const csrf_token = issueCsrfToken(res);
+  res.json({ csrf_token });
 });
 
 // GET /api/auth/setup-status — บอกว่าต้องสร้าง admin คนแรกหรือไม่ (ไม่ต้องล็อกอิน)
@@ -52,19 +150,11 @@ router.post('/bootstrap', bootstrapLimiter, async (req, res, next) => {
     const result = await query<UserRow>(
       `INSERT INTO users (username, password_hash, role)
        VALUES ($1, $2, 'admin')
-       RETURNING id, username, role`,
+       RETURNING id, username, role, token_version`,
       [body.username.trim(), hash],
     );
-    const user = result.rows[0];
-    const token = jwt.sign(
-      { sub: user.id, username: user.username, role: user.role },
-      env.JWT_SECRET,
-      { expiresIn: env.JWT_EXPIRES_IN as any },
-    );
-    res.status(201).json({
-      token,
-      user: { id: user.id, username: user.username, role: user.role },
-    });
+    const user = result.rows[0] as UserRow;
+    sendAuthResponse(res, user, 201);
   } catch (err: unknown) {
     const e = err as { code?: string };
     if (e.code === '23505') {
@@ -76,7 +166,7 @@ router.post('/bootstrap', bootstrapLimiter, async (req, res, next) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req: Request, res: Response, next: NextFunction) => {
+router.post('/login', loginLimiter, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { username, password } = loginSchema.parse(req.body);
 
@@ -87,21 +177,23 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
 
     const user = result.rows[0];
     if (!user) {
+      await query(
+        'INSERT INTO audit_log (user_id, action, details, ip_address) VALUES (NULL, $1, $2, $3)',
+        ['login_failed', { username, reason: 'user_not_found' }, req.ip],
+      );
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
 
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
+      await query(
+        'INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)',
+        [user.id, 'login_failed', { username: user.username, reason: 'invalid_password' }, req.ip],
+      );
       res.status(401).json({ error: 'Invalid credentials' });
       return;
     }
-
-    const token = jwt.sign(
-      { sub: user.id, username: user.username, role: user.role },
-      env.JWT_SECRET,
-      { expiresIn: env.JWT_EXPIRES_IN as any },
-    );
 
     // Log login event
     await query(
@@ -109,41 +201,108 @@ router.post('/login', async (req: Request, res: Response, next: NextFunction) =>
       [user.id, 'login', req.ip],
     );
 
-    res.json({
-      token,
-      user: { id: user.id, username: user.username, role: user.role },
-    });
+    sendAuthResponse(res, user);
+  } catch (err) {
+    next(err);
+  }
+});
+
+const refreshBodySchema = z.object({
+  refresh_token: z.string().min(1).optional(),
+});
+
+// POST /api/auth/refresh — rotate access token from refresh token (body or httpOnly cookie)
+router.post('/refresh', refreshLimiter, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const parsed = refreshBodySchema.safeParse(req.body ?? {});
+    let refresh_token = parsed.success ? parsed.data.refresh_token : undefined;
+    if (!refresh_token && env.COOKIE_AUTH_ENABLED) {
+      refresh_token = readRequestCookie(req, 'refresh_token');
+    }
+    if (!refresh_token) {
+      res.status(401).json({ error: 'Missing refresh token', code: 'INVALID_REFRESH_TOKEN' });
+      return;
+    }
+    let payload: jwt.JwtPayload & { token_type?: string; tv?: number };
+    try {
+      payload = jwt.verify(refresh_token, refreshSecret) as jwt.JwtPayload & { token_type?: string; tv?: number };
+    } catch {
+      await query(
+        'INSERT INTO audit_log (user_id, action, details, ip_address) VALUES (NULL, $1, $2, $3)',
+        ['refresh_failed', { reason: 'invalid_token' }, req.ip],
+      );
+      res.status(401).json({ error: 'Invalid or expired refresh token', code: 'INVALID_REFRESH_TOKEN' });
+      return;
+    }
+    if (payload?.token_type !== 'refresh') {
+      res.status(401).json({ error: 'Invalid refresh token type' });
+      return;
+    }
+    const r = await query<UserRow>(
+      'SELECT id, username, role, is_active, token_version FROM users WHERE id = $1',
+      [payload.sub],
+    );
+    const user = r.rows[0] as (UserRow & { token_version?: number; is_active?: boolean }) | undefined;
+    if (!user || user.is_active === false) {
+      res.status(401).json({ error: 'User not found or inactive' });
+      return;
+    }
+    const tokenVersion = Number(payload.tv ?? 0);
+    const currentVersion = Number((user as any).token_version ?? 0);
+    if (tokenVersion !== currentVersion) {
+      res.status(401).json({ error: 'Refresh token revoked' });
+      return;
+    }
+    await query(
+      'INSERT INTO audit_log (user_id, action, ip_address) VALUES ($1, $2, $3)',
+      [user.id, 'token_refreshed', req.ip],
+    );
+    sendAuthResponse(res, user);
+  } catch (err) {
+    if (err instanceof jwt.JsonWebTokenError || err instanceof jwt.TokenExpiredError) {
+      res.status(401).json({ error: 'Invalid or expired refresh token', code: 'INVALID_REFRESH_TOKEN' });
+      return;
+    }
+    next(err);
+  }
+});
+router.post('/logout', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await query('UPDATE users SET token_version = token_version + 1, updated_at = NOW() WHERE id = $1', [
+      req.user!.sub,
+    ]);
+    await query(
+      'INSERT INTO audit_log (user_id, action, ip_address) VALUES ($1, $2, $3)',
+      [req.user!.sub, 'logout', req.ip],
+    );
+    clearAuthCookies(res);
+    res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /api/auth/logout-all — same strategy for phased rollout compatibility
+router.post('/logout-all', authenticate, async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    await query('UPDATE users SET token_version = token_version + 1, updated_at = NOW() WHERE id = $1', [
+      req.user!.sub,
+    ]);
+    await query(
+      'INSERT INTO audit_log (user_id, action, ip_address) VALUES ($1, $2, $3)',
+      [req.user!.sub, 'logout_all', req.ip],
+    );
+    clearAuthCookies(res);
+    res.status(204).send();
   } catch (err) {
     next(err);
   }
 });
 
 // GET /api/auth/me — validate token and return user info
-router.get(
-  '/me',
-  async (req: Request, res: Response, next: NextFunction) => {
-    const header = req.headers.authorization;
-    if (!header?.startsWith('Bearer ')) {
-      res.status(401).json({ error: 'No token provided' });
-      return;
-    }
-    try {
-      const payload = jwt.verify(header.slice(7), env.JWT_SECRET) as any;
-      const result = await query<UserRow>(
-        'SELECT id, username, role, is_active FROM users WHERE id = $1',
-        [payload.sub],
-      );
-      const user = result.rows[0];
-      if (!user || !user.is_active) {
-        res.status(401).json({ error: 'User not found or inactive' });
-        return;
-      }
-      res.json({ id: user.id, username: user.username, role: user.role });
-    } catch {
-      res.status(401).json({ error: 'Invalid token' });
-    }
-  },
-);
+router.get('/me', authenticate, async (req: Request, res: Response) => {
+  res.json({ id: req.user!.sub, username: req.user!.username, role: req.user!.role });
+});
 
 const registerUserSchema = z.object({
   username: z.string().min(1).max(50),

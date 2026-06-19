@@ -203,7 +203,7 @@
   .glass-card {
     @apply rounded-2xl transition-[transform,box-shadow,background-color,backdrop-filter] duration-[200ms];
     transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: rgb(255 255 255);
+    background: var(--color-card-bg-solid);
     box-shadow: var(--color-card-shadow);
     border: none;
     backdrop-filter: blur(var(--blur-glass-strong)) saturate(1.18);
@@ -242,7 +242,8 @@
 
   /** แผงสรุปข้าง (ลูกค้า/เจ้ามือ): ไม่มีเส้นตาราง แค่คั่นแถวแบบอ่อน */
   .summary-side-stack {
-    @apply rounded-2xl bg-white overflow-hidden shadow-sm backdrop-blur-[16px];
+    @apply rounded-2xl overflow-hidden shadow-sm backdrop-blur-[16px];
+    background: var(--color-card-bg-solid);
   }
 
   .summary-side-row {
@@ -285,24 +286,24 @@
   .btn-primary-glow {
     @apply inline-flex items-center justify-center gap-1.5 font-semibold rounded-full transition-all duration-[200ms] select-none text-white border-0;
     transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: linear-gradient(to right, rgb(59 130 246), rgb(37 99 235));
+    background: linear-gradient(to right, var(--gradient-btn-from), var(--gradient-btn-to));
     box-shadow:
       0 4px 6px -1px rgb(0 0 0 / 0.08),
       0 2px 4px -2px rgb(0 0 0 / 0.06);
     @apply hover:shadow-md hover:-translate-y-0.5;
     @apply active:translate-y-0;
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-accent)];
     @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-md;
   }
 
   .btn-toolbar-glow {
     @apply inline-flex items-center justify-center gap-1 h-7 px-3 rounded-full text-xs font-semibold transition-all duration-[200ms] select-none text-white border-0;
     transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
-    background: linear-gradient(to right, rgb(59 130 246), rgb(37 99 235));
+    background: linear-gradient(to right, var(--gradient-btn-from), var(--gradient-btn-to));
     box-shadow:
       0 4px 6px -1px rgb(0 0 0 / 0.08),
       0 2px 4px -2px rgb(0 0 0 / 0.06);
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-blue-400;
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[var(--color-accent)];
     @apply disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:translate-y-0;
   }
 
@@ -323,7 +324,7 @@
   }
 
   .btn-toolbar-amber {
-    background: rgb(255 255 255);
+    background: var(--color-card-bg-solid);
     color: var(--color-text-primary);
     border: none;
     box-shadow: var(--shadow-soft);

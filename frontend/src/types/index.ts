@@ -160,6 +160,7 @@ export interface DashboardStats {
   round_stats: { status: string; count: number }[];
   active_bets: { total_bets: number; total_revenue: number };
   recent_rounds: Round[];
+  profit_by_round?: Record<string, { profit: number; sellTotal: number }>;
 }
 
 export type DealerRates = Record<BetType, number>;
