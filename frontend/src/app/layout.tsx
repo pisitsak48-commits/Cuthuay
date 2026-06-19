@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { QueryProvider } from '@/components/providers/QueryProvider';
 import { THEME_INIT_SCRIPT } from '@/lib/theme-script';
 
 /** โหลดฟอนต์ผ่าน stylesheet (ไม่ใช้ next/font/google) — ให้ `next build` / Docker ไม่ต้อง fetch fonts.googleapis.com */
@@ -22,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="bg-app-ambient font-sans text-theme-text-primary antialiased min-h-dvh">
-        <ThemeProvider>{children}</ThemeProvider>
+        <QueryProvider><ThemeProvider>{children}</ThemeProvider></QueryProvider>
       </body>
     </html>
   );
