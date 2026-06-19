@@ -1,4 +1,10 @@
 'use client';
+
+// Recharts uses SVG presentation attributes; CSS custom properties don't resolve there.
+const CHART_SALES_COLOR  = '#4a90e2'; // --chart-primary
+const CHART_PROFIT_COLOR = '#059669'; // --chart-profit (success)
+const CHART_PEAK_COLOR   = '#fbbf24'; // highlight: highest-revenue bar
+
 import {
   BarChart,
   Bar,
@@ -150,8 +156,8 @@ export function RiskDistributionChart({ rounds, profitByRoundId = {} }: Props) {
             wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
             iconType="square"
             payload={[
-              { value: 'ยอดขาย', type: 'square', id: 'sales', color: '#4a90e2' },
-              { value: 'กำไร', type: 'square', id: 'profit', color: '#059669' },
+              { value: 'ยอดขาย', type: 'square', id: 'sales', color: CHART_SALES_COLOR },
+              { value: 'กำไร', type: 'square', id: 'profit', color: CHART_PROFIT_COLOR },
             ]}
           />
           <ReferenceLine y={0} stroke="var(--chart-ref-line)" />
@@ -160,7 +166,7 @@ export function RiskDistributionChart({ rounds, profitByRoundId = {} }: Props) {
               <Cell
                 key={`s-${index}`}
                 fill={
-                  maxRev > 0 && entry.sales === maxRev ? '#fbbf24' : 'url(#riskBarSales)'
+                  maxRev > 0 && entry.sales === maxRev ? CHART_PEAK_COLOR : 'url(#riskBarSales)'
                 }
               />
             ))}

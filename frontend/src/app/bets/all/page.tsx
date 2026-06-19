@@ -1,20 +1,30 @@
 'use client';
-import { useEffect, useState, useRef, Suspense, useCallback } from 'react';
+import { useEffect, useState, useRef, Suspense, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
-import { roundsApi, reportsApi } from '@/lib/api';
+import { reportsApi } from '@/lib/api';
+import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
 import { useAuthStore } from '@/store/useStore';
 import { buildPrintSlipBrandStrip, openPrintPreview } from '@/lib/printPreview';
 import { themeHex } from '@/lib/printColorTokens';
-import { PRINT_FONT_FAMILY, PRINT_GOOGLE_FONTS_HREF, PRINT_ROOT_INLINE_STYLE } from '@/lib/printTypography';
-import { BET_TYPE_LABELS, BetType, Round } from '@/types';
+import { PRINT_FONT_FAMILY, PRINT_ROOT_INLINE_STYLE } from '@/lib/printTypography';
+import { BET_TYPE_LABELS, BetType } from '@/types';
+import {
+  BetViewColumnGrid,
+  BetViewTable,
+  formatBetViewN,
+  loadBetViewLayoutMode,
+  saveBetViewLayoutMode,
+  type BetViewLayoutMode,
+  type BetViewRow,
+  type BetViewThreshold,
+} from '@/components/bets/BetViewGrid';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
-interface BetViewRow { number: string; bet_type: string; sold: number; sent: number; remaining: number }
 interface BetViewResult { rows: BetViewRow[]; total_sold: number; total_sent: number; total_remaining: number }
 
-interface Threshold { id: number; amount: number; color: string }
+type Threshold = BetViewThreshold;
 
 /** โทนระดับความเสี่ยงยอดขาย: เย็น → ร้อน — ยอดสูงใช้แดงเข้มให้เห็นชัดว่าต้องระวัง */
 const PRESET_COLORS = [
@@ -45,15 +55,6 @@ function saveThresholds(t: Threshold[]) {
   try { localStorage.setItem('betview_thresholds', JSON.stringify(t)); } catch { /* ignore */ }
 }
 
-function getThresholdColor(sold: number, thresholds: Threshold[]): string | null {
-  // Find highest threshold that is <= sold
-  const sorted = [...thresholds].sort((a, b) => b.amount - a.amount);
-  for (const t of sorted) {
-    if (sold >= t.amount) return t.color;
-  }
-  return null;
-}
-
 const BET_TYPE_ORDER: BetType[] = [
   '3digit_top', '3digit_tote', '3digit_back',
   '2digit_top', '2digit_bottom', '1digit_top', '1digit_bottom',
@@ -66,7 +67,7 @@ const SORT_LABELS: Record<SortMode, string> = {
 };
 
 function formatN(v: number): string {
-  return v === 0 ? '0' : v.toLocaleString('th-TH', { maximumFractionDigits: 0 });
+  return formatBetViewN(v);
 }
 
 function escapeHtml(s: string): string {
@@ -93,7 +94,6 @@ function buildBetTableHtml(
   return `
     <div class="print-sheet" style="margin:0 0 18px 0;${PRINT_ROOT_INLINE_STYLE};">
       <style>
-        @import url('${PRINT_GOOGLE_FONTS_HREF}');
         table { width:100%; border-collapse:collapse; font-size:13px; background:${themeHex.surface}; margin-bottom:12px; }
         th, td { border:1px solid ${themeHex.gray200}; padding:6px 8px; }
         th { background:${themeHex.gray100}; color:${themeHex.textPrimary}; font-family:${PRINT_FONT_FAMILY}; font-size:13px; font-weight:600; }
@@ -131,53 +131,6 @@ function buildBetTableHtml(
       </table>
     </div>
   `;
-}
-
-/** คอลัมน์กว้างขึ้นเล็กน้อย + ตัวเลขอ่านง่ายขึ้น */
-const CELL_GRID_TEMPLATE = 'minmax(4.25rem,0.42fr) minmax(5rem,1fr) minmax(4.5rem,1fr) minmax(5rem,1fr)';
-
-// ─── One cell in the grid ─────────────────────────────────────────────────────
-function GridCell({ row, rowIndex, fontSize, thresholds }: { row: BetViewRow; rowIndex: number; fontSize: number; thresholds: Threshold[] }) {
-  const soldColor = getThresholdColor(row.sold, thresholds);
-  const rowBg = rowIndex % 2 === 0 ? 'bg-surface-50' : 'bg-[var(--color-surface)]';
-  const padY = fontSize >= 13 ? 'py-2' : 'py-1.5';
-  return (
-    <div
-      className={`grid border-b border-[var(--color-border)] hover:bg-[var(--bg-hover)] transition-colors duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))] ${rowBg}`}
-      style={{ fontSize, gridTemplateColumns: CELL_GRID_TEMPLATE, lineHeight: 1.35 }}
-    >
-      <div className={`px-2 sm:px-2.5 ${padY} tabular-nums tracking-tight font-bold tracking-wide text-theme-text-primary border-r border-[var(--color-border)] text-center bg-[var(--bg-glass-subtle)]`}>
-        {row.number}
-      </div>
-      <div
-        className={`px-2 sm:px-2.5 ${padY} text-right  tracking-tight font-semibold border-r border-[var(--color-border)] text-theme-text-primary`}
-        style={soldColor ? { color: soldColor } : undefined}
-      >
-        {formatN(row.sold)}
-      </div>
-      <div className={`px-2 sm:px-2.5 ${padY} text-right  tracking-tight font-semibold border-r border-[var(--color-border)] ${row.sent > 0 ? 'text-neutral' : 'text-theme-text-muted'}`}>
-        {formatN(row.sent)}
-      </div>
-      <div className={`px-2 sm:px-2.5 ${padY} text-right  tracking-tight font-semibold border-r-0 sm:border-r border-[var(--color-border)] ${row.remaining > 0 ? 'text-theme-text-primary font-bold' : 'text-theme-text-muted'}`}>
-        {formatN(row.remaining)}
-      </div>
-    </div>
-  );
-}
-
-// ─── Column header ─────────────────────────────────────────────────────────────
-function ColHeader({ fontSize }: { fontSize: number }) {
-  return (
-    <div
-      className="grid border-b border-[var(--color-border)] bg-[var(--bg-glass-subtle)] sticky top-0 z-10 select-none shadow-[var(--shadow-soft)]"
-      style={{ fontSize: Math.max(fontSize, 11), gridTemplateColumns: CELL_GRID_TEMPLATE }}
-    >
-      <div className="px-2 sm:px-2.5 py-2 text-theme-text-primary font-semibold border-r border-[var(--color-border)] text-center tracking-wide">เลข</div>
-      <div className="px-2 sm:px-2.5 py-2 text-theme-text-secondary font-semibold text-right border-r border-[var(--color-border)]">ขาย</div>
-      <div className="px-2 sm:px-2.5 py-2 text-theme-text-secondary font-semibold text-right border-r border-[var(--color-border)]">ส่ง</div>
-      <div className="px-2 sm:px-2.5 py-2 text-theme-text-secondary font-semibold text-right border-r-0 sm:border-r border-[var(--color-border)]">เหลือ</div>
-    </div>
-  );
 }
 
 // ─── Threshold Settings Modal ─────────────────────────────────────────────────
@@ -219,7 +172,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
               ไล่โทนจากเย็นไปร้อนตามความเสี่ยง — ยอดสูงควรเป็นโทนร้อน/แดงเข้ม · คอลัมน์ขายเปลี่ยนสีเมื่อถึงขั้นที่กำหนด
             </div>
           </div>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-xl leading-none ml-4">×</button>
+          <button type="button" onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-xl leading-none ml-4">×</button>
         </div>
 
         <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto">
@@ -282,38 +235,48 @@ function BetsAllInner() {
   const searchParams = useSearchParams();
   const roundFromUrl = searchParams.get('round') ?? '';
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
+  const { data: roundsFull = [] } = useRoundsQuery();
+  const rounds = useMemo(
+    () => {
+      const list = isAdmin ? roundsFull : roundsFull.filter((x) => x.status === 'open');
+      return list.map(({ id, name }) => ({ id, name }));
+    },
+    [roundsFull, isAdmin],
+  );
 
-  const [rounds, setRounds]             = useState<Array<{ id: string; name: string }>>([]);
   const [roundId, setRoundId]           = useState(searchParams.get('round') ?? '');
   const [activeBetType, setActiveBetType] = useState<BetType | 'all'>('3digit_top');
   const [sortMode, setSortMode]         = useState<SortMode>('number_asc');
-  const [fontSize, setFontSize]         = useState(13);
+  const [fontSize, setFontSize]         = useState(14);
   const [autoRefreshMin, setAutoRefreshMin] = useState(5);
   const [loading, setLoading]           = useState(false);
   const [data, setData]                 = useState<BetViewResult | null>(null);
   const [tab, setTab]                   = useState<'by_type' | 'total'>('by_type');
-  const [cols, setCols]                 = useState(4);
+  const [cols, setCols]                 = useState(3);
+  const [layoutMode, setLayoutMode]     = useState<BetViewLayoutMode>('columns');
   const [thresholds, setThresholds]     = useState<Threshold[]>(DEFAULT_THRESHOLDS);
   const [showThresholdPanel, setShowThresholdPanel] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
   const intervalRef                     = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Fetch rounds (ผู้ปฏิบัติงาน: เลือกได้เฉพาะงวดเปิดรับ)
+  // Sync roundId when rounds load (ผู้ปฏิบัติงาน: เลือกได้เฉพาะงวดเปิดรับ)
   useEffect(() => {
-    roundsApi.list().then(r => {
-      const full: Round[] = r.data.rounds ?? [];
-      const list = isAdmin ? full : full.filter((x: Round) => x.status === 'open');
-      setRounds(list.map(({ id, name }) => ({ id, name })));
-      setRoundId((prev) => {
-        if (prev && list.some((x) => x.id === prev)) return prev;
-        if (roundFromUrl && list.some((x) => x.id === roundFromUrl)) return roundFromUrl;
-        return list[0]?.id ?? '';
-      });
+    const list = isAdmin ? roundsFull : roundsFull.filter((x) => x.status === 'open');
+    setRoundId((prev) => {
+      if (prev && list.some((x) => x.id === prev)) return prev;
+      if (roundFromUrl && list.some((x) => x.id === roundFromUrl)) return roundFromUrl;
+      return list[0]?.id ?? '';
     });
-  }, [isAdmin, roundFromUrl]);
+  }, [roundsFull, isAdmin, roundFromUrl]);
 
-  // Load thresholds from localStorage
+  // Load thresholds + layout from localStorage
   useEffect(() => { setThresholds(loadThresholds()); }, []);
+  useEffect(() => { setLayoutMode(loadBetViewLayoutMode()); }, []);
+
+  const handleLayoutModeChange = (mode: BetViewLayoutMode) => {
+    setLayoutMode(mode);
+    saveBetViewLayoutMode(mode);
+  };
 
   const handleThresholdChange = (t: Threshold[]) => {
     setThresholds(t);
@@ -374,12 +337,6 @@ function BetsAllInner() {
   })();
 
   const displayRows = tab === 'total' ? totalRows : rows;
-
-  // Split into `cols` columns
-  const perCol = Math.ceil(displayRows.length / cols);
-  const columnGroups: BetViewRow[][] = Array.from({ length: cols }, (_, i) =>
-    displayRows.slice(i * perCol, (i + 1) * perCol),
-  );
 
   const totalSold      = data?.total_sold ?? 0;
   const totalSent      = data?.total_sent ?? 0;
@@ -466,13 +423,13 @@ function BetsAllInner() {
       <main className="flex-1 flex flex-col min-h-0 overflow-hidden">
 
         {/* ── Tabs ── */}
-        <div className="flex gap-2 px-4 py-3 shrink-0 bg-[#f5f7fb]">
+        <div className="flex gap-2 px-4 py-3 shrink-0 bg-[var(--color-surface-muted)]">
           {([['by_type', 'ยอดขายตามประเภท'], ['total', 'ยอดขายรวม']] as const).map(([k, label]) => (
-            <button key={k} onClick={() => setTab(k)}
+            <button key={k} type="button" onClick={() => setTab(k)}
               className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === k
                   ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200/90'
+                  : 'bg-[var(--color-surface-muted)] text-theme-text-secondary hover:bg-[var(--bg-hover)]'
               }`}>
               {label}
             </button>
@@ -518,11 +475,32 @@ function BetsAllInner() {
             </div>
 
             <div className="flex flex-wrap items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--bg-glass-subtle)] px-2.5 py-1.5">
-              <span className="text-[11px] text-theme-text-muted">คอลัมน์</span>
-              <select value={cols} onChange={e => setCols(parseInt(e.target.value))}
-                className="h-8 w-14 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
-                {[2, 3, 4, 5, 6].map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <span className="text-[11px] text-theme-text-muted">มุมมอง</span>
+              <div className="flex rounded-lg border border-border overflow-hidden">
+                {([['columns', 'คอลัมน์'], ['table', 'ตาราง']] as const).map(([mode, label]) => (
+                  <button
+                    key={mode}
+                    type="button"
+                    onClick={() => handleLayoutModeChange(mode)}
+                    className={`h-8 px-2.5 text-[11px] transition-colors ${
+                      layoutMode === mode
+                        ? 'bg-[var(--color-accent)] text-white font-medium'
+                        : 'bg-[var(--color-input-bg)] text-theme-text-secondary hover:bg-surface-200/80'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {layoutMode === 'columns' && (
+                <>
+                  <span className="text-[11px] text-theme-text-muted">คอลัมน์</span>
+                  <select value={cols} onChange={e => setCols(parseInt(e.target.value))}
+                    className="h-8 w-14 rounded-lg bg-[var(--color-input-bg)] border border-border px-2 text-xs text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
+                    {[2, 3, 4, 5, 6].map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </>
+              )}
               <span className="text-[11px] text-theme-text-muted">ขนาด</span>
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => setFontSize(f => Math.max(9, f - 1))}
@@ -594,20 +572,10 @@ function BetsAllInner() {
             </div>
           ) : displayRows.length === 0 ? (
             <div className="flex items-center justify-center min-h-[8rem] text-theme-text-muted text-sm">ไม่มีข้อมูล</div>
+          ) : layoutMode === 'table' ? (
+            <BetViewTable rows={displayRows} fontSize={fontSize} thresholds={thresholds} />
           ) : (
-            <div className="grid gap-1.5 sm:gap-2 p-1.5 sm:p-2 items-start content-start" style={{ gridTemplateColumns: `repeat(${cols}, minmax(0, 1fr))` }}>
-              {columnGroups.map((group, ci) => (
-                <div
-                  key={ci}
-                  className="flex flex-col min-w-0 rounded-2xl border border-[var(--color-border)] bg-white shadow-sm"
-                >
-                  <ColHeader fontSize={fontSize} />
-                  {group.map((row, ri) => (
-                    <GridCell key={`${row.number}-${row.bet_type}-${ri}`} row={row} rowIndex={ri} fontSize={fontSize} thresholds={thresholds} />
-                  ))}
-                </div>
-              ))}
-            </div>
+            <BetViewColumnGrid rows={displayRows} cols={cols} fontSize={fontSize} thresholds={thresholds} />
           )}
         </div>
 

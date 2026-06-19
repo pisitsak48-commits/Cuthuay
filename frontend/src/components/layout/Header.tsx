@@ -22,7 +22,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
       <div>
         <h1
           className={cn(
-            'font-semibold text-theme-text-primary tracking-tight',
+            'font-semibold text-theme-text-primary tracking-tight text-balance',
             prominent ? 'text-3xl sm:text-4xl' : 'text-2xl',
           )}>
           {title}
@@ -30,7 +30,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
         {subtitle && (
           <p
             className={cn(
-              'text-gray-600 mt-1',
+              'text-theme-text-secondary mt-1 text-pretty',
               prominent ? 'text-base mt-1.5 max-w-2xl leading-snug' : 'text-sm',
             )}>
             {subtitle}

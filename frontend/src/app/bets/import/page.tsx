@@ -5,11 +5,14 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
-import { roundsApi, betsApi } from '@/lib/api';
+import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
+import { betsApi } from '@/lib/api';
 import { playBlockedNumber, playError, isBlockedBetApiMessage } from '@/lib/sounds';
 import { formatBaht } from '@/lib/utils';
 import { BET_TYPE_LABELS, Round } from '@/types';
 import { parseLineBetsTextWithSegments } from '@/lib/betParser';
+import { formatApiErrorMessage } from '@/lib/handleApiError';
+import { BetSheetTable } from '@/components/bets/BetSheetTable';
 import { useAuthStore } from '@/store/useStore';
 
 interface ParsedBet {
@@ -34,22 +37,24 @@ function BetsImportInner() {
   const [saved, setSaved]     = useState(false);
   const [lastInserted, setLastInserted] = useState(0);
 
+  const { data: roundsFull = [], isSuccess: roundsReady } = useRoundsQuery(
+    _hasHydrated && user?.role === 'admin',
+  );
+
   useEffect(() => {
     if (!_hasHydrated) return;
     if (user?.role !== 'admin') {
       router.replace('/bets');
       return;
     }
-    roundsApi.list().then(r => {
-      const full: Round[] = r.data.rounds ?? [];
-      setRounds(full.map(({ id, name }: Round) => ({ id, name })));
-      setRoundId((prev) => {
-        if (prev && full.some((x: Round) => x.id === prev)) return prev;
-        if (roundFromUrl && full.some((x: Round) => x.id === roundFromUrl)) return roundFromUrl;
-        return full[0]?.id ?? '';
-      });
+    if (!roundsReady) return;
+    setRounds(roundsFull.map(({ id, name }: Round) => ({ id, name })));
+    setRoundId((prev) => {
+      if (prev && roundsFull.some((x: Round) => x.id === prev)) return prev;
+      if (roundFromUrl && roundsFull.some((x: Round) => x.id === roundFromUrl)) return roundFromUrl;
+      return roundsFull[0]?.id ?? '';
     });
-  }, [_hasHydrated, user?.role, router, roundFromUrl]);
+  }, [_hasHydrated, user?.role, router, roundFromUrl, roundsFull, roundsReady]);
 
   const handleParse = useCallback(() => {
     const result = parseLineBetsTextWithSegments(raw);
@@ -83,9 +88,9 @@ function BetsImportInner() {
       if (apiErrors.length) setErrors(apiErrors);
       setLastInserted(inserted);
       setSaved(inserted > 0);
-    } catch {
+    } catch (err) {
       playError();
-      setErrors(['บันทึกไม่สำเร็จ']);
+      setErrors([formatApiErrorMessage(err, 'บันทึกไม่สำเร็จ')]);
       setSaved(false);
       setLastInserted(0);
     } finally {
@@ -106,23 +111,24 @@ function BetsImportInner() {
             <CardHeader><CardTitle>วางข้อมูล</CardTitle></CardHeader>
             <div className="px-5 pb-5 space-y-4">
               <div>
-                <label className="text-xs text-theme-text-muted mb-1 block">เลือกงวด</label>
-                <select value={roundId} onChange={e => setRoundId(e.target.value)}
+                <label htmlFor="import-round-select" className="text-xs text-theme-text-muted mb-1 block">เลือกงวด</label>
+                <select id="import-round-select" value={roundId} onChange={e => setRoundId(e.target.value)}
                   className="w-full h-9 rounded-lg bg-surface-200 border border-border px-3 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
                   {rounds.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
 
               <div>
-                <label className="text-xs text-theme-text-muted mb-1 block">
+                <label htmlFor="import-raw-text" className="text-xs text-theme-text-muted mb-1 block">
                   รูปแบบไลน์: <code className="text-accent/80">เลข=บนxล่าง</code> หรือ <code className="text-accent/80">เลข บราคา ตราคา</code>
                 </label>
-                <div className="text-[10px] text-theme-text-muted mb-2 space-y-0.5">
+                <div className="text-[11px] text-theme-text-muted mb-2 space-y-0.5">
                   <p>ตัวอย่าง: <code>12=100×100</code> · <code>019=30*30</code> · <code>470 บ50 ต50</code> · <code>70=50-50</code></p>
                   <p>3 ตัว: <code>123-100-120-130</code> · <code>123=100+100+450</code> · <code>123+100-520=20</code></p>
                   <p>กลุ่ม: วางเลขแต่ละบรรทัด + บรรทัดสุดท้ายใส่ราคา (ใช้ราคาร่วมกัน)</p>
                 </div>
                 <textarea
+                  id="import-raw-text"
                   value={raw}
                   onChange={e => { setRaw(e.target.value); setSaved(false); setParsed([]); setLastInserted(0); }}
                   rows={18}
@@ -172,34 +178,26 @@ function BetsImportInner() {
                 <span className="text-xs text-theme-text-muted">{parsed.length} รายการ · รวม {formatBaht(totalAmount)} บาท</span>
               )}
             </CardHeader>
-            <div className="overflow-auto max-h-[calc(100vh-220px)]">
+            <div className="overflow-auto max-h-[calc(100vh-220px)] px-5 pb-5">
               {parsed.length === 0 ? (
-                <div className="px-5 pb-5 text-sm text-theme-text-muted italic">กด "ตรวจสอบข้อมูล" เพื่อดูตัวอย่าง</div>
+                <div className="text-sm text-theme-text-muted italic">กด "ตรวจสอบข้อมูล" เพื่อดูตัวอย่าง</div>
               ) : (
-                <table className="w-full text-xs">
-                  <thead className="sticky top-0 bg-surface-100 border-b border-border">
-                    <tr>
-                      {['เลข', 'ประเภท', 'ราคา'].map(h => (
-                        <th key={h} className="py-2 px-4 text-left text-theme-text-muted font-medium">{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {parsed.map((b, i) => (
-                      <tr key={i} className={`border-b border-border/30 ${i % 2 === 0 ? '' : 'bg-surface-200/30'}`}>
-                        <td className="py-1.5 px-4  tracking-tight font-bold text-theme-text-primary tracking-widest">{b.number}</td>
-                        <td className="py-1.5 px-4 text-theme-text-secondary">{BET_TYPE_LABELS[b.bet_type as keyof typeof BET_TYPE_LABELS] ?? b.bet_type}</td>
-                        <td className="py-1.5 px-4  tracking-tight text-profit">{formatBaht(b.amount)}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                  <tfoot className="border-t border-border bg-surface-200">
-                    <tr>
-                      <td colSpan={2} className="py-2 px-4 text-xs text-theme-text-secondary font-semibold text-right">รวม</td>
-                      <td className="py-2 px-4  tracking-tight font-bold text-profit">{formatBaht(totalAmount)}</td>
-                    </tr>
-                  </tfoot>
-                </table>
+                <>
+                  <BetSheetTable
+                    bets={parsed.map((b, i) => ({
+                      id: String(i),
+                      number: b.number,
+                      bet_type: b.bet_type,
+                      amount: b.amount,
+                    }))}
+                    formatBetType={(t) => BET_TYPE_LABELS[t as keyof typeof BET_TYPE_LABELS] ?? t}
+                    emptyLabel="ยังไม่มีรายการ"
+                  />
+                  <div className="mt-3 flex justify-end border-t border-border pt-2 text-xs">
+                    <span className="text-theme-text-secondary font-semibold mr-2">รวม</span>
+                    <span className="font-bold text-profit tabular-nums">{formatBaht(totalAmount)}</span>
+                  </div>
+                </>
               )}
             </div>
           </Card>

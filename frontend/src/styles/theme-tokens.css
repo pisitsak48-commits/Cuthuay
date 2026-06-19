@@ -26,6 +26,21 @@
   --font-weight-label: 500;
   --font-weight-heading: 600;
 
+  /* ─── Type scale (fixed rem — product UI, 1.175 ratio) ─────────────────── */
+  --text-caption:  0.6875rem;  /* 11px  — absolute minimum; badges, timestamps */
+  --text-xs:       0.75rem;    /* 12px  — secondary metadata, helper text */
+  --text-sm:       0.875rem;   /* 14px  — secondary UI labels, form hints */
+  --text-table:    0.8125rem;  /* 13px  — dense table cells, thead */
+  --text-base:     0.9375rem;  /* 15px  — body; matches body font-size */
+  --text-md:       1rem;       /* 16px  — prominent body, card leads */
+  --text-lg:       1.125rem;   /* 18px  — card headings, subheadings */
+  --text-xl:       1.375rem;   /* 22px  — page section headings */
+  --text-2xl:      1.75rem;    /* 28px  — page h1 default variant */
+  --text-3xl:      2.25rem;    /* 36px  — page h1 prominent variant */
+
+  /* Uppercase label tracking — add to all ALL-CAPS labels/eyebrows */
+  --tracking-label-caps: 0.08em;
+
   --blur-glass: 10px;
   --blur-glass-strong: 16px;
 
@@ -251,6 +266,8 @@
   --chart-tick-label: var(--text-secondary);
   --chart-profit: var(--color-semantic-success);
   --chart-profit-stop: #3d8b40;
+  --chart-profit-line: #4caf50;  /* profit series line (recharts needs resolved hex) */
+  --chart-pct-line: #a855f7;     /* percentage overlay line */
   --chart-bar-kept: var(--chart-primary-dark);
   --chart-bar-sent: var(--chart-primary-soft);
   --chart-bar-new: var(--chart-neutral-light);

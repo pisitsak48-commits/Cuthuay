@@ -89,15 +89,20 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="relative h-dvh max-h-dvh text-theme-text-primary overflow-hidden bg-[var(--color-bg)]">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[9999] focus:rounded-lg focus:bg-[var(--color-accent)] focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-white focus:shadow-lg"
+      >
+        ข้ามไปยังเนื้อหาหลัก
+      </a>
       <div className="pointer-events-none absolute inset-0 bg-[var(--color-bg-ambient)]" />
       <div className="relative flex h-full min-h-0">
         <Sidebar />
         <div
+          id="main-content"
           className={cn(
             'flex flex-1 flex-col min-h-0 min-w-0 max-w-full transition-[margin] duration-200 ease-out',
-            // Desktop: offset for sidebar width
             sidebarExpanded ? 'md:ml-60' : 'md:ml-[4.5rem]',
-            // Mobile: no offset — sidebar overlays as drawer
           )}
         >
           {/* Mobile-only top bar — shows hamburger + brand name */}

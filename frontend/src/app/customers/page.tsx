@@ -3,6 +3,8 @@ import { useEffect, useState, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import type { AxiosError } from 'axios';
 import { customersApi, dealersApi } from '@/lib/api';
+import { formatApiErrorMessage } from '@/lib/handleApiError';
+import { showApiError, showToastMessage } from '@/lib/apiErrorToast';
 import { useAuthStore } from '@/store/useStore';
 import { Customer, Dealer, DEFAULT_PAYOUT_RATES } from '@/types';
 import { AppShell } from '@/components/layout/AppShell';
@@ -117,14 +119,14 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
       if (edit) await customersApi.update(edit.id, p);
       else      await customersApi.create(p);
       await fetchList(); startNew();
-    } catch { setError('บันทึกไม่สำเร็จ'); }
+    } catch (err) { setError(formatApiErrorMessage(err, 'บันทึกไม่สำเร็จ')); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('ลบลูกค้านี้?')) return;
     try { await customersApi.delete(id); await fetchList(); if (edit?.id === id) startNew(); }
-    catch { setError('ลบไม่สำเร็จ'); }
+    catch (err) { setError(formatApiErrorMessage(err, 'ลบไม่สำเร็จ')); }
   };
 
   return (
@@ -140,7 +142,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
             <p className="text-[11px] text-theme-text-muted mt-0.5">ตั้งค่าอัตราจ่ายและเปอร์เซ็นต์</p>
           </div>
           {edit && (
-            <span className="shrink-0 text-[10px] px-2 py-1 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold tracking-wide">
+            <span className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold tracking-wide">
               กำลังแก้ไข
             </span>
           )}
@@ -150,10 +152,11 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           {/* Name */}
           <div>
-            <label className="text-xs text-theme-text-secondary font-semibold block mb-1.5">
+            <label htmlFor="customer-name" className="text-xs text-theme-text-secondary font-semibold block mb-1.5">
               ชื่อลูกค้า <span className="text-loss font-bold">*</span>
             </label>
             <input
+              id="customer-name"
               value={form.name}
               onChange={e => set('name', e.target.value)}
               placeholder="ชื่อ หรือ รหัส"
@@ -163,7 +166,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
 
           {/* Rate table */}
           <div>
-            <p className="text-[10px] text-theme-text-muted uppercase tracking-widest font-semibold mb-2">
+            <p className="text-[11px] text-theme-text-muted uppercase tracking-widest font-semibold mb-2">
               อัตราจ่ายและเปอร์เซ็นต์
             </p>
             <div className="rounded-xl overflow-hidden border border-[var(--color-border)]">
@@ -208,8 +211,9 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
 
           {/* Note */}
           <div>
-            <label className="text-xs text-theme-text-secondary font-semibold block mb-1.5">หมายเหตุ</label>
+            <label htmlFor="customer-note" className="text-xs text-theme-text-secondary font-semibold block mb-1.5">หมายเหตุ</label>
             <textarea
+              id="customer-note"
               value={form.note}
               onChange={e => set('note', e.target.value)}
               rows={2}
@@ -219,7 +223,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
           </div>
 
           {error && (
-            <p className="text-xs text-loss bg-[var(--color-badge-danger-bg)] border border-[var(--color-badge-danger-border)] rounded-lg px-3 py-2">
+            <p role="alert" className="text-xs text-loss bg-[var(--color-badge-danger-bg)] border border-[var(--color-badge-danger-border)] rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -399,14 +403,14 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
       if (edit) await dealersApi.update(edit.id, p);
       else      await dealersApi.create(p);
       await fetchList(); startNew();
-    } catch { setError('บันทึกไม่สำเร็จ'); }
+    } catch (err) { setError(formatApiErrorMessage(err, 'บันทึกไม่สำเร็จ')); }
     finally { setSaving(false); }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm('ลบเจ้ามือนี้?')) return;
     try { await dealersApi.delete(id); await fetchList(); if (edit?.id === id) startNew(); }
-    catch { setError('ลบไม่สำเร็จ'); }
+    catch (err) { setError(formatApiErrorMessage(err, 'ลบไม่สำเร็จ')); }
   };
 
   return (
@@ -421,7 +425,7 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
             <p className="text-[11px] text-theme-text-muted mt-0.5">ตั้งค่าอัตราจ่ายและเปอร์เซ็นต์</p>
           </div>
           {edit && (
-            <span className="shrink-0 text-[10px] px-2 py-1 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold tracking-wide">
+            <span className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-[var(--color-badge-info-bg)] text-[var(--color-badge-info-text)] border border-[var(--color-badge-info-border)] font-semibold tracking-wide">
               กำลังแก้ไข
             </span>
           )}
@@ -429,18 +433,18 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
 
         <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
           <div>
-            <label className="text-xs text-theme-text-secondary font-semibold block mb-1.5">
+            <label htmlFor="dealer-name" className="text-xs text-theme-text-secondary font-semibold block mb-1.5">
               ชื่อเจ้ามือ <span className="text-loss font-bold">*</span>
             </label>
-            <input value={form.name} onChange={e => set('name', e.target.value)} placeholder="ชื่อเจ้ามือ" className={fieldCls} />
+            <input id="dealer-name" value={form.name} onChange={e => set('name', e.target.value)} placeholder="ชื่อเจ้ามือ" className={fieldCls} />
           </div>
           <div>
-            <label className="text-xs text-theme-text-secondary font-semibold block mb-1.5">ชื่อผู้ส่ง</label>
-            <input value={form.sender_name} onChange={e => set('sender_name', e.target.value)} placeholder="ผู้ส่ง" className={fieldCls} />
+            <label htmlFor="dealer-sender" className="text-xs text-theme-text-secondary font-semibold block mb-1.5">ชื่อผู้ส่ง</label>
+            <input id="dealer-sender" value={form.sender_name} onChange={e => set('sender_name', e.target.value)} placeholder="ผู้ส่ง" className={fieldCls} />
           </div>
 
           <div>
-            <p className="text-[10px] text-theme-text-muted uppercase tracking-widest font-semibold mb-2">
+            <p className="text-[11px] text-theme-text-muted uppercase tracking-widest font-semibold mb-2">
               อัตราจ่ายและเปอร์เซ็นต์
             </p>
             <div className="rounded-xl overflow-hidden border border-[var(--color-border)]">
@@ -480,7 +484,7 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
           </div>
 
           {error && (
-            <p className="text-xs text-loss bg-[var(--color-badge-danger-bg)] border border-[var(--color-badge-danger-border)] rounded-lg px-3 py-2">
+            <p role="alert" className="text-xs text-loss bg-[var(--color-badge-danger-bg)] border border-[var(--color-badge-danger-border)] rounded-lg px-3 py-2">
               {error}
             </p>
           )}
@@ -613,37 +617,37 @@ function ContactsPageInner() {
 
   const exportCustomers = async () => {
     try { const res = await customersApi.exportJson(); triggerDownload(res.data, `aurax-customers-${new Date().toISOString().slice(0,10)}.json`); }
-    catch { alert('ส่งออกลูกค้าไม่สำเร็จ'); }
+    catch (err) { showApiError(err, 'ส่งออกลูกค้าไม่สำเร็จ'); }
   };
   const exportDealers = async () => {
     try { const res = await dealersApi.exportJson(); triggerDownload(res.data, `aurax-dealers-${new Date().toISOString().slice(0,10)}.json`); }
-    catch { alert('ส่งออกเจ้ามือไม่สำเร็จ'); }
+    catch (err) { showApiError(err, 'ส่งออกเจ้ามือไม่สำเร็จ'); }
   };
 
   const onCustomerImportPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     try {
       const r = await customersApi.importJson(JSON.parse(await f.text()) as Record<string, unknown>);
-      alert(`นำเข้า/อัปเดต ${r.data.imported} แถวจากไฟล์`);
+      showToastMessage(`นำเข้า/อัปเดต ${r.data.imported} แถวจากไฟล์`, 'success');
       setCustomerReload(x => x + 1);
     } catch (err) {
       const ax = err as AxiosError<{ error?: string; errors?: { index: number; message: string }[] }>;
       const msg = ax.response?.data?.error ?? (err instanceof Error ? err.message : 'นำเข้าไม่สำเร็จ');
-      const extra = ax.response?.data?.errors?.length ? `\n${ax.response.data.errors.slice(0,3).map(x => `#${x.index}: ${x.message}`).join('\n')}` : '';
-      alert(msg + extra);
+      const extra = ax.response?.data?.errors?.length ? ` — ${ax.response.data.errors.slice(0, 3).map(x => `#${x.index}: ${x.message}`).join('; ')}` : '';
+      showApiError(new Error(msg + extra), 'นำเข้าลูกค้าไม่สำเร็จ');
     }
   };
   const onDealerImportPick = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const f = e.target.files?.[0]; e.target.value = ''; if (!f) return;
     try {
       const r = await dealersApi.importJson(JSON.parse(await f.text()) as Record<string, unknown>);
-      alert(`นำเข้า/อัปเดต ${r.data.imported} แถวจากไฟล์`);
+      showToastMessage(`นำเข้า/อัปเดต ${r.data.imported} แถวจากไฟล์`, 'success');
       setDealerReload(x => x + 1);
     } catch (err) {
       const ax = err as AxiosError<{ error?: string; errors?: { index: number; message: string }[] }>;
       const msg = ax.response?.data?.error ?? (err instanceof Error ? err.message : 'นำเข้าไม่สำเร็จ');
-      const extra = ax.response?.data?.errors?.length ? `\n${ax.response.data.errors.slice(0,3).map(x => `#${x.index}: ${x.message}`).join('\n')}` : '';
-      alert(msg + extra);
+      const extra = ax.response?.data?.errors?.length ? ` — ${ax.response.data.errors.slice(0, 3).map(x => `#${x.index}: ${x.message}`).join('; ')}` : '';
+      showApiError(new Error(msg + extra), 'นำเข้าเจ้ามือไม่สำเร็จ');
     }
   };
 
@@ -689,7 +693,7 @@ function ContactsPageInner() {
                 }`}
               >
                 {t.label}
-                <span className="ml-1.5 text-[10px] font-normal opacity-60 hidden sm:inline">— {t.sub}</span>
+                <span className="ml-1.5 text-[11px] font-normal opacity-60 hidden sm:inline">— {t.sub}</span>
               </button>
             ))}
           </div>

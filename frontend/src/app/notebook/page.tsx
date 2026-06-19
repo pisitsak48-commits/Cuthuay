@@ -110,7 +110,7 @@ export default function NotebookPage() {
 
   return (
     <AppShell>
-      <Header title="สมุดบันทึก" subtitle="จดบันทึกข้อมูลสำคัญ" />
+      <Header title="สมุดบันทึก" subtitle="เก็บเฉพาะในเบราว์เซอร์เครื่องนี้ — ไม่ sync ขึ้นเซิร์ฟเวอร์" />
       <main className="flex-1 overflow-auto p-5">
         <div className="max-w-5xl mx-auto">
 
@@ -152,7 +152,7 @@ export default function NotebookPage() {
                   <div className="px-4 pb-3 flex-1">
                     <p className="text-xs text-theme-text-secondary leading-relaxed line-clamp-5 whitespace-pre-wrap">{note.content}</p>
                   </div>
-                  <div className="px-4 pb-3 text-[10px] text-theme-text-muted">
+                  <div className="px-4 pb-3 text-[11px] text-theme-text-muted">
                     {new Date(note.updatedAt).toLocaleString('th-TH', { dateStyle: 'short', timeStyle: 'short' })}
                   </div>
                 </motion.div>
@@ -170,25 +170,26 @@ export default function NotebookPage() {
             <h3 className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขบันทึก' : 'บันทึกใหม่'}</h3>
 
             <div>
-              <label className="text-xs text-theme-text-muted mb-1 block">หัวข้อ</label>
-              <input value={title} onChange={e => setTitle(e.target.value)}
+              <label htmlFor="note-title" className="text-xs text-theme-text-muted mb-1 block">หัวข้อ</label>
+              <input id="note-title" value={title} onChange={e => setTitle(e.target.value)}
                 placeholder="หัวข้อบันทึก..."
                 className="w-full h-9 rounded-lg bg-surface-200 border border-border px-3 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]" />
             </div>
 
             <div>
-              <label className="text-xs text-theme-text-muted mb-1 block">รายละเอียด</label>
-              <textarea value={content} onChange={e => setContent(e.target.value)}
+              <label htmlFor="note-content" className="text-xs text-theme-text-muted mb-1 block">รายละเอียด</label>
+              <textarea id="note-content" value={content} onChange={e => setContent(e.target.value)}
                 rows={8}
                 placeholder="จดบันทึกที่นี่..."
                 className="w-full rounded-xl bg-surface-200 border border-border px-3 py-2.5 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] resize-none" />
             </div>
 
             <div>
-              <label className="text-xs text-theme-text-muted mb-2 block">สีพื้นหลัง</label>
-              <div className="flex gap-2">
+              <label className="text-xs text-theme-text-muted mb-2 block" id="note-color-label">สีพื้นหลัง</label>
+              <div role="group" aria-labelledby="note-color-label" className="flex gap-2">
                 {COLORS.map((c, i) => (
                   <button key={c} onClick={() => setColor(c)} title={COLOR_LABELS[i]}
+                    aria-pressed={color === c}
                     className={`w-7 h-7 rounded-full transition-all border-2 ${color === c ? 'border-accent scale-110' : 'border-transparent hover:scale-105'}`}
                     style={{ backgroundColor: c }} />
                 ))}
@@ -196,7 +197,7 @@ export default function NotebookPage() {
             </div>
 
             {storageError && (
-              <p className="text-xs text-loss">{storageError}</p>
+              <p role="alert" className="text-xs text-loss">{storageError}</p>
             )}
             <div className="flex gap-2 justify-end pt-1">
               <Button variant="ghost" onClick={() => { setStorageError(''); setShowForm(false); }}>ยกเลิก</Button>

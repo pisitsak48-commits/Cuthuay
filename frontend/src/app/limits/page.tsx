@@ -2,7 +2,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
-import { roundsApi, limitsApi, customersApi, dealersApi } from '@/lib/api';
+import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
+import { showApiError } from '@/lib/apiErrorToast';
+import { limitsApi, customersApi, dealersApi } from '@/lib/api';
 import {
   Round, NumberLimit, BetType, BET_TYPE_LABELS,
   Customer, Dealer, DEFAULT_PAYOUT_RATES,
@@ -160,17 +162,17 @@ function LimitTable({ limits, customers, dealers, dealerLimits, selectedId, tab,
               </td>
               <td className="px-3 py-2 text-theme-text-secondary">
                 {tab === 'customer' && (l as NumberLimit & { custCount?: number }).custCount != null ? (
-                  <span className="text-[10px] bg-[var(--color-badge-neutral-bg)] border border-[var(--color-badge-neutral-border)] text-theme-text-secondary rounded px-1.5 py-0.5">
+                  <span className="text-[11px] bg-[var(--color-badge-neutral-bg)] border border-[var(--color-badge-neutral-border)] text-theme-text-secondary rounded px-1.5 py-0.5">
                     ลูกค้าทุกคน {(l as NumberLimit & { custCount: number }).custCount > 1 ? `(${(l as NumberLimit & { custCount: number }).custCount})` : ''}
                   </span>
                 ) : (
                   <>
                     {entityName(l)}
                     {l.entity_type === 'all' && (
-                      <span className="ml-1.5 text-[10px] bg-[var(--color-badge-neutral-bg)] border border-[var(--color-badge-neutral-border)] text-theme-text-secondary rounded px-1 py-0.5 align-middle">ทุกคน</span>
+                      <span className="ml-1.5 text-[11px] bg-[var(--color-badge-neutral-bg)] border border-[var(--color-badge-neutral-border)] text-theme-text-secondary rounded px-1 py-0.5 align-middle">ทุกคน</span>
                     )}
                     {matchesDealer(l) && (
-                      <span className="ml-1.5 text-[10px] bg-[var(--color-badge-success-bg)] border border-[var(--color-badge-success-border)] text-[var(--color-badge-success-text)] rounded px-1 py-0.5 align-middle">= เจ้ามือ</span>
+                      <span className="ml-1.5 text-[11px] bg-[var(--color-badge-success-bg)] border border-[var(--color-badge-success-border)] text-[var(--color-badge-success-text)] rounded px-1 py-0.5 align-middle">= เจ้ามือ</span>
                     )}
                   </>
                 )}
@@ -289,7 +291,9 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
       else await limitsApi.bulkUpsert(roundId, payloads);
       setMsg('ปิดรับสำเร็จ');
       onSave();
-    } catch { setMsg('เกิดข้อผิดพลาด'); }
+    } catch (err: unknown) {
+      showApiError(err, 'ปิดรับไม่สำเร็จ');
+    }
     setBusy(false);
   };
 
@@ -303,7 +307,9 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
       else await limitsApi.bulkUpsert(roundId, payloads);
       setMsg('บันทึกสำเร็จ');
       onSave();
-    } catch { setMsg('เกิดข้อผิดพลาด'); }
+    } catch (err: unknown) {
+      showApiError(err, 'บันทึกเพดานไม่สำเร็จ');
+    }
     setBusy(false);
   };
 
@@ -331,7 +337,9 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
       await limitsApi.bulkUpsert(roundId, payloads);
       setMsg(`บันทึก 3บน+โต็ด สำเร็จ (${nums.length * 2} รายการ) · ใช้ ${pct}% แยกคำนวณตามอัตราแต่ละประเภท`);
       onSave();
-    } catch { setMsg('เกิดข้อผิดพลาด'); }
+    } catch (err: unknown) {
+      showApiError(err, 'บันทึก 3บน+โต็ด ไม่สำเร็จ');
+    }
     setBusy(false);
   };
 
@@ -342,7 +350,9 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
       await limitsApi.deleteById(roundId, selectedLimitId);
       setMsg('ยกเลิกการอั้นสำเร็จ');
       onSave();
-    } catch { setMsg('เกิดข้อผิดพลาด'); }
+    } catch (err: unknown) {
+      showApiError(err, 'ยกเลิกการอั้นไม่สำเร็จ');
+    }
     setBusy(false);
   };
 
@@ -357,7 +367,9 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
       await limitsApi.bulkUpsert(roundId, payloads);
       setMsg(`อั้นเลขติด ${payloads.length} รายการสำเร็จ`);
       onSave();
-    } catch { setMsg('เกิดข้อผิดพลาด'); }
+    } catch (err: unknown) {
+      showApiError(err, 'อั้นเลขติดไม่สำเร็จ');
+    }
     setBusy(false);
   };
 
@@ -511,7 +523,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
           </button>
         )}
         <div className="pt-2 mt-1 border-t border-border/70 space-y-1.5">
-          <p className="text-[10px] text-theme-text-muted text-center leading-snug px-0.5">
+          <p className="text-[11px] text-theme-text-muted text-center leading-snug px-0.5">
             ปิดรับทันที (ไม่ค่อยใช้)
           </p>
           <button
@@ -583,7 +595,9 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
       await limitsApi.bulkUpsert(roundId, payloads);
       setMsg(`คัดลอกสำเร็จ ${dealerLimits.length} รายการ × ${targetIds.length} ลูกค้า`);
       setTimeout(onDone, 800);
-    } catch { setMsg('เกิดข้อผิดพลาด'); }
+    } catch (err: unknown) {
+      showApiError(err, 'คัดลอกเพดานไม่สำเร็จ');
+    }
     finally { setBusy(false); }
   };
 
@@ -605,7 +619,7 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left: dealer limits preview */}
           <div className="flex-1 border-r border-border overflow-auto">
-            <div className="px-3 py-2 text-[10px] text-theme-text-muted uppercase tracking-wider border-b border-border sticky top-0 bg-surface-100">เลขอั้นเจ้ามือที่จะคัดลอก</div>
+            <div className="px-3 py-2 text-[11px] text-theme-text-muted uppercase tracking-wider border-b border-border sticky top-0 bg-surface-100">เลขอั้นเจ้ามือที่จะคัดลอก</div>
             {dealerLimits.length === 0
               ? <p className="text-theme-text-muted text-xs italic text-center py-8">ไม่มีเลขอั้นเจ้ามือ</p>
               : (
@@ -638,7 +652,7 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
 
           {/* Right: customer selection */}
           <div className="w-52 shrink-0 flex flex-col overflow-hidden">
-            <div className="px-3 py-2 text-[10px] text-theme-text-muted uppercase tracking-wider border-b border-border">ใช้กับ</div>
+            <div className="px-3 py-2 text-[11px] text-theme-text-muted uppercase tracking-wider border-b border-border">ใช้กับ</div>
             <div className="flex-1 overflow-auto p-3 space-y-2">
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
                 allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
@@ -687,7 +701,7 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
 }
 
 export default function LimitsPage() {
-  const [rounds, setRounds]       = useState<Round[]>([]);
+  const { data: rounds = [] } = useRoundsQuery();
   const [roundId, setRoundId]     = useState('');
   const [tab, setTab]             = useState<Tab>('customer');
   const [limits, setLimits]       = useState<NumberLimit[]>([]);
@@ -698,13 +712,12 @@ export default function LimitsPage() {
   const [loading, setLoading]     = useState(false);
   const [showCopyModal, setShowCopyModal] = useState(false);
 
-  // ── load rounds, customers, dealers on mount ──
+  // ── load customers, dealers on mount; rounds from useRoundsQuery ──
   useEffect(() => {
-    roundsApi.list().then((r) => {
-      const list: Round[] = r.data.rounds;
-      setRounds(list);
-      if (list.length) setRoundId(list[0].id);
-    });
+    if (rounds.length && !roundId) setRoundId(rounds[0].id);
+  }, [rounds, roundId]);
+
+  useEffect(() => {
     customersApi.list().then((r) => setCustomers(r.data.customers ?? r.data));
     dealersApi.list().then((r) => setDealers(r.data.dealers ?? r.data));
   }, []);
@@ -728,7 +741,9 @@ export default function LimitsPage() {
         return true;
       });
       setDealerLimits(merged);
-    } catch { /* ignore */ }
+    } catch (err) {
+      showApiError(err, 'โหลดเลขอั้นเจ้ามือไม่สำเร็จ');
+    }
   }, [roundId]);
 
   useEffect(() => { fetchDealerLimits(); }, [fetchDealerLimits]);
@@ -770,8 +785,8 @@ export default function LimitsPage() {
   const handleDelete = async (id: string) => {
     try {
       await limitsApi.deleteById(roundId, id);
-    } catch {
-      // ignore if already deleted
+    } catch (err: unknown) {
+      showApiError(err, 'ลบเพดานไม่สำเร็จ');
     }
     setSelectedId(null);
     fetchLimits();
@@ -790,8 +805,8 @@ export default function LimitsPage() {
       } else {
         await limitsApi.deleteAll(roundId, 'customer');
       }
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      showApiError(err, 'ลบเพดานไม่สำเร็จ');
     }
     setSelectedId(null);
     fetchLimits();
@@ -807,8 +822,8 @@ export default function LimitsPage() {
     )) return;
     try {
       await limitsApi.deleteAll(roundId);
-    } catch {
-      // ignore
+    } catch (err: unknown) {
+      showApiError(err, 'ลบเพดานทั้งงวดไม่สำเร็จ');
     }
     setSelectedId(null);
     fetchLimits();
@@ -825,7 +840,7 @@ export default function LimitsPage() {
           <select
             value={roundId}
             onChange={(e) => setRoundId(e.target.value)}
-            className="bg-gray-100 border-0 rounded-full px-4 py-2 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-400"
+            className="bg-[var(--color-surface-muted)] border-0 rounded-full px-4 py-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
           >
             <option value="">-- เลือกงวด --</option>
             {rounds.map((r) => (
@@ -833,23 +848,25 @@ export default function LimitsPage() {
             ))}
           </select>
 
-          <div className="inline-flex flex-1 min-w-[280px] max-w-md rounded-full bg-gray-100 p-1 gap-1 shadow-sm">
+          <div className="inline-flex flex-1 min-w-[280px] max-w-md rounded-full bg-[var(--color-surface-muted)] p-1 gap-1 shadow-sm">
             <button
+              type="button"
               onClick={() => setTab('customer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === 'customer'
                   ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-white/90'
+                  : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
               }`}
             >
               อั้นเลขลูกค้า
             </button>
             <button
+              type="button"
               onClick={() => setTab('dealer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === 'dealer'
                   ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-white/90'
+                  : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
               }`}
             >
               เลขอั้นเจ้ามือ

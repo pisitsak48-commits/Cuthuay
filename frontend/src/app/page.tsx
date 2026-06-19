@@ -100,7 +100,7 @@ function CardHeader({
           <p className="text-sm font-bold text-theme-text-primary tracking-tight leading-tight">{title}</p>
           <div className="flex items-center gap-1.5 mt-0.5">
             <span className={`inline-block w-1.5 h-1.5 rounded-full ${dot}`} />
-            <span className="text-[10px] text-theme-text-muted font-medium tracking-wide uppercase">Live</span>
+            <span className="text-[11px] text-theme-text-muted font-medium tracking-wide uppercase">Live</span>
           </div>
         </div>
       </div>

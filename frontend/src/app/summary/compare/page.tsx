@@ -1,5 +1,10 @@
 'use client';
 
+// Recharts uses SVG presentation attributes; CSS custom properties don't resolve there.
+const CHART_SALES_COLOR  = '#2563eb'; // --chart-primary (blue-600)
+const CHART_PROFIT_COLOR = '#22c55e'; // --chart-profit (green-500)
+const CHART_LOSS_COLOR   = '#ef4444'; // --color-semantic-danger (red-500)
+
 import { useCallback, useEffect, useMemo, useState, Fragment } from 'react';
 import Link from 'next/link';
 import {
@@ -460,7 +465,7 @@ export default function SummaryComparePage() {
               },
             ].map((k) => (
               <Card key={k.label} className="p-4 rounded-2xl border border-[var(--color-border)]/70 shadow-[var(--shadow-soft)] bg-gradient-to-b from-white to-[var(--color-bg-primary)]">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-theme-text-muted">{k.label}</p>
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted">{k.label}</p>
                 <p className="text-xs text-theme-text-secondary mt-1">{k.sub}</p>
                 <p className={cn('text-xl font-bold tabular-nums mt-2 tracking-tight', k.cls)}>
                   {'raw' in k && k.raw ? k.value : typeof k.value === 'number' ? formatBaht(k.value) : k.value}
@@ -512,13 +517,13 @@ export default function SummaryComparePage() {
                       wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
                       iconType="square"
                       payload={[
-                        { value: 'ยอดขาย', type: 'square', id: 'sales', color: '#2563eb' },
-                        { value: 'กำไร', type: 'square', id: 'profit', color: '#22c55e' },
+                        { value: 'ยอดขาย', type: 'square', id: 'sales', color: CHART_SALES_COLOR },
+                        { value: 'กำไร', type: 'square', id: 'profit', color: CHART_PROFIT_COLOR },
                       ]}
                     />
                     <ReferenceLine y={0} stroke="var(--chart-ref-line)" />
-                    <Bar dataKey="sales" name="ยอดขาย" fill="#2563eb" radius={[6, 6, 0, 0]} maxBarSize={28} />
-                    <Bar dataKey="profit" name="กำไร" fill="#22c55e" radius={[6, 6, 0, 0]} maxBarSize={28}>
+                    <Bar dataKey="sales" name="ยอดขาย" fill={CHART_SALES_COLOR} radius={[6, 6, 0, 0]} maxBarSize={28} />
+                    <Bar dataKey="profit" name="กำไร" fill={CHART_PROFIT_COLOR} radius={[6, 6, 0, 0]} maxBarSize={28}>
                       {chartData.map((entry) => (
                         <Cell
                           key={entry.key}
@@ -526,8 +531,8 @@ export default function SummaryComparePage() {
                             entry.profit == null
                               ? 'transparent'
                               : entry.profit >= 0
-                                ? '#22c55e'
-                                : '#ef4444'
+                                ? CHART_PROFIT_COLOR
+                                : CHART_LOSS_COLOR
                           }
                         />
                       ))}

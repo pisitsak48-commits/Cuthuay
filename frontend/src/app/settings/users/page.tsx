@@ -6,6 +6,7 @@ import { Header } from '@/components/layout/Header';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
+import { showApiError } from '@/lib/apiErrorToast';
 
 interface UserRow {
   id: string;
@@ -122,7 +123,9 @@ export default function UsersPage() {
         body: JSON.stringify({ is_active: !u.is_active }),
       });
       fetchUsers();
-    } catch { /* ignore */ }
+    } catch (err: unknown) {
+      showApiError(err, 'เปลี่ยนสถานะผู้ใช้ไม่สำเร็จ');
+    }
   };
 
   const handleDelete = async (u: UserRow) => {
@@ -131,7 +134,7 @@ export default function UsersPage() {
       await apiFetch(`/auth/users/${u.id}`, { method: 'DELETE' });
       fetchUsers();
     } catch (e: unknown) {
-      alert((e as Error).message ?? 'ลบไม่สำเร็จ');
+      showApiError(e, 'ลบไม่สำเร็จ');
     }
   };
 
@@ -195,19 +198,19 @@ export default function UsersPage() {
 
               {!editing && (
                 <div>
-                  <label className="text-xs text-theme-text-muted mb-1 block">ชื่อผู้ใช้</label>
-                  <input value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
+                  <label htmlFor="user-form-username" className="text-xs text-theme-text-muted mb-1 block">ชื่อผู้ใช้</label>
+                  <input id="user-form-username" value={form.username} onChange={e => setForm(f => ({ ...f, username: e.target.value }))}
                     className="w-full h-9 rounded-lg bg-surface-200 border border-border px-3 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]" />
                 </div>
               )}
               <div>
-                <label className="text-xs text-theme-text-muted mb-1 block">{editing ? 'รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)' : 'รหัสผ่าน'}</label>
-                <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
+                <label htmlFor="user-form-password" className="text-xs text-theme-text-muted mb-1 block">{editing ? 'รหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)' : 'รหัสผ่าน'}</label>
+                <input id="user-form-password" type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                   className="w-full h-9 rounded-lg bg-surface-200 border border-border px-3 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]" />
               </div>
               <div>
-                <label className="text-xs text-theme-text-muted mb-1 block">บทบาท</label>
-                <select value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as UserRow['role'] }))}
+                <label htmlFor="user-form-role" className="text-xs text-theme-text-muted mb-1 block">บทบาท</label>
+                <select id="user-form-role" value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value as UserRow['role'] }))}
                   className="w-full h-9 rounded-lg bg-surface-200 border border-border px-3 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
                   <option value="admin">ผู้ดูแลระบบ</option>
                   <option value="operator">ผู้ปฏิบัติงาน</option>
@@ -215,7 +218,7 @@ export default function UsersPage() {
                 </select>
               </div>
 
-              {error && <p className="text-xs text-loss">{error}</p>}
+              {error && <p role="alert" className="text-xs text-loss">{error}</p>}
               <div className="flex gap-2 justify-end">
                 <Button variant="ghost" onClick={() => setShowForm(false)}>ยกเลิก</Button>
                 <Button onClick={handleSave} loading={saving}>บันทึก</Button>

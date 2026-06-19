@@ -247,7 +247,7 @@ export default function RoundsPage() {
         </div>
 
         {importMsg && (
-          <div className={`rounded-lg px-4 py-2 text-sm ${importMsg.ok ? 'bg-[var(--color-badge-success-bg)] text-[var(--color-badge-success-text)] border border-[var(--color-badge-success-border)]' : 'bg-[var(--color-badge-danger-bg)] text-[var(--color-badge-danger-text)] border border-[var(--color-badge-danger-border)]'}`}>
+          <div role="alert" className={`rounded-lg px-4 py-2 text-sm ${importMsg.ok ? 'bg-[var(--color-badge-success-bg)] text-[var(--color-badge-success-text)] border border-[var(--color-badge-success-border)]' : 'bg-[var(--color-badge-danger-bg)] text-[var(--color-badge-danger-text)] border border-[var(--color-badge-danger-border)]'}`}>
             {importMsg.msg}
           </div>
         )}
@@ -257,8 +257,9 @@ export default function RoundsPage() {
             <CardTitle className="mb-4">สร้างงวดใหม่</CardTitle>
             <div className="flex flex-wrap gap-3 items-end">
               <div className="flex flex-col gap-1">
-                <label className="text-xs text-theme-text-muted uppercase tracking-wider">วันออกรางวัล</label>
+                <label htmlFor="round-draw-date" className="text-xs text-theme-text-muted uppercase tracking-wider">วันออกรางวัล</label>
                 <input
+                  id="round-draw-date"
                   type="date"
                   className="h-10 min-w-[11rem] rounded-lg border border-[var(--color-border-strong)] bg-[var(--color-card-bg)] px-3 text-sm font-semibold text-[var(--color-text-primary)] shadow-[var(--shadow-input-inner)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--color-border-strong)] [color-scheme:light]"
                   style={{ colorScheme: 'light' }}
