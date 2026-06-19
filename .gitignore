@@ -27,7 +27,7 @@ logs/
 Thumbs.db
 
 # ── Reports output ────────────────────────────────────────
-reports/
+/reports/
 
 # ── IDE ───────────────────────────────────────────────────
 .vscode/settings.json
