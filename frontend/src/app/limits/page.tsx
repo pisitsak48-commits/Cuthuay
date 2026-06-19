@@ -861,7 +861,7 @@ export default function LimitsPage() {
               onClick={() => setTab('customer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === 'customer'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-[var(--gradient-btn-from)] to-[var(--gradient-btn-to)] text-white shadow-sm'
                   : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
               }`}
             >
@@ -872,7 +872,7 @@ export default function LimitsPage() {
               onClick={() => setTab('dealer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === 'dealer'
-                  ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-sm'
+                  ? 'bg-gradient-to-r from-[var(--gradient-btn-from)] to-[var(--gradient-btn-to)] text-white shadow-sm'
                   : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
               }`}
             >

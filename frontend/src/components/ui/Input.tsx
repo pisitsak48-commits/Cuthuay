@@ -20,7 +20,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           ref={ref}
           id={id}
           className={cn(
-            'h-11 w-full rounded-full px-4 py-2 border-0 bg-[var(--color-surface-muted)] text-theme-text-primary placeholder:text-theme-text-muted',
+            'h-11 w-full rounded-xl px-4 py-2 border-0 bg-[var(--color-surface-muted)] text-theme-text-primary placeholder:text-theme-text-muted',
             'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
             'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
@@ -54,7 +54,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={id}
           className={cn(
-            'h-11 w-full rounded-full px-4 py-2 border-0 text-sm bg-[var(--color-surface-muted)] text-theme-text-primary',
+            'h-11 w-full rounded-xl px-4 py-2 border-0 text-sm bg-[var(--color-surface-muted)] text-theme-text-primary',
             'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
             'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',

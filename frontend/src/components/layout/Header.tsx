@@ -45,7 +45,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
               <p
                 className={cn(
                   'uppercase text-theme-text-muted',
-                  prominent ? 'text-xs tracking-[0.2em]' : 'text-[11px] tracking-[0.22em]',
+                  prominent ? 'text-xs tracking-[var(--tracking-label-caps)]' : 'text-[11px] tracking-[var(--tracking-label-caps)]',
                 )}>
                 งวด
               </p>
@@ -61,7 +61,7 @@ export function Header({ title, subtitle, variant = 'default', trailing }: Heade
               <p
                 className={cn(
                   'uppercase text-theme-text-muted',
-                  prominent ? 'text-xs tracking-[0.2em]' : 'text-[11px] tracking-[0.22em]',
+                  prominent ? 'text-xs tracking-[var(--tracking-label-caps)]' : 'text-[11px] tracking-[var(--tracking-label-caps)]',
                 )}>
                 ยอดรับ
               </p>
