@@ -19,9 +19,6 @@ import limitsRouter    from './routes/limits';
 import reportsRouter   from './routes/reports';
 import customersRouter from './routes/customers';
 import dealersRouter        from './routes/dealers';
-import lineWebhookRouter    from './routes/lineWebhook';
-import lineIntegrationRouter from './routes/lineIntegration';
-
 const app = express();
 const server = http.createServer(app);
 
@@ -47,12 +44,6 @@ app.use(
   }),
 );
 app.use(morgan(env.NODE_ENV === 'production' ? 'combined' : 'dev'));
-// LINE ต้องใช้ raw body ในการตรวจ HMAC — วางก่อน express.json()
-app.use(
-  '/api/line/webhook',
-  express.raw({ type: 'application/json' }),
-  lineWebhookRouter,
-);
 const jsonBodyDefault = express.json({ limit: '5mb' });
 const jsonBodyLarge = express.json({ limit: '100mb' });
 app.use((req, res, next) => {
@@ -80,7 +71,6 @@ app.get('/', (_req, res) => {
 });
 
 // ─── API Routes ───────────────────────────────────────────────────────────────
-app.use('/api/line-integration', lineIntegrationRouter);
 app.use('/api/auth',      authRouter);
 app.use('/api/bets',      betsRouter);
 app.use('/api/rounds',    roundsRouter);
