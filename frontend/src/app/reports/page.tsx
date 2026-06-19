@@ -145,7 +145,7 @@ export default function ReportsPage() {
                       </span>
                       <span className="text-xs text-theme-text-muted">{BET_TYPE_TH[exp.bet_type]}</span>
                     </div>
-                    <span className={` tracking-tight text-sm font-semibold ${exp.net_pl >= 0 ? 'text-profit' : 'text-rose-400'}`}>
+                    <span className={` tracking-tight text-sm font-semibold ${exp.net_pl >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {exp.net_pl >= 0 ? '+' : ''}{formatBaht(exp.net_pl)}
                     </span>
                   </motion.div>

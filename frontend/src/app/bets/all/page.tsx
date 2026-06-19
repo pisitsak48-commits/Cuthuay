@@ -166,7 +166,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
 
   return (
     <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={onClose}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="alert-color-title" tabIndex={-1} className="bg-[var(--color-card-bg-solid)] border-0 rounded-2xl shadow-md p-6 w-[380px] flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="alert-color-title" tabIndex={-1} className="bg-[var(--color-card-bg-solid)] border-0 rounded-2xl shadow-md p-6 w-[380px] max-w-[calc(100vw-2rem)] flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
             <div id="alert-color-title" className="text-sm font-semibold text-theme-text-primary">ตั้งค่าสีแจ้งเตือนยอดขาย</div>

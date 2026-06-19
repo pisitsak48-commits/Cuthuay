@@ -1610,7 +1610,7 @@ function BetsPageContent() {
       {/* CSV Export Modal */}
       {csvModalOpen && (
         <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={() => setCsvModalOpen(false)}>
-          <div ref={csvDialogRef} role="dialog" aria-modal="true" aria-label="Export CSV ทุกแผ่น" tabIndex={-1} className="bg-surface-100 border border-border rounded-lg p-4 w-96 flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
+          <div ref={csvDialogRef} role="dialog" aria-modal="true" aria-label="Export CSV ทุกแผ่น" tabIndex={-1} className="bg-surface-100 border border-border rounded-lg p-4 w-96 max-w-[calc(100vw-2rem)] flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
             <div className="text-sm font-semibold text-theme-text-primary">Export CSV ทุกแผ่น</div>
             <div className="space-y-2">
               <label className="flex items-center gap-2 text-sm text-theme-text-secondary cursor-pointer">

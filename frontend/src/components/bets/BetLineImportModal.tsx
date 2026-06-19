@@ -122,7 +122,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
   aria-hidden={false}
 >
   <div
-    className="pointer-events-auto flex h-full max-h-[100dvh] w-full max-w-[min(100vw,720px)] flex-col border-y border-r border-[var(--color-border)] bg-[color-mix(in_srgb,var(--gray-50)_92%,var(--primary-50)_8%)] shadow-[var(--shadow-lift-hover)] sm:rounded-l-2xl overflow-hidden border-l-[3px] border-l-[var(--chart-primary)]"
+    className="pointer-events-auto flex h-full max-h-[100dvh] w-full max-w-[min(100vw,720px)] flex-col border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--gray-50)_92%,var(--primary-50)_8%)] shadow-[var(--shadow-lift-hover)] sm:rounded-l-2xl overflow-hidden"
     role="dialog"
     aria-modal="false"
     aria-labelledby="line-import-title"

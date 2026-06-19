@@ -68,7 +68,7 @@ const CHART_SEG_ACTIVE =
   '[background:var(--color-nav-active-bg)] text-[var(--color-nav-active-fg)] shadow-sm font-semibold ring-1 ring-black/10';
 /** idle: ข้อความสีเข้มบนพื้นอ่อน — ห้ามใช้สีขาวบน bg อ่อน (เคยพังเมื่อ gradient ไปอยู่ background-color) */
 const CHART_SEG_IDLE =
-  'text-[var(--text-primary)] bg-white/90 hover:bg-[var(--color-nav-hover-bg)] shadow-sm ring-1 ring-[var(--chart-neutral-light)]';
+  'text-[var(--text-primary)] bg-[var(--color-card-bg-solid)]/90 hover:bg-[var(--color-nav-hover-bg)] shadow-sm ring-1 ring-[var(--chart-neutral-light)]';
 
 /** ป้าย «ขีด xxx บ/เลข» — ใช้ gradient นำทางเดียวกับปุ่มเรียงกราฟ */
 function ThresholdPerNumberPill({ amount }: { amount: number }) {

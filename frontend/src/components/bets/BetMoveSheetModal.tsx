@@ -48,7 +48,7 @@ export function BetMoveSheetModal({
 
   return (
     <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={onClose}>
-      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="move-sheet-title" tabIndex={-1} className="bg-surface-100 border border-border rounded-lg p-4 w-80 flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-labelledby="move-sheet-title" tabIndex={-1} className="bg-surface-100 border border-border rounded-lg p-4 w-80 max-w-[calc(100vw-2rem)] flex flex-col gap-3 focus:outline-none" onClick={e => e.stopPropagation()}>
         <div id="move-sheet-title" className="text-sm font-semibold text-theme-text-primary">ย้าย — {selectedGroups.size} รายการ</div>
 
         <div className="flex items-center gap-2">

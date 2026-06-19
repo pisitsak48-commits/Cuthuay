@@ -155,8 +155,6 @@ export function CutRangeTableModal({
                       className={cn(
                         'py-1.5 px-2.5 text-[var(--text-muted)] tabular-nums',
                         tdSel,
-                        rowSelected &&
-                          'border-l-[3px] border-l-[var(--chart-primary)] shadow-[inset_1px_0_0_color-mix(in_srgb,var(--chart-primary)_35%,transparent)]',
                       )}
                     >
                       {row.row}

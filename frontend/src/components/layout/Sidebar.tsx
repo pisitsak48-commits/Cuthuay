@@ -172,7 +172,7 @@ export function Sidebar() {
           aria-label={expanded ? 'ย่อเมนู' : 'ขยายเมนู'}
           title={expanded ? 'ย่อเมนู (แสดงไอคอน)' : 'ขยายเมนู'}
           className={cn(
-            'hidden md:flex rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 backdrop-blur-[8px] transition-all duration-theme shrink-0 items-center justify-center',
+            'hidden md:flex rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 transition-all duration-theme shrink-0 items-center justify-center',
             !expanded && 'mx-auto',
           )}
         >
@@ -183,7 +183,7 @@ export function Sidebar() {
           type="button"
           onClick={() => setSidebarMobileOpen(false)}
           aria-label="ปิดเมนู"
-          className="md:hidden flex rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 backdrop-blur-[8px] transition-all duration-theme shrink-0 items-center justify-center"
+          className="md:hidden flex rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-accent hover:border-accent/30 transition-all duration-theme shrink-0 items-center justify-center"
         >
           <CloseIcon />
         </button>
@@ -414,7 +414,7 @@ export function Sidebar() {
               <p className="text-[11px] text-theme-text-muted capitalize">{user?.role}</p>
             </div>
           )}
-          <button onClick={logout} aria-label="ออกจากระบบ" className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] backdrop-blur-[8px] transition-all duration-theme" title="ออกจากระบบ">
+          <button onClick={logout} aria-label="ออกจากระบบ" className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] transition-all duration-theme" title="ออกจากระบบ">
             <LogoutIcon />
           </button>
         </div>
