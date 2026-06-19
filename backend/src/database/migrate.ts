@@ -236,6 +236,13 @@ ALTER TABLE bets ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ;
 UPDATE bets SET updated_at = created_at WHERE updated_at IS NULL;
 ALTER TABLE bets ALTER COLUMN updated_at SET DEFAULT NOW();
 ALTER TABLE bets ALTER COLUMN updated_at SET NOT NULL;
+
+-- migrate12: remove LINE webhook artifacts
+DROP TABLE IF EXISTS line_webhook_log;
+DROP TABLE IF EXISTS line_integration_settings;
+
+-- migrate13: token versioning for force-logout
+ALTER TABLE users ADD COLUMN IF NOT EXISTS token_version INTEGER NOT NULL DEFAULT 0;
 `;
 
 async function migrate(): Promise<void> {
@@ -243,7 +250,7 @@ async function migrate(): Promise<void> {
   try {
     console.log('Running base schema...');
     await client.query(SQL);
-    console.log('Running extensions (migrate 2–11 + customers)...');
+    console.log('Running extensions (migrate 2–13 + customers)...');
     await client.query(SQL_EXTENSIONS);
     console.log('✅ Migrations completed');
   } finally {
