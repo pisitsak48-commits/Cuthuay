@@ -74,6 +74,13 @@ export default function UsersPage() {
 
   useEffect(() => { fetchUsers(); }, []);
 
+  useEffect(() => {
+    if (!showForm) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowForm(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showForm]);
+
   const openNew = () => {
     setEditing(null);
     setForm({ username: '', password: '', role: 'operator' });
@@ -193,8 +200,9 @@ export default function UsersPage() {
         {showForm && (
           <div className="fixed inset-0 z-50 bg-[var(--color-backdrop-overlay)] flex items-center justify-center p-4">
             <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              role="dialog" aria-modal="true" aria-labelledby="user-form-title"
               className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-md p-5 space-y-4">
-              <h3 className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้ใหม่'}</h3>
+              <h3 id="user-form-title" className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขผู้ใช้' : 'เพิ่มผู้ใช้ใหม่'}</h3>
 
               {!editing && (
                 <div>

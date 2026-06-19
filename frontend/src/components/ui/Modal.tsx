@@ -19,15 +19,42 @@ const sizeMap = {
   xl: 'max-w-4xl',
 };
 
+const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+
 export function Modal({ open, onClose, title, children, className, size = 'md' }: ModalProps) {
   const overlayRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+    if (!open) return;
+    const panel = panelRef.current;
+    if (!panel) return;
+
+    const prev = document.activeElement as HTMLElement | null;
+
+    const focusable = panel.querySelectorAll<HTMLElement>(FOCUSABLE);
+    (focusable[0] ?? panel).focus();
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (!panel) return;
+      if (e.key === 'Escape') { onClose(); return; }
+      if (e.key !== 'Tab') return;
+      const els = Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE));
+      if (!els.length) { e.preventDefault(); return; }
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey) {
+        if (document.activeElement === first) { e.preventDefault(); last.focus(); }
+      } else {
+        if (document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      prev?.focus();
     };
-    if (open) window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
   }, [open, onClose]);
 
   return (
@@ -46,6 +73,11 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
           />
           {/* Panel */}
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={title ? 'modal-title' : undefined}
+            tabIndex={-1}
             initial={{ opacity: 0, scale: 0.95, y: -8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -8 }}
@@ -53,16 +85,18 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
             className={cn(
               'relative z-10 w-full rounded-2xl border-0',
               'shadow-lg p-6 backdrop-blur-none',
-              'bg-white',
+              'bg-white focus:outline-none',
               sizeMap[size],
               className,
             )}
           >
             {title && (
               <div className="flex items-center justify-between mb-5">
-                <h2 className="text-base font-semibold text-theme-text-primary">{title}</h2>
+                <h2 id="modal-title" className="text-base font-semibold text-theme-text-primary">{title}</h2>
                 <button
+                  type="button"
                   onClick={onClose}
+                  aria-label="ปิด"
                   className="text-theme-text-muted hover:text-theme-text-primary transition-all duration-theme p-1 rounded-full hover:bg-[var(--bg-hover)]"
                 >
                   <XIcon />

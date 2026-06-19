@@ -61,6 +61,13 @@ export default function NotebookPage() {
 
   useEffect(() => { setNotes(loadNotes()); }, []);
 
+  useEffect(() => {
+    if (!showForm) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') { setShowForm(false); setStorageError(''); } };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showForm]);
+
   const openNew = () => {
     setEditing(null);
     setTitle('');
@@ -166,8 +173,9 @@ export default function NotebookPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 bg-[var(--color-backdrop-overlay)] flex items-center justify-center p-4">
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            role="dialog" aria-modal="true" aria-labelledby="note-form-title"
             className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-lg p-5 space-y-4">
-            <h3 className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขบันทึก' : 'บันทึกใหม่'}</h3>
+            <h3 id="note-form-title" className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขบันทึก' : 'บันทึกใหม่'}</h3>
 
             <div>
               <label htmlFor="note-title" className="text-xs text-theme-text-muted mb-1 block">หัวข้อ</label>

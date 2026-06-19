@@ -164,15 +164,15 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
 
   return (
     <div className="fixed inset-0 bg-[var(--color-backdrop-overlay)] flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-white border-0 rounded-2xl shadow-md p-6 w-[380px] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
+      <div role="dialog" aria-modal="true" aria-labelledby="alert-color-title" className="bg-white border-0 rounded-2xl shadow-md p-6 w-[380px] flex flex-col gap-3" onClick={e => e.stopPropagation()}>
         <div className="flex items-center justify-between">
           <div>
-            <div className="text-sm font-semibold text-theme-text-primary">ตั้งค่าสีแจ้งเตือนยอดขาย</div>
+            <div id="alert-color-title" className="text-sm font-semibold text-theme-text-primary">ตั้งค่าสีแจ้งเตือนยอดขาย</div>
             <div className="text-xs text-theme-text-muted mt-0.5 leading-snug">
               ไล่โทนจากเย็นไปร้อนตามความเสี่ยง — ยอดสูงควรเป็นโทนร้อน/แดงเข้ม · คอลัมน์ขายเปลี่ยนสีเมื่อถึงขั้นที่กำหนด
             </div>
           </div>
-          <button type="button" onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-xl leading-none ml-4">×</button>
+          <button type="button" onClick={onClose} aria-label="ปิด" className="text-theme-text-muted hover:text-theme-text-secondary text-xl leading-none ml-4">×</button>
         </div>
 
         <div className="flex flex-col gap-2 max-h-[320px] overflow-y-auto">

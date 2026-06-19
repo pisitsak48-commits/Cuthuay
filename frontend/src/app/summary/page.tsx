@@ -65,6 +65,13 @@ function SummaryPageInner() {
     setShowResultModal(true);
   }, [data]);
 
+  useEffect(() => {
+    if (!showResultModal) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowResultModal(false); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [showResultModal]);
+
   const autoOpenResultDone = useRef(false);
   useEffect(() => {
     if (searchParams.get('editResult') !== '1') {
@@ -271,6 +278,7 @@ function SummaryPageInner() {
           onClick={() => setShowResultModal(false)}
         >
           <div
+            role="dialog" aria-modal="true" aria-label="ผลรางวัลงวดนี้"
             className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-border)]/80 bg-[var(--color-card-bg-solid)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.28)] ring-1 ring-black/[0.04]"
             onClick={e => e.stopPropagation()}
           >

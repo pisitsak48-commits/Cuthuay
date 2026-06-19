@@ -562,6 +562,12 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
 
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [onClose]);
+
   const toggleCust = (id: string) =>
     setSelectedCust(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
@@ -604,16 +610,17 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4" onClick={onClose}>
       <div
+        role="dialog" aria-modal="true" aria-labelledby="copy-limits-title"
         className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-2xl flex flex-col max-h-[90vh]"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
         <div className="px-5 py-3 border-b border-border flex items-center justify-between shrink-0">
           <div>
-            <h3 className="font-bold text-theme-text-primary text-sm">คัดลอกเลขอั้นจากเจ้ามือ</h3>
+            <h3 id="copy-limits-title" className="font-bold text-theme-text-primary text-sm">คัดลอกเลขอั้นจากเจ้ามือ</h3>
             <p className="text-xs text-theme-text-muted mt-0.5">{dealerLimits.length} รายการ — เลือกว่าจะใช้กับลูกค้าใด</p>
           </div>
-          <button onClick={onClose} className="text-theme-text-muted hover:text-theme-text-secondary text-lg leading-none">✕</button>
+          <button type="button" onClick={onClose} aria-label="ปิด" className="text-theme-text-muted hover:text-theme-text-secondary text-lg leading-none">✕</button>
         </div>
 
         <div className="flex flex-1 min-h-0 overflow-hidden">
