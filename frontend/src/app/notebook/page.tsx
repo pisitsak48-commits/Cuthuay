@@ -1,6 +1,7 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
@@ -61,12 +62,8 @@ export default function NotebookPage() {
 
   useEffect(() => { setNotes(loadNotes()); }, []);
 
-  useEffect(() => {
-    if (!showForm) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') { setShowForm(false); setStorageError(''); } };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showForm]);
+  const closeForm = useCallback(() => { setShowForm(false); setStorageError(''); }, []);
+  const panelRef = useFocusTrap(showForm, closeForm);
 
   const openNew = () => {
     setEditing(null);
@@ -173,8 +170,10 @@ export default function NotebookPage() {
       {showForm && (
         <div className="fixed inset-0 z-50 bg-[var(--color-backdrop-overlay)] flex items-center justify-center p-4">
           <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
+            ref={panelRef}
             role="dialog" aria-modal="true" aria-labelledby="note-form-title"
-            className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-lg p-5 space-y-4">
+            tabIndex={-1}
+            className="bg-surface-100 border border-border rounded-xl shadow-[var(--shadow-hover)] w-full max-w-lg p-5 space-y-4 focus:outline-none">
             <h3 id="note-form-title" className="font-semibold text-theme-text-primary">{editing ? 'แก้ไขบันทึก' : 'บันทึกใหม่'}</h3>
 
             <div>

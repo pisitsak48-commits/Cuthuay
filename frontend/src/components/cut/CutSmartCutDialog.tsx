@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import type { RangeSimRow } from '@/types';
 import { formatBaht } from '@/lib/utils';
 import { compareRangeRowsBetter, smartCutDisplayScore } from '@/lib/cut/rangeSimSort';
@@ -16,6 +17,7 @@ export function CutSmartCutDialog({
   onClose: () => void;
   onApply: (rowIdx: number, threshold: number) => void;
 }) {
+  const panelRef = useFocusTrap(true, onClose);
   const [maxLossLimit, setMaxLossLimit] = useState(Math.round(totalRevenue * 0.5));
   const [minPctWin, setMinPctWin]       = useState(50);
   const resetConstraints = () => {
@@ -125,8 +127,10 @@ export function CutSmartCutDialog({
       <motion.div
         initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        ref={panelRef}
         role="dialog" aria-modal="true" aria-labelledby="smart-cut-title"
-        className="w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)]">
+        tabIndex={-1}
+        className="w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)] focus:outline-none">
 
         {/* Header */}
         <div className="shrink-0 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_35%,white)] px-5 py-4">

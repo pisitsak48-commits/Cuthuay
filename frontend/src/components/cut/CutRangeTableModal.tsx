@@ -2,6 +2,7 @@
 
 import type { RefObject } from 'react';
 import { motion } from 'framer-motion';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import type { RangeSimResponse } from '@/types';
 import { cn, formatBaht } from '@/lib/utils';
 
@@ -32,6 +33,7 @@ export function CutRangeTableModal({
   onClose,
   onConfirm,
 }: CutRangeTableModalProps) {
+  const panelRef = useFocusTrap(true, onClose);
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -44,8 +46,10 @@ export function CutRangeTableModal({
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        ref={panelRef}
         role="dialog" aria-modal="true" aria-label="กำหนดช่วง"
-        className="w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)]"
+        tabIndex={-1}
+        className="w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)] focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="px-4 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between shrink-0 bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_30%,white)]">

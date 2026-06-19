@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo, Suspense } from 'react';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
@@ -65,12 +66,8 @@ function SummaryPageInner() {
     setShowResultModal(true);
   }, [data]);
 
-  useEffect(() => {
-    if (!showResultModal) return;
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowResultModal(false); };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [showResultModal]);
+  const closeResultModal = useCallback(() => setShowResultModal(false), []);
+  const resultModalRef = useFocusTrap(showResultModal, closeResultModal);
 
   const autoOpenResultDone = useRef(false);
   useEffect(() => {
@@ -278,8 +275,10 @@ function SummaryPageInner() {
           onClick={() => setShowResultModal(false)}
         >
           <div
+            ref={resultModalRef}
             role="dialog" aria-modal="true" aria-label="ผลรางวัลงวดนี้"
-            className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-border)]/80 bg-[var(--color-card-bg-solid)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.28)] ring-1 ring-black/[0.04]"
+            tabIndex={-1}
+            className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-border)]/80 bg-[var(--color-card-bg-solid)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.28)] ring-1 ring-black/[0.04] focus:outline-none"
             onClick={e => e.stopPropagation()}
           >
             <div className="relative px-6 pt-6 pb-5 border-b border-[var(--color-border)]/90 bg-gradient-to-br from-[var(--color-card-bg-solid)] via-white to-[var(--bg-glass-subtle)]">

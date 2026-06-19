@@ -1,11 +1,13 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 
 export function CutSearchDialog({ onClose, onConfirm }: {
   onClose: () => void;
   onConfirm: (mode: string, value: number) => void;
 }) {
+  const panelRef = useFocusTrap(true, onClose);
   const [mode, setMode] = useState<'manual' | 'pct_win' | 'max_payout'>('manual');
   const [value, setValue] = useState(0);
   const opts = [
@@ -20,8 +22,10 @@ export function CutSearchDialog({ onClose, onConfirm }: {
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.96, opacity: 0 }}
         transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+        ref={panelRef}
         role="dialog" aria-modal="true" aria-labelledby="cut-search-title"
-        className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)]">
+        tabIndex={-1}
+        className="w-full max-w-[400px] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)] focus:outline-none">
         <div className="border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_40%,white)] px-6 py-4">
           <h3 id="cut-search-title" className="font-semibold text-[var(--text-primary)] text-lg tracking-tight">ค้นหายอดตัด</h3>
           <p className="text-xs text-[var(--text-secondary)] mt-1">เลือกวิธีแล้วกรอกค่า — ระบบจะไฮไลต์แถวในตารางกำหนดช่วงให้</p>

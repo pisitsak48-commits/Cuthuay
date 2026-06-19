@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import type { BetType, RangeSimRow } from '@/types';
 import { buildPrintSlipBrandStrip, openPrintPreview, slipPagination, SLIP_PRINT_GRID_OPTS } from '@/lib/printPreview';
 import { downloadHtmlAsPng } from '@/lib/htmlToPng';
@@ -106,6 +107,7 @@ export function CutPdfDialog({ roundName, betType, dealerName, threshold, cutIte
     COLS,
     SLIP_PRINT_GRID_OPTS,
   );
+  const panelRef = useFocusTrap(true, onClose);
   const [pngBusy, setPngBusy] = useState(false);
 
   const BET_PREFIX: Record<string, string> = {
@@ -257,8 +259,10 @@ export function CutPdfDialog({ roundName, betType, dealerName, threshold, cutIte
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4">
       <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
+        ref={panelRef}
         role="dialog" aria-modal="true" aria-labelledby="pdf-dialog-title"
-        className="bg-white border-0 rounded-2xl shadow-lg  w-full max-w-5xl max-h-[95vh] flex flex-col">
+        tabIndex={-1}
+        className="bg-[var(--color-card-bg-solid)] border-0 rounded-2xl shadow-lg w-full max-w-5xl max-h-[95vh] flex flex-col focus:outline-none">
 
         {/* Dialog header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-[var(--bg-glass)] rounded-t-xl">

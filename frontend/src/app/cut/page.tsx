@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useLayoutEffect, useState, useCallback, useRef, useMemo, Suspense } from 'react';
+import { useFocusTrap } from '@/lib/useFocusTrap';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -171,6 +172,8 @@ function CutPageInner() {
   // ── Chart display
   const [chartHeight, setChartHeight]         = useState<number | null>(360);
   const [chartFullscreen, setChartFullscreen] = useState(false);
+  const closeChartDialog = useCallback(() => setChartFullscreen(false), []);
+  const chartDialogRef = useFocusTrap(chartFullscreen, closeChartDialog);
   const [chartSortMode, setChartSortMode]     = useState<ChartSortMode>('number_asc');
   const [hoveredChartNumber, setHoveredChartNumber] = useState<string | null>(null);
 
@@ -1051,9 +1054,11 @@ function CutPageInner() {
             className="fixed inset-0 z-50 bg-[var(--color-backdrop-overlay)] flex items-center justify-center p-4"
             onClick={() => setChartFullscreen(false)}>
             <motion.div
+              ref={chartDialogRef}
               initial={{ scale: 0.96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.96, opacity: 0 }}
               role="dialog" aria-modal="true" aria-label="การกระจายยอดแทง — เต็มจอ"
-              className="border border-[var(--chart-neutral-light)] rounded-xl shadow-[var(--shadow-hover)] w-full max-w-[96vw] flex flex-col overflow-hidden bg-[var(--color-surface)]"
+              tabIndex={-1}
+              className="border border-[var(--chart-neutral-light)] rounded-xl shadow-[var(--shadow-hover)] w-full max-w-[96vw] flex flex-col overflow-hidden bg-[var(--color-surface)] focus:outline-none"
               style={{ height: '90vh' }}
               onClick={e => e.stopPropagation()}>
               {/* Header */}
