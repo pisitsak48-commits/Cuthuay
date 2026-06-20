@@ -288,7 +288,7 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
           {(() => { const eff = chartHeight ?? 360; return (
           <span className="flex items-center gap-0.5 border-l border-[var(--chart-neutral-light)] pl-2 ml-0.5">
             {([180, 260, 360, 480] as const).map(h => (
-              <button key={h} onClick={() => setChartHeight(h)}
+              <button type="button" key={h} onClick={() => setChartHeight(h)}
                 className={`w-8 h-8 rounded-md text-[9px] font-bold transition-[color,background-color,box-shadow] duration-200 ease-out ${
                   eff === h ? CHART_SEG_ACTIVE : `${CHART_SEG_IDLE} hover:bg-[var(--color-nav-hover-bg)]`
                 }`}>
@@ -298,7 +298,7 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
           </span>
           ); })()}
           {/* Fullscreen button */}
-          <button onClick={() => setChartFullscreen(true)} title="ขยายเต็มจอ"
+          <button type="button" onClick={() => setChartFullscreen(true)} title="ขยายเต็มจอ"
             className="w-8 h-8 rounded-md hover:bg-[var(--color-nav-hover-bg)] text-[var(--chart-neutral-mid)] hover:text-[var(--text-primary)] transition-colors duration-200 flex items-center justify-center">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
               <path d="M8 3H5a2 2 0 00-2 2v3m18 0V5a2 2 0 00-2-2h-3m0 18h3a2 2 0 002-2v-3M3 16v3a2 2 0 002 2h3"/>

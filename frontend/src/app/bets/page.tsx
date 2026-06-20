@@ -1637,9 +1637,9 @@ function BetsPageContent() {
               </label>
             </div>
             <div className="flex justify-end gap-2">
-              <button onClick={() => setCsvModalOpen(false)}
+              <button type="button" onClick={() => setCsvModalOpen(false)}
                 className="h-8 px-4 rounded bg-surface-200 text-theme-text-secondary hover:bg-surface-300 text-sm">ยกเลิก</button>
-              <button onClick={() => void handleExportCsv()}
+              <button type="button" onClick={() => void handleExportCsv()}
                 className="h-8 px-4 rounded bg-profit/95 hover:bg-profit/90 text-theme-btn-primary-fg text-sm font-semibold">ดาวน์โหลด</button>
             </div>
           </div>

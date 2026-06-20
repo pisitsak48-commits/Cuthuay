@@ -271,7 +271,7 @@ export function CutPdfDialog({ roundName, betType, dealerName, threshold, cutIte
             <p className="text-xs text-theme-text-muted mt-0.5">{BET_TYPE_SHORT[betType]} · {cutItems.length} รายการ · {totalPages} หน้า</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            <button onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-[var(--bg-hover)] text-sm text-theme-text-primary border border-border transition-colors duration-theme">ปิด</button>
+            <button type="button" onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-[var(--bg-hover)] text-sm text-theme-text-primary border border-border transition-colors duration-theme">ปิด</button>
             <button
               type="button"
               onClick={() => void doDownloadPng()}
@@ -279,7 +279,7 @@ export function CutPdfDialog({ roundName, betType, dealerName, threshold, cutIte
               className="h-8 px-4 text-sm rounded-xl border-2 border-[var(--chart-primary)] bg-[var(--chart-primary-soft)] text-[var(--chart-neutral-dark)] font-semibold hover:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               {pngBusy ? 'กำลังสร้าง PNG…' : 'ดาวน์โหลด PNG (ส่งไลน์)'}
             </button>
-            <button onClick={doPrint} className="btn-primary-glow h-8 px-4 text-sm rounded-xl flex items-center gap-1.5">
+            <button type="button" onClick={doPrint} className="btn-primary-glow h-8 px-4 text-sm rounded-xl flex items-center gap-1.5">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="6 9 6 2 18 2 18 9" /><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" /><rect x="6" y="14" width="12" height="8" />
               </svg>

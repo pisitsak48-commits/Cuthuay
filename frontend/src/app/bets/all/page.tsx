@@ -193,21 +193,21 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
               <span className="text-xs text-theme-text-muted shrink-0">สี</span>
               <div className="flex gap-1.5 flex-wrap flex-1">
                 {PRESET_COLORS.map(pc => (
-                  <button key={pc.value} title={pc.label}
+                  <button type="button" key={pc.value} title={pc.label}
                     onClick={() => updateColor(t.id, pc.value)}
                     className={`w-5 h-5 rounded-full border-2 transition-[border-color,transform] ${t.color === pc.value ? 'border-[var(--text-inverse)] scale-110' : 'border-transparent hover:border-border-bright'}`}
                     style={{ backgroundColor: pc.value }}
                   />
                 ))}
               </div>
-              <button onClick={() => remove(t.id)}
+              <button type="button" onClick={() => remove(t.id)}
                 className="text-theme-text-muted hover:text-loss text-lg leading-none shrink-0">×</button>
             </div>
           ))}
         </div>
 
         <div className="flex items-center gap-3 pt-2 border-t border-border">
-          <button onClick={addRow}
+          <button type="button" onClick={addRow}
             className="btn-primary-glow h-8 px-4 text-xs rounded-xl">
             + เพิ่มยอด
           </button>
@@ -222,7 +222,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
               ))}
             </div>
           )}
-          <button onClick={onClose}
+          <button type="button" onClick={onClose}
             className="btn-toolbar-glow btn-toolbar-muted !h-8 px-4 text-xs ml-auto rounded-2xl">
             ปิด
           </button>

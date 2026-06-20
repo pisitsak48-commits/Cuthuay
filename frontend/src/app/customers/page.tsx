@@ -235,8 +235,8 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
 
         {/* footer buttons */}
         <div className="px-4 py-3 border-t border-[var(--color-border)] bg-[var(--bg-glass-subtle)] flex gap-2 shrink-0">
-          {edit && <button onClick={startNew} className={btnCancel}>ยกเลิก</button>}
-          <button onClick={handleSave} disabled={saving} className={btnSave}>
+          {edit && <button type="button" onClick={startNew} className={btnCancel}>ยกเลิก</button>}
+          <button type="button" onClick={handleSave} disabled={saving} className={btnSave}>
             {saving ? 'กำลังบันทึก…' : edit ? 'อัปเดตลูกค้า' : 'เพิ่มลูกค้า'}
           </button>
         </div>
@@ -502,8 +502,8 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
         </div>
 
         <div className="px-4 py-3 border-t border-[var(--color-border)] bg-[var(--bg-glass-subtle)] flex gap-2 shrink-0">
-          {edit && <button onClick={startNew} className={btnCancel}>ยกเลิก</button>}
-          <button onClick={handleSave} disabled={saving} className={btnSave}>
+          {edit && <button type="button" onClick={startNew} className={btnCancel}>ยกเลิก</button>}
+          <button type="button" onClick={handleSave} disabled={saving} className={btnSave}>
             {saving ? 'กำลังบันทึก…' : edit ? 'อัปเดตเจ้ามือ' : 'เพิ่มเจ้ามือ'}
           </button>
         </div>

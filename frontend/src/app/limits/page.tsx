@@ -693,10 +693,10 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
         <div className="px-5 py-3 border-t border-border flex items-center justify-between shrink-0">
           <span className={`text-xs ${msg.includes('ผิดพลาด') ? 'text-loss' : 'text-profit'}`}>{msg}</span>
           <div className="flex gap-2">
-            <button onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-surface-300 text-sm text-theme-text-secondary transition-colors border border-border">
+            <button type="button" onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-surface-300 text-sm text-theme-text-secondary transition-colors border border-border">
               ยกเลิก
             </button>
-            <button onClick={handleConfirm} disabled={busy || dealerLimits.length === 0}
+            <button type="button" onClick={handleConfirm} disabled={busy || dealerLimits.length === 0}
               className="btn-primary-glow h-8 px-5 text-sm rounded-xl">
               {busy ? 'กำลังบันทึก…' : `ยืนยัน (${dealerLimits.length} รายการ)`}
             </button>

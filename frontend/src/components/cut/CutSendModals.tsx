@@ -93,11 +93,11 @@ export function SaveDealerModal({
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-border flex justify-end gap-2">
-          <button onClick={onClose}
+          <button type="button" onClick={onClose}
             className="h-9 px-4 rounded-lg bg-surface-300 hover:bg-surface-200 text-sm text-theme-text-secondary transition-colors border border-border">
             ยกเลิก
           </button>
-          <button onClick={() => onConfirm(dealerId)} disabled={saving || !dealerId}
+          <button type="button" onClick={() => onConfirm(dealerId)} disabled={saving || !dealerId}
             className="btn-primary-glow h-9 px-5 text-sm rounded-xl disabled:opacity-50">
             {saving ? 'กำลังบันทึก…' : 'บันทึกส่ง'}
           </button>

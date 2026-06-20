@@ -354,7 +354,7 @@ function BetSheetEditableGridInner(props: BetSheetEditableGridProps) {
             </td>
             <td className="py-1 px-1 w-6" onClick={e => e.stopPropagation()}>
               {canMutate && (
-                <button onClick={() => deleteSavedGroup(group.bets)} className="text-theme-text-muted hover:text-loss">×</button>
+                <button type="button" onClick={() => deleteSavedGroup(group.bets)} className="text-theme-text-muted hover:text-loss">×</button>
               )}
             </td>
           </tr>
