@@ -64,7 +64,7 @@ export function Modal({ open, onClose, title, children, className, size = 'md' }
                   type="button"
                   onClick={onClose}
                   aria-label="ปิด"
-                  className="text-theme-text-muted hover:text-theme-text-primary transition-all duration-theme p-1 rounded-full hover:bg-[var(--bg-hover)]"
+                  className="text-theme-text-muted hover:text-theme-text-primary transition-colors duration-theme p-1 rounded-full hover:bg-[var(--bg-hover)]"
                 >
                   <XIcon />
                 </button>

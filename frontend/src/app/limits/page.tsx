@@ -477,7 +477,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 const newPayout = parseFloat((defaultRate * newPct / 100).toFixed(2));
                 setForm((p) => ({ ...p, payoutPct: String(newPct), customPayout: String(newPayout) }));
               }}
-              className="bg-surface-300 hover:bg-surface-400 text-theme-btn-primary-fg rounded px-2 py-1 text-xs transition-all duration-theme"
+              className="bg-surface-300 hover:bg-surface-400 text-theme-btn-primary-fg rounded px-2 py-1 text-xs transition-colors duration-theme"
             >▼</button>
             <input
               type="text"
@@ -498,7 +498,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 const newPayout = parseFloat((defaultRate * newPct / 100).toFixed(2));
                 setForm((p) => ({ ...p, payoutPct: String(newPct), customPayout: String(newPayout) }));
               }}
-              className="bg-surface-300 hover:bg-surface-400 text-theme-btn-primary-fg rounded px-2 py-1 text-xs transition-all duration-theme"
+              className="bg-surface-300 hover:bg-surface-400 text-theme-btn-primary-fg rounded px-2 py-1 text-xs transition-colors duration-theme"
             >▲</button>
             <span className="text-theme-text-secondary text-sm">%</span>
           </div>
@@ -664,13 +664,13 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
                 allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
               }`}>
-                <input type="radio" checked={allCustomers} onChange={() => setAllCustomers(true)} className="accent" />
+                <input type="radio" name="limit-scope" checked={allCustomers} onChange={() => setAllCustomers(true)} className="accent" />
                 ลูกค้าทุกคน
               </label>
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
                 !allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
               }`}>
-                <input type="radio" checked={!allCustomers} onChange={() => setAllCustomers(false)} className="accent" />
+                <input type="radio" name="limit-scope" checked={!allCustomers} onChange={() => setAllCustomers(false)} className="accent" />
                 เลือกลูกค้า
               </label>
               {!allCustomers && (
@@ -857,7 +857,7 @@ export default function LimitsPage() {
             <button
               type="button"
               onClick={() => setTab('customer')}
-              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
+              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                 tab === 'customer'
                   ? 'bg-[var(--color-accent)] text-white shadow-sm'
                   : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
@@ -868,7 +868,7 @@ export default function LimitsPage() {
             <button
               type="button"
               onClick={() => setTab('dealer')}
-              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
+              className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                 tab === 'dealer'
                   ? 'bg-[var(--color-accent)] text-white shadow-sm'
                   : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
@@ -883,7 +883,7 @@ export default function LimitsPage() {
               <button
                 type="button"
                 onClick={handlePurgeAllLimitsInRound}
-                className="text-xs px-2 py-1 rounded-lg border border-risk-medium/50 bg-risk-medium/10 text-risk-medium hover:bg-risk-medium/20 transition-all duration-theme"
+                className="text-xs px-2 py-1 rounded-lg border border-risk-medium/50 bg-risk-medium/10 text-risk-medium hover:bg-risk-medium/20 transition-colors duration-theme"
                 title="ลบทุกแถว number_limits ของงวดนี้ (ทุก entity_type)"
               >
                 ล้างทั้งงวด (ทุกแท็บ)
@@ -902,7 +902,7 @@ export default function LimitsPage() {
                 <div className="flex justify-end mb-2">
                   <button
                     onClick={handleDeleteAll}
-                    className="text-xs px-2 py-1 rounded bg-[var(--color-badge-danger-bg)] border-[var(--color-badge-danger-border)] text-loss hover:bg-risk-high/20 transition-all duration-theme"
+                    className="text-xs px-2 py-1 rounded bg-[var(--color-badge-danger-bg)] border-[var(--color-badge-danger-border)] text-loss hover:bg-risk-high/20 transition-colors duration-theme"
                   >
                     ลบทั้งหมด
                   </button>

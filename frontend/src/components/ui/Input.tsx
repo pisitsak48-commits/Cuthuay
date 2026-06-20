@@ -22,7 +22,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           className={cn(
             'h-11 w-full rounded-xl px-4 py-2 border-0 bg-[var(--color-surface-muted)] text-theme-text-primary placeholder:text-theme-text-muted',
             'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
-            'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+            'transition-[box-shadow] duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
             error && 'ring-2 ring-[var(--color-semantic-danger)] focus:ring-[var(--color-semantic-danger)]',
             className,
@@ -56,7 +56,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           className={cn(
             'h-11 w-full rounded-xl px-4 py-2 border-0 text-sm bg-[var(--color-surface-muted)] text-theme-text-primary',
             'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
-            'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+            'transition-[box-shadow] duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             'disabled:opacity-40 disabled:cursor-not-allowed',
             error && 'ring-2 ring-[var(--color-semantic-danger)]',
             className,
@@ -92,7 +92,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           className={cn(
             'w-full rounded-2xl px-4 py-3 border-0 text-sm resize-y min-h-[80px] bg-[var(--color-surface-muted)] text-theme-text-primary placeholder:text-theme-text-muted',
             'focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:ring-offset-0',
-            'transition-all duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
+            'transition-[box-shadow] duration-theme [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
             error && 'ring-2 ring-[var(--color-semantic-danger)]',
             className,
           )}

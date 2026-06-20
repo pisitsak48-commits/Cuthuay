@@ -195,7 +195,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
                 {PRESET_COLORS.map(pc => (
                   <button key={pc.value} title={pc.label}
                     onClick={() => updateColor(t.id, pc.value)}
-                    className={`w-5 h-5 rounded-full border-2 transition-all ${t.color === pc.value ? 'border-[var(--text-inverse)] scale-110' : 'border-transparent hover:border-border-bright'}`}
+                    className={`w-5 h-5 rounded-full border-2 transition-[border-color,transform] ${t.color === pc.value ? 'border-[var(--text-inverse)] scale-110' : 'border-transparent hover:border-border-bright'}`}
                     style={{ backgroundColor: pc.value }}
                   />
                 ))}
@@ -428,7 +428,7 @@ function BetsAllInner() {
         <div className="flex gap-2 px-4 py-3 shrink-0 bg-[var(--color-surface-muted)]">
           {([['by_type', 'ยอดขายตามประเภท'], ['total', 'ยอดขายรวม']] as const).map(([k, label]) => (
             <button key={k} type="button" onClick={() => setTab(k)}
-              className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
+              className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
                 tab === k
                   ? 'bg-[var(--color-accent)] text-white shadow-sm'
                   : 'bg-[var(--color-surface-muted)] text-theme-text-secondary hover:bg-[var(--bg-hover)]'

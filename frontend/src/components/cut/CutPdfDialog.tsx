@@ -271,7 +271,7 @@ export function CutPdfDialog({ roundName, betType, dealerName, threshold, cutIte
             <p className="text-xs text-theme-text-muted mt-0.5">{BET_TYPE_SHORT[betType]} · {cutItems.length} รายการ · {totalPages} หน้า</p>
           </div>
           <div className="flex flex-wrap gap-2 shrink-0">
-            <button onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-[var(--bg-hover)] text-sm text-theme-text-primary border border-border transition-all duration-theme">ปิด</button>
+            <button onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-[var(--bg-hover)] text-sm text-theme-text-primary border border-border transition-colors duration-theme">ปิด</button>
             <button
               type="button"
               onClick={() => void doDownloadPng()}

@@ -197,7 +197,7 @@ export default function NotebookPage() {
                 {COLORS.map((c, i) => (
                   <button key={c} onClick={() => setColor(c)} title={COLOR_LABELS[i]}
                     aria-pressed={color === c}
-                    className={`w-7 h-7 rounded-full transition-all border-2 ${color === c ? 'border-accent scale-110' : 'border-transparent hover:scale-105'}`}
+                    className={`w-7 h-7 rounded-full transition-[border-color,transform] border-2 ${color === c ? 'border-accent scale-110' : 'border-transparent hover:scale-105'}`}
                     style={{ backgroundColor: c }} />
                 ))}
               </div>

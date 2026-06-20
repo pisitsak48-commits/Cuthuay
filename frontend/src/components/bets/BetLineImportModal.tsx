@@ -126,7 +126,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
     role="region"
     aria-labelledby="line-import-title"
   >
-    <div className="shrink-0 px-4 sm:px-5 py-3.5 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_35%,white)] flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+    <div className="shrink-0 px-4 sm:px-5 py-3.5 border-b border-[var(--color-border)] bg-[var(--color-surface)] flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
       <div className="min-w-0 flex-1">
         <h2 id="line-import-title" className="text-base font-semibold text-[var(--text-primary)] tracking-tight">รับข้อมูลไลน์</h2>
         <p className="text-xs text-[var(--text-secondary)] mt-1 leading-relaxed max-w-[40rem]">

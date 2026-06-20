@@ -283,7 +283,7 @@ function SummaryPageInner() {
             className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl bg-[var(--color-card-bg-solid)] shadow-xl focus:outline-none"
             onClick={e => e.stopPropagation()}
           >
-            <div className="relative px-6 pt-6 pb-5 border-b border-[var(--color-border)]/90 bg-gradient-to-br from-[var(--color-card-bg-solid)] via-white to-[var(--bg-glass-subtle)]">
+            <div className="relative px-6 pt-6 pb-5 border-b border-[var(--color-border)]/90 bg-[var(--color-card-bg-solid)]">
               <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-gradient-to-r from-profit/35 via-[var(--color-accent)]/25 to-loss/25 opacity-90" aria-hidden />
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
@@ -312,7 +312,7 @@ function SummaryPageInner() {
               </div>
             </div>
 
-            <div className="px-6 py-5 space-y-5 bg-gradient-to-b from-[var(--color-bg-primary)] to-[var(--color-card-bg-solid)]/30 max-h-[min(78vh,calc(100vh-8rem))] overflow-y-auto">
+            <div className="px-6 py-5 space-y-5 bg-[var(--color-bg-primary)] max-h-[min(78vh,calc(100vh-8rem))] overflow-y-auto">
               <section className="rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)]">
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-secondary mb-2 block">
                   รางวัลที่ 1 <span className="text-loss normal-case tracking-normal">*</span>
@@ -389,7 +389,7 @@ function SummaryPageInner() {
               )}
             </div>
 
-            <div className="px-6 py-4 border-t border-[var(--color-border)] bg-gradient-to-t from-[var(--color-card-bg-solid)] to-[var(--bg-glass-subtle)] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+            <div className="px-6 py-4 border-t border-[var(--color-border)] bg-[var(--color-card-bg-solid)] flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
               <button
                 type="button"
                 onClick={handleSaveResult}

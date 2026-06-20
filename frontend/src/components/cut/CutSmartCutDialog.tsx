@@ -133,7 +133,7 @@ export function CutSmartCutDialog({
         className="w-full max-w-2xl flex flex-col max-h-[90vh] overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)] focus:outline-none">
 
         {/* Header */}
-        <div className="shrink-0 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_35%,white)] px-5 py-4">
+        <div className="shrink-0 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-4">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h3 id="smart-cut-title" className="font-bold text-[var(--text-primary)] text-base tracking-tight">✨ ตัดอัจฉริยะ</h3>

@@ -470,7 +470,7 @@ export default function SummaryComparePage() {
                 raw: true,
               },
             ].map((k) => (
-              <Card key={k.label} className="p-4 rounded-2xl border border-[var(--color-border)]/70 shadow-[var(--shadow-soft)] bg-gradient-to-b from-white to-[var(--color-bg-primary)]">
+              <Card key={k.label} className="p-4 rounded-2xl border border-[var(--color-border)]/70 shadow-[var(--shadow-soft)] bg-[var(--color-card-bg-solid)]">
                 <p className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted">{k.label}</p>
                 <p className="text-xs text-theme-text-secondary mt-1">{k.sub}</p>
                 <p className={cn('text-xl font-bold tabular-nums mt-2 tracking-tight', k.cls)}>

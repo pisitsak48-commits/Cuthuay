@@ -81,7 +81,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
           <div className="flex min-w-0 flex-1 items-center gap-1 rounded-xl bg-[color-mix(in_srgb,var(--gray-900)_3.5%,var(--color-surface))] px-1.5 py-1 ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_10%,var(--color-border))] shadow-[inset_0_1px_2px_rgba(15,23,42,0.06)]">
             <button type="button" title={soundOn ? 'ปิดเสียงพูด' : 'เปิดเสียงพูด'} onClick={() => setSoundOn(v => !v)}
               className={cn(
-                'flex !h-8 !min-w-[2rem] !px-0 items-center justify-center rounded-lg text-base shadow-sm transition-all duration-150 shrink-0',
+                'flex !h-8 !min-w-[2rem] !px-0 items-center justify-center rounded-lg text-base shadow-sm transition-[color,border-color,box-shadow] duration-150 shrink-0',
                 soundOn
                   ? 'bg-gradient-to-b from-[color-mix(in_srgb,var(--chart-primary)_22%,white)] to-[color-mix(in_srgb,var(--primary-100)_55%,white)] text-[var(--primary-800)] ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_28%,transparent)]'
                   : 'bg-[var(--color-surface)] text-theme-text-muted ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)]',
@@ -124,7 +124,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
             });
           }}
           className={cn(
-            'relative w-full overflow-hidden rounded-xl !h-10 !px-3 text-[12px] font-extrabold tracking-wide shadow-md transition-all duration-200 disabled:opacity-35',
+            'relative w-full overflow-hidden rounded-xl !h-10 !px-3 text-[12px] font-extrabold tracking-wide shadow-md transition-[filter,border-color,box-shadow,opacity] duration-200 disabled:opacity-35',
             voiceAuditMode
               ? 'border border-transparent bg-gradient-to-r from-[var(--primary-600)] via-[var(--chart-primary)] to-[var(--primary-600)] text-white shadow-[0_8px_22px_-10px_color-mix(in_srgb,var(--chart-primary)_65%,transparent)] hover:brightness-[1.06]'
               : 'border border-[color-mix(in_srgb,var(--chart-primary)_22%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface)_96%,var(--primary-50))] text-[var(--primary-800)] hover:bg-[color-mix(in_srgb,var(--primary-50)_75%,var(--color-surface))]',

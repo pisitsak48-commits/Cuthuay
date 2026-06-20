@@ -179,7 +179,8 @@
   }
 
   .glow-hover {
-    @apply transition-all duration-[200ms];
+    transition-property: background-color, border-color, box-shadow;
+    transition-duration: 200ms;
     transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
   }
 
@@ -251,7 +252,9 @@
 
 
   .btn-primary-glow {
-    @apply inline-flex items-center justify-center gap-1.5 font-semibold rounded-full transition-all duration-[200ms] select-none text-white border-0;
+    @apply inline-flex items-center justify-center gap-1.5 font-semibold rounded-full select-none text-white border-0;
+    transition-property: filter, box-shadow, opacity;
+    transition-duration: 200ms;
     transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
     background: var(--color-accent);
     box-shadow: var(--shadow-hover);
@@ -261,7 +264,9 @@
   }
 
   .btn-toolbar-glow {
-    @apply inline-flex items-center justify-center gap-1 h-7 px-3 rounded-full text-xs font-semibold transition-all duration-[200ms] select-none text-white border-0;
+    @apply inline-flex items-center justify-center gap-1 h-7 px-3 rounded-full text-xs font-semibold select-none text-white border-0;
+    transition-property: filter, box-shadow, opacity;
+    transition-duration: 200ms;
     transition-timing-function: var(--ease-premium, cubic-bezier(0.22, 1, 0.36, 1));
     background: var(--color-accent);
     box-shadow: var(--shadow-hover);

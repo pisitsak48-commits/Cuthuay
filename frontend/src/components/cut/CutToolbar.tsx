@@ -128,7 +128,7 @@ export function CutToolbar(props: CutToolbarProps) {
   <div className="flex min-h-9 items-center gap-0.5 flex-wrap sm:flex-nowrap rounded-xl border border-border bg-surface-200/50 px-0.5 py-0.5 min-w-0 flex-1 sm:flex-initial">
     {BET_TYPE_ORDER.map(bt => (
       <button key={bt} type="button" onClick={() => setActiveBetType(bt)}
-        className={`h-8 shrink-0 px-2.5 rounded-xl text-xs font-semibold transition-all duration-theme ${
+        className={`h-8 shrink-0 px-2.5 rounded-xl text-xs font-semibold transition-[color,background-color,border-color,box-shadow] duration-theme ${
           bt === activeBetType
             ? 'btn-primary-glow'
             : 'text-theme-text-secondary border border-transparent bg-transparent hover:text-theme-text-primary hover:bg-[var(--bg-glass-strong)] hover:shadow-[var(--shadow-hover)] hover:border-[var(--color-border-strong)]'

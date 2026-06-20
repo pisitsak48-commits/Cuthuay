@@ -363,14 +363,14 @@ export const BetKeyInputPanel = forwardRef<BetKeyInputHandle, BetKeyInputPanelPr
           style={{ width: numWidth, minWidth: 100, maxWidth: 400 }}
           className={[
             'relative flex flex-col items-center justify-center rounded-2xl px-4 py-2.5 shrink-0 overflow-hidden',
-            'transition-all duration-150 ease-out',
+            'transition-[border-color,box-shadow] duration-150 ease-out',
             activeField === 'num'
               ? 'bg-[var(--color-card-bg-solid)] shadow-[0_0_0_2px_var(--color-accent),0_4px_16px_rgba(74,144,226,0.18)] border border-[var(--color-accent)]'
               : 'bg-[var(--color-card-bg-solid)] shadow-[0_2px_8px_rgba(15,23,42,0.07)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50',
           ].join(' ')}
         >
           <div
-            className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl transition-all duration-150 ${activeField === 'num' ? 'bg-gradient-to-r from-[var(--primary-400)] via-[var(--color-accent)] to-[var(--primary-400)]' : 'bg-transparent'}`}
+            className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl transition-colors duration-150 ${activeField === 'num' ? 'bg-gradient-to-r from-[var(--primary-400)] via-[var(--color-accent)] to-[var(--primary-400)]' : 'bg-transparent'}`}
           />
           <span
             className={`text-[11px] font-bold mb-1.5 tracking-[0.22em] uppercase transition-colors duration-150 ${activeField === 'num' ? 'text-[var(--color-accent)]' : 'text-theme-text-muted'}`}
@@ -405,14 +405,14 @@ export const BetKeyInputPanel = forwardRef<BetKeyInputHandle, BetKeyInputPanelPr
         <div
           className={[
             'relative flex min-w-0 flex-1 flex-col items-center justify-center overflow-hidden rounded-2xl px-3 py-2.5 sm:px-6',
-            'transition-all duration-150 ease-out',
+            'transition-[border-color,box-shadow] duration-150 ease-out',
             activeField === 'amt'
               ? 'bg-[var(--color-card-bg-solid)] shadow-[0_0_0_2px_var(--color-accent),0_4px_16px_rgba(74,144,226,0.18)] border border-[var(--color-accent)]'
               : 'bg-[var(--color-card-bg-solid)] shadow-[0_2px_8px_rgba(15,23,42,0.07)] border border-[var(--color-border)] hover:border-[var(--color-accent)]/50',
           ].join(' ')}
         >
           <div
-            className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl transition-all duration-150 ${activeField === 'amt' ? 'bg-gradient-to-r from-[var(--primary-400)] via-[var(--color-accent)] to-[var(--primary-400)]' : 'bg-transparent'}`}
+            className={`absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl transition-colors duration-150 ${activeField === 'amt' ? 'bg-gradient-to-r from-[var(--primary-400)] via-[var(--color-accent)] to-[var(--primary-400)]' : 'bg-transparent'}`}
           />
           <span
             className={`text-[11px] font-bold mb-1.5 tracking-[0.22em] uppercase transition-colors duration-150 ${activeField === 'amt' ? 'text-[var(--color-accent)]' : 'text-theme-text-muted'}`}
@@ -522,7 +522,7 @@ export const BetKeyInputPanel = forwardRef<BetKeyInputHandle, BetKeyInputPanelPr
             <button
               type="button"
               title="ล้างช่องเลข/ราคา"
-              className="!h-9 !min-w-[1.75rem] !px-0 rounded-lg bg-gradient-to-b from-[var(--primary-100)] to-[var(--primary-200)] text-[11px] font-extrabold text-[var(--primary-700)] shadow-sm border border-[var(--primary-300)]/60 hover:from-[var(--primary-200)] hover:to-[var(--primary-300)] active:scale-[0.95] transition-all duration-100"
+              className="!h-9 !min-w-[1.75rem] !px-0 rounded-lg bg-gradient-to-b from-[var(--primary-100)] to-[var(--primary-200)] text-[11px] font-extrabold text-[var(--primary-700)] shadow-sm border border-[var(--primary-300)]/60 hover:from-[var(--primary-200)] hover:to-[var(--primary-300)] active:scale-[0.95] transition-[transform,box-shadow] duration-100"
               onClick={handleClearInputs}
             >
               C

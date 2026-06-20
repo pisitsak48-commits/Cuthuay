@@ -344,7 +344,7 @@ export function KpiCard({
   valueClass: string;
 }) {
   return (
-    <div className="rounded-2xl border border-[var(--color-border)]/65 bg-gradient-to-b from-white to-[var(--color-bg-primary)] shadow-[var(--shadow-soft)] px-4 py-3.5 flex flex-col justify-between gap-2 min-h-[5.75rem]">
+    <div className="rounded-2xl border border-[var(--color-border)]/65 bg-[var(--color-card-bg-solid)] shadow-[var(--shadow-soft)] px-4 py-3.5 flex flex-col justify-between gap-2 min-h-[5.75rem]">
       <div className="min-w-0">
         <span className={cn('text-[11px] sm:text-xs uppercase tracking-[0.12em] font-semibold block', labelClass)}>{label}</span>
         {labelSecondary ? (
@@ -372,7 +372,7 @@ export function SummaryPrizeBar({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-[var(--color-border)]/70 bg-gradient-to-b from-white via-[var(--color-card-bg-solid)] to-[var(--bg-glass-subtle)] shadow-[var(--shadow-soft)] px-4 py-3 sm:px-5 sm:py-3.5 transition-opacity duration-200 ease-out',
+        'rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)] shadow-[var(--shadow-soft)] px-4 py-3 sm:px-5 sm:py-3.5 transition-opacity duration-200 ease-out',
         loading && 'opacity-[0.62]',
       )}
     >

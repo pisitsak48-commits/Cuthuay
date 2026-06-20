@@ -77,7 +77,7 @@ export function SaveDealerModal({
             return (
               <label key={dealer.id} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                 dealer.id === dealerId ? 'border-accent/50 bg-accent/10' : 'border-border hover:border-border'}`}>
-                <input type="radio" className="accent-accent mt-0.5" checked={dealer.id === dealerId} onChange={() => setDealerId(dealer.id)} />
+                <input type="radio" name="cut-send-dealer" className="accent-accent mt-0.5" checked={dealer.id === dealerId} onChange={() => setDealerId(dealer.id)} />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-theme-text-primary">{dealer.name}</p>
                   <div className="flex flex-wrap gap-4 mt-1 text-xs text-theme-text-muted">

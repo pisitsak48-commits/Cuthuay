@@ -52,7 +52,7 @@ export function CutRangeTableModal({
         className="w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-lift-hover)] focus:outline-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="px-4 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between shrink-0 bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_30%,white)]">
+        <div className="px-4 py-3.5 border-b border-[var(--color-border)] flex items-center justify-between shrink-0 bg-[var(--color-surface)]">
           <div className="flex items-center gap-3 flex-wrap min-w-0">
             <span className="text-sm font-semibold text-[var(--text-primary)] tracking-tight">กำหนดช่วง</span>
             <span className="text-xs text-[var(--text-secondary)] whitespace-nowrap">เปอร์เซ็นต์</span>
@@ -69,7 +69,7 @@ export function CutRangeTableModal({
                     onClick={() => setStepPct(v)}
                     aria-pressed={active}
                     title={active ? `กำลังใช้ขั้น ${v}%` : `ใช้ขั้น ${v}%`}
-                    className={`h-8 min-w-[3.5rem] px-2.5 rounded-xl text-xs font-semibold transition-all inline-flex items-center justify-center gap-1 ${
+                    className={`h-8 min-w-[3.5rem] px-2.5 rounded-xl text-xs font-semibold transition-[background-color,color,border-color,box-shadow] inline-flex items-center justify-center gap-1 ${
                       active
                         ? '[background:var(--color-nav-active-bg)] text-[var(--color-nav-active-fg)] shadow-md ring-1 ring-white/25'
                         : 'bg-[var(--color-surface)] text-[var(--text-secondary)] border-2 border-[var(--color-border)] hover:bg-[var(--primary-50)] hover:border-[color-mix(in_srgb,var(--chart-primary)_40%,var(--color-border))]'

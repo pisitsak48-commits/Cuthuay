@@ -196,7 +196,7 @@ export default function DashboardPage() {
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
-            className="rounded-2xl border border-[var(--color-border)]/70 bg-gradient-to-r from-[var(--color-card-bg-solid)] via-white to-[var(--bg-glass-subtle)] shadow-[var(--shadow-soft)] px-4 py-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
+            className="rounded-2xl border border-[var(--color-border)]/70 bg-[var(--color-card-bg-solid)] shadow-[var(--shadow-soft)] px-4 py-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"
           >
             <div className="min-w-0">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-theme-text-muted">สรุปกำไรรวมทั้งปี (งวดที่ออกผลแล้ว)</p>

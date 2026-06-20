@@ -701,7 +701,7 @@ function ContactsPageInner() {
               <button
                 key={t.key}
                 onClick={() => switchTab(t.key)}
-                className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-all duration-150 leading-none ${
+                className={`px-4 py-1.5 text-sm font-semibold rounded-lg transition-colors duration-150 leading-none ${
                   tab === t.key
                     ? 'bg-[var(--color-card-bg-solid)] shadow-sm text-theme-text-primary'
                     : 'text-theme-text-muted hover:text-theme-text-secondary hover:bg-[var(--color-card-bg-solid)]/40'
