@@ -387,7 +387,12 @@ router.patch('/users/:id', authenticate, authorize('admin'), async (req, res, ne
       res.status(404).json({ error: 'User not found' });
       return;
     }
-    res.json({ user: result.rows[0] });
+    const updated = result.rows[0];
+    await query(
+      `INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)`,
+      [req.user!.sub, 'update_user', JSON.stringify({ target_id: id, changes: body }), req.ip ?? null],
+    );
+    res.json({ user: updated });
   } catch (err) {
     next(err);
   }

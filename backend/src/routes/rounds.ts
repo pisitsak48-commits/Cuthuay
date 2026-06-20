@@ -676,50 +676,6 @@ router.post(
         '1digit_bottom': new Set(result_1bottom_all),
       };
 
-      // Fetch all bets for this round
-      const betsRes = await query<{
-        id: string; number: string; bet_type: string;
-        amount: string; payout_rate: string;
-        customer_ref: string | null; customer_id: string | null;
-        sheet_no: number;
-      }>(
-        `SELECT id, number, bet_type, amount, payout_rate, customer_ref, customer_id, sheet_no
-         FROM bets WHERE round_id = $1`,
-        [id],
-      );
-      const bets = betsRes.rows;
-
-      // Use integer สตางค์ arithmetic to avoid floating point accumulation across many bets
-      let totalRevenueCents = 0;
-      let totalPayoutCents  = 0;
-      const winningBets: {
-        number: string; bet_type: string; amount: number; payout: number;
-        customer_ref: string | null; customer_id: string | null; sheet_no: number;
-      }[] = [];
-
-      for (const bet of bets) {
-        const amtCents = Math.round(parseFloat(bet.amount) * 100);
-        const rate     = parseFloat(bet.payout_rate);
-        totalRevenueCents += amtCents;
-        const won = winSets[bet.bet_type]?.has(bet.number) ?? false;
-        if (won) {
-          const payoutCents = Math.round(amtCents * rate);
-          totalPayoutCents += payoutCents;
-          winningBets.push({
-            number: bet.number, bet_type: bet.bet_type,
-            amount: amtCents / 100,
-            payout: payoutCents / 100,
-            customer_ref: bet.customer_ref, customer_id: bet.customer_id,
-            sheet_no: bet.sheet_no,
-          });
-        }
-      }
-
-      const totalRevenue = totalRevenueCents / 100;
-      const totalPayout  = totalPayoutCents / 100;
-      const netPl        = (totalRevenueCents - totalPayoutCents) / 100;
-
-      // Store full result data
       const resultData = {
         prize_1st:  result_prize_1st,
         prize_3top: result_3top,
@@ -739,11 +695,62 @@ router.post(
         ? `${result_prize_1st}/${result_2bottom}`
         : `${result_3top}/${result_2bottom}`;
 
-      await query(
-        `UPDATE rounds SET status = 'drawn', result_number = $1, result_data = $2, updated_at = NOW()
-         WHERE id = $3`,
-        [resultNumber, JSON.stringify(resultData), id],
-      );
+      // Wrap bets fetch + payout calculation + round update in one transaction
+      // so the stored result is always consistent with the bets that were read
+      const { totalRevenue, totalPayout, netPl, winningBets, totalBets } =
+        await withTransaction(async (client) => {
+          const betsRes = await client.query<{
+            id: string; number: string; bet_type: string;
+            amount: string; payout_rate: string;
+            customer_ref: string | null; customer_id: string | null;
+            sheet_no: number;
+          }>(
+            `SELECT id, number, bet_type, amount, payout_rate, customer_ref, customer_id, sheet_no
+             FROM bets WHERE round_id = $1`,
+            [id],
+          );
+          const bets = betsRes.rows;
+
+          // Integer สตางค์ arithmetic — no floating point accumulation
+          let totalRevenueCents = 0;
+          let totalPayoutCents  = 0;
+          const winningBets: {
+            number: string; bet_type: string; amount: number; payout: number;
+            customer_ref: string | null; customer_id: string | null; sheet_no: number;
+          }[] = [];
+
+          for (const bet of bets) {
+            const amtCents = Math.round(parseFloat(bet.amount) * 100);
+            const rate     = parseFloat(bet.payout_rate);
+            totalRevenueCents += amtCents;
+            const won = winSets[bet.bet_type]?.has(bet.number) ?? false;
+            if (won) {
+              const payoutCents = Math.round(amtCents * rate);
+              totalPayoutCents += payoutCents;
+              winningBets.push({
+                number: bet.number, bet_type: bet.bet_type,
+                amount: amtCents / 100,
+                payout: payoutCents / 100,
+                customer_ref: bet.customer_ref, customer_id: bet.customer_id,
+                sheet_no: bet.sheet_no,
+              });
+            }
+          }
+
+          await client.query(
+            `UPDATE rounds SET status = 'drawn', result_number = $1, result_data = $2, updated_at = NOW()
+             WHERE id = $3`,
+            [resultNumber, JSON.stringify(resultData), id],
+          );
+
+          return {
+            totalRevenue: totalRevenueCents / 100,
+            totalPayout:  totalPayoutCents  / 100,
+            netPl:        (totalRevenueCents - totalPayoutCents) / 100,
+            winningBets,
+            totalBets:    bets.length,
+          };
+        });
 
       res.json({
         round_id: id,
@@ -752,7 +759,7 @@ router.post(
         total_payout:  totalPayout,
         net_pl:        netPl,
         winning_bets:  winningBets,
-        total_bets:    bets.length,
+        total_bets:    totalBets,
         winning_count: winningBets.length,
       });
     } catch (err) {
