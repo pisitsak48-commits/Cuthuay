@@ -49,6 +49,7 @@ function SummaryPageInner() {
   const [rBot2, setRBot2] = useState('');
   const [resultSaving, setResultSaving] = useState(false);
   const [resultError, setResultError] = useState('');
+  const [warned3back, setWarned3back] = useState(false);
 
   const rTop3  = rPrize1st.length >= 3 ? rPrize1st.slice(-3) : '';
   const rTop2  = rTop3.length === 3 ? rTop3.slice(-2) : '';
@@ -65,6 +66,7 @@ function SummaryPageInner() {
       setRPrize1st(''); setRBot3(['','','','']); setRBot2('');
     }
     setResultError('');
+    setWarned3back(false);
     setShowResultModal(true);
   }, [data]);
 
@@ -88,7 +90,13 @@ function SummaryPageInner() {
     if (!roundId) { setResultError('กรุณาเลือกงวด'); return; }
     if (rTop3.length !== 3) { setResultError('กรุณากรอกรางวัลที่ 1 ให้ครบอย่างน้อย 3 หลัก'); return; }
     if (rBot2.length !== 2) { setResultError('กรุณากรอก 2 ตัวล่าง (2 หลัก)'); return; }
+    if (rBot3.filter(s => s.length === 3).length === 0 && !warned3back) {
+      setResultError('⚠️ ยังไม่ได้กรอก 3 ตัวล่าง — ลูกค้าที่แทง 3 ตัวล่างจะไม่ได้รับรางวัล กดบันทึกอีกครั้งเพื่อยืนยัน');
+      setWarned3back(true);
+      return;
+    }
     setResultError('');
+    setWarned3back(false);
     setResultSaving(true);
     try {
       await roundsApi.submitResult(roundId, {

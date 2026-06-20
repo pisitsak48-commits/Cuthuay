@@ -153,7 +153,7 @@ export function parseBetLine(numberInput: string, amountInput: string): ParseRes
   const rawCore = isKlapTote ? amountStr.slice(1, -1) : (isKlapFromAmt ? amountStr.slice(0, -1) : amountStr);
   const normalized = rawCore;
   const core      = normalized.replace(/\*/g, '+');
-  const parts     = core.split('+').map(p => parseFloat(p) || 0);
+  const parts     = core.split('+').map(p => { const n = parseFloat(p); return Number.isFinite(n) && n > 0 ? n : 0; });
 
   if (parts.every(p => p === 0)) {
     return { bets: [], mode, expandedNumbers: numbers, isKlap, amountHint: getAmountHint(mode, isKlap, isKlapTote, isKlapBoth) };
@@ -171,8 +171,10 @@ export function parseBetLine(numberInput: string, amountInput: string): ParseRes
       }
     } else if (isKlapBoth && klapBothMatch) {
       // กลับบน+โต๊ด: all perms × 3บน + all perms × โต๊ด (same amount for all perms)
-      const topAmt  = parseFloat(klapBothMatch[1]) || 0;
-      const toteAmt = parseFloat(klapBothMatch[2]) || 0;
+      const topAmtRaw  = parseFloat(klapBothMatch[1]);
+      const toteAmtRaw = parseFloat(klapBothMatch[2]);
+      const topAmt  = Number.isFinite(topAmtRaw)  && topAmtRaw  > 0 ? topAmtRaw  : 0;
+      const toteAmt = Number.isFinite(toteAmtRaw) && toteAmtRaw > 0 ? toteAmtRaw : 0;
       const perms = getPermutations(num);
       for (const perm of perms) {
         if (topAmt  > 0) bets.push({ number: perm, bet_type: '3digit_top',  amount: topAmt  });

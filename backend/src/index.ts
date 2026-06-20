@@ -87,6 +87,15 @@ app.use(errorHandler);
 // ─── WebSocket ────────────────────────────────────────────────────────────────
 initWebSocket(server);
 
+// ─── Security config sanity check ────────────────────────────────────────────
+if (env.COOKIE_AUTH_ENABLED && !env.CSRF_ENABLED) {
+  console.warn(
+    '\n⚠️  WARNING: COOKIE_AUTH_ENABLED=true but CSRF_ENABLED=false.' +
+    ' Cookie-based auth without CSRF protection is vulnerable to CSRF attacks.' +
+    ' Set CSRF_ENABLED=true in production.\n',
+  );
+}
+
 // ─── Start ────────────────────────────────────────────────────────────────────
 server.listen(env.PORT, () => {
   console.log(`\n🚀 AuraX API running on http://localhost:${env.PORT}`);

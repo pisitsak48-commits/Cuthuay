@@ -12,6 +12,7 @@ import {
 import { calculateRisk } from '../services/riskEngine';
 import { autoCut, applyCutPlan } from '../services/cutAlgorithm';
 import { createError } from '../middleware/errorHandler';
+import { moneyToNumber } from '../lib/money';
 
 const router = Router();
 router.use(authenticate);
@@ -142,7 +143,7 @@ router.get('/:roundId/dealer-rates', async (req: Request, res: Response, next: N
 });
 
 // GET /api/cut/:roundId/risk — compute current risk report
-router.get('/:roundId/risk', async (req: Request, res: Response, next: NextFunction) => {
+router.get('/:roundId/risk', authorize('admin', 'operator'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const roundId = z.string().uuid().parse(req.params.roundId);
     const bets = (
@@ -169,6 +170,7 @@ router.get('/:roundId/risk', async (req: Request, res: Response, next: NextFunct
 // POST /api/cut/:roundId/simulate — simulate cut strategies
 router.post(
   '/:roundId/simulate',
+  authorize('admin', 'operator'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const roundId = z.string().uuid().parse(req.params.roundId);
@@ -242,6 +244,14 @@ router.post(
           JSON.stringify(rates),
           req.user!.sub,
         ],
+      );
+
+      // Keep only the last 10 plans per round to prevent unbounded growth
+      await query(
+        `DELETE FROM cut_plans WHERE round_id = $1 AND id NOT IN (
+           SELECT id FROM cut_plans WHERE round_id = $1 ORDER BY created_at DESC LIMIT 10
+         )`,
+        [roundId],
       );
 
       res.status(201).json({ ...result.rows[0], risk_after: riskAfter });
@@ -349,6 +359,7 @@ const rangeSimSchema = z.object({
 // POST /api/cut/:roundId/range-simulation
 router.post(
   '/:roundId/range-simulation',
+  authorize('admin', 'operator'),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const roundId = z.string().uuid().parse(req.params.roundId);
@@ -801,6 +812,25 @@ router.post(
 
 // ─── Send Batches ─────────────────────────────────────────────────────────────
 
+function normalizeSendBatchRow(row: Record<string, unknown>) {
+  const rawItems = row.items;
+  const items = Array.isArray(rawItems)
+    ? rawItems.map((it) => {
+        const entry = it as { number?: unknown; amount?: unknown };
+        return {
+          number: String(entry.number ?? ''),
+          amount: moneyToNumber(entry.amount as string | number | null | undefined),
+        };
+      })
+    : [];
+  return {
+    ...row,
+    threshold: moneyToNumber(row.threshold as string | number | null | undefined),
+    total: moneyToNumber(row.total as string | number | null | undefined),
+    items,
+  };
+}
+
 const sendBatchSchema = z.object({
   bet_type:    z.enum(betTypeValues),
   threshold:   z.number().nonnegative(),
@@ -818,13 +848,23 @@ router.post(
     try {
       const roundId = z.string().uuid().parse(req.params.roundId);
       const data = sendBatchSchema.parse(req.body);
+      const itemsSum = data.items.reduce((s, it) => s + it.amount, 0);
+      if (Math.abs(itemsSum - data.total) > 0.01) {
+        throw createError('total must match sum of item amounts', 400);
+      }
       const result = await query(
         `INSERT INTO send_batches (round_id, bet_type, threshold, items, total, dealer_id, dealer_name, created_by)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
         [roundId, data.bet_type, data.threshold, JSON.stringify(data.items), data.total,
          data.dealer_id ?? null, data.dealer_name ?? null, req.user!.sub],
       );
-      res.status(201).json(result.rows[0]);
+      const rawRow = result.rows[0] as Record<string, unknown>;
+      const batchId = String(rawRow.id ?? '');
+      await query(
+        `INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)`,
+        [req.user!.sub, 'send_batch', JSON.stringify({ batch_id: batchId, round_id: roundId, bet_type: data.bet_type, total: data.total, dealer_name: data.dealer_name ?? null }), req.ip ?? null],
+      );
+      res.status(201).json(normalizeSendBatchRow(rawRow));
     } catch (err) {
       next(err);
     }
@@ -843,7 +883,9 @@ router.get('/:roundId/send-batches', async (req: Request, res: Response, next: N
        ORDER BY sb.created_at DESC`,
       [roundId],
     );
-    res.json({ batches: result.rows });
+    res.json({
+      batches: result.rows.map((row) => normalizeSendBatchRow(row as Record<string, unknown>)),
+    });
   } catch (err) {
     next(err);
   }
@@ -862,6 +904,10 @@ router.delete(
         [batchId, roundId],
       );
       if (!result.rowCount) throw createError('Send batch not found', 404);
+      await query(
+        `INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)`,
+        [req.user!.sub, 'delete_send_batch', JSON.stringify({ batch_id: batchId, round_id: roundId }), req.ip ?? null],
+      );
       res.json({ deleted: batchId });
     } catch (err) {
       next(err);

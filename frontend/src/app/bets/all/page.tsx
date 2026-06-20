@@ -576,7 +576,15 @@ function BetsAllInner() {
               กำลังโหลด...
             </div>
           ) : displayRows.length === 0 ? (
-            <div className="flex items-center justify-center min-h-[8rem] text-theme-text-muted text-sm">ไม่มีข้อมูล</div>
+            <div className="flex flex-col items-center justify-center min-h-[12rem] gap-2 text-center px-4">
+              <span className="text-2xl opacity-30">📋</span>
+              <p className="text-sm font-medium text-theme-text-secondary">
+                {!roundId ? 'เลือกงวดก่อน' : 'งวดนี้ยังไม่มีโพย'}
+              </p>
+              {roundId && (
+                <p className="text-xs text-theme-text-muted">เปิดหน้า «รับโพย» เพื่อเพิ่มรายการ</p>
+              )}
+            </div>
           ) : layoutMode === 'table' ? (
             <BetViewTable rows={displayRows} fontSize={fontSize} thresholds={thresholds} />
           ) : (

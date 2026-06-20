@@ -143,11 +143,13 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const q = z
       .object({
-        round_id: z.string().uuid(),
+        round_id:    z.string().uuid(),
         customer_id: z.string().uuid().optional(),
+        limit:       z.coerce.number().int().min(1).max(10000).default(10000),
+        offset:      z.coerce.number().int().min(0).default(0),
       })
       .parse(req.query);
-    const params: string[] = [q.round_id];
+    const params: unknown[] = [q.round_id];
     let sql = `SELECT b.*, u.username as created_by_name
        FROM bets b
        LEFT JOIN users u ON b.created_by = u.id
@@ -157,7 +159,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       sql += ` AND b.customer_id = $${params.length}`;
     }
     sql += ` ORDER BY COALESCE(b.sort_order, EXTRACT(EPOCH FROM b.created_at) * 1000) ASC`;
-    const result = await query<BetRow>(sql, params);
+    params.push(q.limit, q.offset);
+    sql += ` LIMIT $${params.length - 1} OFFSET $${params.length}`;
+    const result = await query<BetRow>(sql, params as string[]);
     res.json({ bets: result.rows, total: result.rowCount });
   } catch (err) {
     next(err);
@@ -201,47 +205,52 @@ router.post(
         );
       }
 
-      // Check if number is blocked or over limit
-      const limitResult = await query(
-        `SELECT max_amount, is_blocked FROM number_limits
-         WHERE round_id = $1 AND number = $2 AND bet_type = $3`,
-        [data.round_id, data.number, data.bet_type],
-      );
-      const limit = limitResult.rows[0] as any;
-      if (limit?.is_blocked) {
-        throw createError(`Number ${data.number} is blocked for this round`, 400);
-      }
+      // Lock per (round_id, number, bet_type), check limit, and insert atomically
+      const bet = await withTransaction(async (client) => {
+        // Advisory lock prevents concurrent inserts from racing past the limit check
+        await client.query(
+          `SELECT pg_advisory_xact_lock(hashtext($1))`,
+          [`${data.round_id}:${data.number}:${data.bet_type}`],
+        );
 
-      if (limit?.max_amount) {
-        // Check current total
-        const totalResult = await query<{ total: string }>(
-          `SELECT COALESCE(SUM(amount), 0) as total FROM bets
+        const limitResult = await client.query(
+          `SELECT max_amount, is_blocked FROM number_limits
            WHERE round_id = $1 AND number = $2 AND bet_type = $3`,
           [data.round_id, data.number, data.bet_type],
         );
-        const currentTotal = parseFloat(totalResult.rows[0]?.total ?? '0');
-        if (currentTotal + data.amount > limit.max_amount) {
-          throw createError(
-            `Bet exceeds limit for number ${data.number}. Available: ${limit.max_amount - currentTotal}`,
-            400,
-          );
+        const limit = limitResult.rows[0] as any;
+        if (limit?.is_blocked) {
+          throw createError(`Number ${data.number} is blocked for this round`, 400);
         }
-      }
 
-      // Use dealer's configured rate for this round, not hardcoded DEFAULT
-      const roundRates = await getRoundPayoutRates(data.round_id);
-      const payoutRate = data.payout_rate ?? roundRates[data.bet_type];
-      const result = await query<BetRow>(
-        `INSERT INTO bets (round_id, number, bet_type, amount, payout_rate, customer_ref, created_by)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING *`,
-        [
-          data.round_id, data.number, data.bet_type,
-          data.amount, payoutRate, data.customer_ref ?? null, req.user!.sub,
-        ],
-      );
+        if (limit?.max_amount) {
+          const totalResult = await client.query<{ total: string }>(
+            `SELECT COALESCE(SUM(amount), 0) as total FROM bets
+             WHERE round_id = $1 AND number = $2 AND bet_type = $3`,
+            [data.round_id, data.number, data.bet_type],
+          );
+          const currentTotal = parseFloat(totalResult.rows[0]?.total ?? '0');
+          if (currentTotal + data.amount > limit.max_amount) {
+            throw createError(
+              `Bet exceeds limit for number ${data.number}. Available: ${limit.max_amount - currentTotal}`,
+              400,
+            );
+          }
+        }
 
-      const bet = result.rows[0];
+        const roundRates = await getRoundPayoutRates(data.round_id);
+        const payoutRate = data.payout_rate ?? roundRates[data.bet_type];
+        const result = await client.query<BetRow>(
+          `INSERT INTO bets (round_id, number, bet_type, amount, payout_rate, customer_ref, created_by)
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           RETURNING *`,
+          [
+            data.round_id, data.number, data.bet_type,
+            data.amount, payoutRate, data.customer_ref ?? null, req.user!.sub,
+          ],
+        );
+        return result.rows[0];
+      });
       broadcast({ type: 'bet_added', data: bet });
       res.status(201).json(bet);
     } catch (err) {
@@ -263,6 +272,9 @@ router.post(
       const errors: string[] = [];
 
       await withTransaction(async (client) => {
+        // Hoist rate lookup: one DB call for all bets in this batch
+        const roundRates = await getRoundPayoutRates(round_id);
+
         for (const b of bets) {
           const importBatchId = b.import_batch_id ?? defaultImportBatchId;
           if (!validateNumberType(b.number, b.bet_type)) {
@@ -281,8 +293,6 @@ router.post(
             errors.push(`เลข ${b.number} (${b.bet_type}) ปิดรับแล้ว`);
             continue;
           }
-          // Use dealer's configured rate for this round, not hardcoded DEFAULT
-          const roundRates = await getRoundPayoutRates(round_id);
           const payoutRate = b.payout_rate ?? roundRates[b.bet_type];
           const r = await client.query<BetRow>(
             `INSERT INTO bets (round_id, number, bet_type, amount, payout_rate, customer_id, customer_ref, sheet_no, created_by, sort_order, import_batch_id, segment_index, created_at)
@@ -395,7 +405,7 @@ router.get('/search', async (req: Request, res: Response, next: NextFunction) =>
                NULL::int AS bet_count
         FROM bets b
         LEFT JOIN customers c ON b.customer_id = c.id${where}
-        ORDER BY b.created_at`;
+        ORDER BY b.created_at LIMIT 500`;
       const r = await query(sql, params as string[]);
       return res.json({ rows: r.rows, mode });
 
@@ -416,7 +426,7 @@ router.get('/search', async (req: Request, res: Response, next: NextFunction) =>
                NULL::int AS bet_count
         FROM bets b
         LEFT JOIN customers c ON b.customer_id = c.id${where}
-        ORDER BY b.created_at`;
+        ORDER BY b.created_at LIMIT 500`;
       const r = await query(sql, params as string[]);
       return res.json({ rows: r.rows, mode });
     }
@@ -433,6 +443,10 @@ router.delete(
     try {
       const id = z.string().uuid().parse(req.params.id);
       await query('DELETE FROM bets WHERE id = $1', [id]);
+      await query(
+        `INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)`,
+        [req.user!.sub, 'delete_bet', JSON.stringify({ id }), req.ip ?? null],
+      );
       broadcast({ type: 'bet_deleted', data: { id } });
       res.json({ deleted: true });
     } catch (err) {
@@ -449,6 +463,10 @@ router.post(
     try {
       const { ids } = z.object({ ids: z.array(z.string().uuid()).min(1) }).parse(req.body);
       await query('DELETE FROM bets WHERE id = ANY($1::uuid[])', [ids]);
+      await query(
+        `INSERT INTO audit_log (user_id, action, details, ip_address) VALUES ($1, $2, $3, $4)`,
+        [req.user!.sub, 'bulk_delete_bets', JSON.stringify({ ids, count: ids.length }), req.ip ?? null],
+      );
       broadcast({ type: 'bet_deleted', data: { ids } });
       res.json({ deleted: ids.length });
     } catch (err) {

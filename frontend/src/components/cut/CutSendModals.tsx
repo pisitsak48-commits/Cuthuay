@@ -72,8 +72,10 @@ export function SaveDealerModal({
           <p className="text-xs font-semibold text-theme-text-secondary uppercase tracking-wider mb-3">เลือกเจ้ามือ</p>
 
           {dealers.filter(d => d.is_active).map(dealer => {
-            const rate = (dealer as any)[DEALER_RATE_KEYS[activeBetType]];
-            const pct  = (dealer as any)[DEALER_PCT_KEYS[activeBetType]];
+            const rateKey = DEALER_RATE_KEYS[activeBetType] as keyof Dealer;
+            const pctKey  = DEALER_PCT_KEYS[activeBetType] as keyof Dealer;
+            const rate = dealer[rateKey];
+            const pct  = dealer[pctKey];
             return (
               <label key={dealer.id} className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
                 dealer.id === dealerId ? 'border-accent/50 bg-accent/10' : 'border-border hover:border-border'}`}>
@@ -152,7 +154,7 @@ export function SendBatchItemsModal({
                 .sort((a, b) => a.number.localeCompare(b.number, 'th', { numeric: true }))
                 .map((it, idx) => (
                   <tr key={`${it.number}-${idx}`} className={`border-b border-border/30 ${idx % 2 === 1 ? 'bg-surface-200/30' : ''}`}>
-                    <td className="py-1.5 px-3 tracking-tight font-bold tracking-widest text-theme-text-primary">{it.number}</td>
+                    <td className="py-1.5 px-3 font-bold tracking-widest text-theme-text-primary">{it.number}</td>
                     <td className="py-1.5 px-3 text-right tracking-tight text-accent-glow">{formatBaht(it.amount)}</td>
                   </tr>
                 ))}
