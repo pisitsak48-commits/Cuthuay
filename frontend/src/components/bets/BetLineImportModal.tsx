@@ -123,8 +123,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
 >
   <div
     className="pointer-events-auto flex h-full max-h-[100dvh] w-full max-w-[min(100vw,720px)] flex-col border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--gray-50)_92%,var(--primary-50)_8%)] shadow-[var(--shadow-lift-hover)] sm:rounded-l-2xl overflow-hidden"
-    role="dialog"
-    aria-modal="false"
+    role="region"
     aria-labelledby="line-import-title"
   >
     <div className="shrink-0 px-4 sm:px-5 py-3.5 border-b border-[var(--color-border)] bg-gradient-to-r from-[var(--primary-50)] via-[var(--color-surface)] to-[color-mix(in_srgb,var(--primary-100)_35%,white)] flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">

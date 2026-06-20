@@ -265,12 +265,12 @@ export function CutPdfDialog({ roundName, betType, dealerName, threshold, cutIte
         className="bg-[var(--color-card-bg-solid)] border-0 rounded-2xl shadow-lg w-full max-w-5xl max-h-[95vh] flex flex-col focus:outline-none">
 
         {/* Dialog header */}
-        <div className="flex items-center justify-between px-5 py-3 border-b border-border bg-[var(--bg-glass)] rounded-t-xl">
-          <div>
+        <div className="flex flex-wrap items-center gap-3 px-5 py-3 border-b border-border bg-[var(--bg-glass)] rounded-t-xl">
+          <div className="flex-1 min-w-0">
             <h3 id="pdf-dialog-title" className="font-semibold text-theme-text-primary">ตัวอย่างฟอร์มส่ง</h3>
             <p className="text-xs text-theme-text-muted mt-0.5">{BET_TYPE_SHORT[betType]} · {cutItems.length} รายการ · {totalPages} หน้า</p>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 shrink-0">
             <button onClick={onClose} className="h-8 px-4 rounded-lg bg-surface-200 hover:bg-[var(--bg-hover)] text-sm text-theme-text-primary border border-border transition-all duration-theme">ปิด</button>
             <button
               type="button"

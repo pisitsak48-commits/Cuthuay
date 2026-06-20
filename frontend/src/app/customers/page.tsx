@@ -190,6 +190,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                       <td className="py-1.5 px-1.5">
                         <input
                           type="text" inputMode="decimal"
+                          aria-label={`${row.label} — ลด %`}
                           value={form[row.dPctKey as keyof CForm]}
                           onChange={e => set(row.dPctKey as keyof CForm, e.target.value.replace(/[^0-9.]/g, ''))}
                           className={inputCls}
@@ -198,6 +199,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                       <td className="py-1.5 px-1.5">
                         <input
                           type="text" inputMode="numeric"
+                          aria-label={`${row.label} — อัตราจ่าย`}
                           value={form[row.cKey as keyof CForm]}
                           onChange={e => set(row.cKey as keyof CForm, e.target.value.replace(/[^0-9.]/g, ''))}
                           placeholder={String(row.def)}
@@ -281,7 +283,10 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                   <tr
                     key={c.id}
                     onClick={() => startEdit(c)}
-                    className={`cursor-pointer border-b border-[var(--color-border)]/50 last:border-b-0 transition-colors duration-100 ${
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startEdit(c); } }}
+                    tabIndex={0}
+                    aria-label={`แก้ไขลูกค้า: ${c.name}`}
+                    className={`cursor-pointer border-b border-[var(--color-border)]/50 last:border-b-0 transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] ${
                       edit?.id === c.id
                         ? 'bg-[var(--color-badge-info-bg)]'
                         : rowIdx % 2 === 0 ? 'bg-[var(--color-card-bg-solid)] hover:bg-[var(--bg-hover)]' : 'bg-[var(--bg-glass-subtle)]/60 hover:bg-[var(--bg-hover)]'
@@ -318,12 +323,13 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                     <td className="py-2 px-2 whitespace-nowrap text-right">
                       <button
                         onClick={e => { e.stopPropagation(); startCopy(c); }}
-                        title="คัดลอกเป็นรายการใหม่"
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-theme-text-muted hover:text-accent hover:bg-[var(--color-badge-info-bg)] transition-colors text-sm mr-1"
+                        aria-label={`คัดลอกลูกค้า: ${c.name}`}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md text-theme-text-muted hover:text-accent hover:bg-[var(--color-badge-info-bg)] transition-colors text-sm mr-0.5"
                       >⎘</button>
                       <button
                         onClick={e => { e.stopPropagation(); handleDelete(c.id); }}
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-theme-text-muted hover:text-loss hover:bg-[var(--color-badge-danger-bg)] transition-colors text-base leading-none"
+                        aria-label={`ลบลูกค้า: ${c.name}`}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md text-theme-text-muted hover:text-loss hover:bg-[var(--color-badge-danger-bg)] transition-colors text-base leading-none"
                       >×</button>
                     </td>
                   </tr>
@@ -468,12 +474,14 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                       <td className="py-1.5 px-3 text-theme-text-primary font-medium whitespace-nowrap">{row.label}</td>
                       <td className="py-1.5 px-1.5">
                         <input type="text" inputMode="decimal"
+                          aria-label={`${row.label} — ลด %`}
                           value={form[row.dPctKey as keyof DForm]}
                           onChange={e => set(row.dPctKey as keyof DForm, e.target.value.replace(/[^0-9.]/g, ''))}
                           className={inputCls} />
                       </td>
                       <td className="py-1.5 px-1.5">
                         <input type="text" inputMode="numeric"
+                          aria-label={`${row.label} — อัตราจ่าย`}
                           value={form[row.dRateKey as keyof DForm]}
                           onChange={e => set(row.dRateKey as keyof DForm, e.target.value.replace(/[^0-9.]/g, ''))}
                           placeholder={String(row.def)}
@@ -541,7 +549,10 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                   <tr
                     key={d.id}
                     onClick={() => startEdit(d)}
-                    className={`cursor-pointer border-b border-[var(--color-border)]/50 last:border-b-0 transition-colors duration-100 ${
+                    onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startEdit(d); } }}
+                    tabIndex={0}
+                    aria-label={`แก้ไขเจ้ามือ: ${d.name}`}
+                    className={`cursor-pointer border-b border-[var(--color-border)]/50 last:border-b-0 transition-colors duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-accent)] ${
                       edit?.id === d.id
                         ? 'bg-[var(--color-badge-info-bg)]'
                         : rowIdx % 2 === 0 ? 'bg-[var(--color-card-bg-solid)] hover:bg-[var(--bg-hover)]' : 'bg-[var(--bg-glass-subtle)]/60 hover:bg-[var(--bg-hover)]'
@@ -576,12 +587,13 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
                     <td className="py-2 px-2 whitespace-nowrap text-right">
                       <button
                         onClick={e => { e.stopPropagation(); startCopy(d); }}
-                        title="คัดลอกเป็นรายการใหม่"
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-theme-text-muted hover:text-accent hover:bg-[var(--color-badge-info-bg)] transition-colors text-sm mr-1"
+                        aria-label={`คัดลอกเจ้ามือ: ${d.name}`}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md text-theme-text-muted hover:text-accent hover:bg-[var(--color-badge-info-bg)] transition-colors text-sm mr-0.5"
                       >⎘</button>
                       <button
                         onClick={e => { e.stopPropagation(); handleDelete(d.id); }}
-                        className="inline-flex items-center justify-center w-6 h-6 rounded-md text-theme-text-muted hover:text-loss hover:bg-[var(--color-badge-danger-bg)] transition-colors text-base leading-none"
+                        aria-label={`ลบเจ้ามือ: ${d.name}`}
+                        className="inline-flex items-center justify-center w-8 h-8 rounded-md text-theme-text-muted hover:text-loss hover:bg-[var(--color-badge-danger-bg)] transition-colors text-base leading-none"
                       >×</button>
                     </td>
                   </tr>

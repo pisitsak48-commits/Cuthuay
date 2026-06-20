@@ -1,9 +1,11 @@
 'use client';
 
-// Recharts uses SVG presentation attributes; CSS custom properties don't resolve there.
-const CHART_SALES_COLOR  = '#2563eb'; // --chart-primary (blue-600)
-const CHART_PROFIT_COLOR = '#22c55e'; // --chart-profit (green-500)
-const CHART_LOSS_COLOR   = '#ef4444'; // --color-semantic-danger (red-500)
+// Recharts SVG fill/stroke attributes don't accept CSS custom properties.
+// Read resolved values at render time so they follow theme changes.
+function readCssVar(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
 
 import { useCallback, useEffect, useMemo, useState, Fragment } from 'react';
 import Link from 'next/link';
@@ -78,6 +80,10 @@ async function poolMap<T, R>(items: T[], concurrency: number, fn: (item: T, inde
 }
 
 export default function SummaryComparePage() {
+  const chartSalesColor  = readCssVar('--chart-primary', '#4a90e2');
+  const chartProfitColor = readCssVar('--chart-profit', '#4caf50');
+  const chartLossColor   = readCssVar('--color-semantic-danger', '#ff6b6b');
+
   const defaultYearBE = useMemo(() => new Date().getFullYear() + 543, []);
   const [rounds, setRounds] = useState<Round[]>([]);
   const [loadingList, setLoadingList] = useState(true);
@@ -517,13 +523,13 @@ export default function SummaryComparePage() {
                       wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
                       iconType="square"
                       payload={[
-                        { value: 'ยอดขาย', type: 'square', id: 'sales', color: CHART_SALES_COLOR },
-                        { value: 'กำไร', type: 'square', id: 'profit', color: CHART_PROFIT_COLOR },
+                        { value: 'ยอดขาย', type: 'square', id: 'sales', color: chartSalesColor },
+                        { value: 'กำไร', type: 'square', id: 'profit', color: chartProfitColor },
                       ]}
                     />
                     <ReferenceLine y={0} stroke="var(--chart-ref-line)" />
-                    <Bar dataKey="sales" name="ยอดขาย" fill={CHART_SALES_COLOR} radius={[6, 6, 0, 0]} maxBarSize={28} />
-                    <Bar dataKey="profit" name="กำไร" fill={CHART_PROFIT_COLOR} radius={[6, 6, 0, 0]} maxBarSize={28}>
+                    <Bar dataKey="sales" name="ยอดขาย" fill={chartSalesColor} radius={[6, 6, 0, 0]} maxBarSize={28} />
+                    <Bar dataKey="profit" name="กำไร" fill={chartProfitColor} radius={[6, 6, 0, 0]} maxBarSize={28}>
                       {chartData.map((entry) => (
                         <Cell
                           key={entry.key}
@@ -531,8 +537,8 @@ export default function SummaryComparePage() {
                             entry.profit == null
                               ? 'transparent'
                               : entry.profit >= 0
-                                ? CHART_PROFIT_COLOR
-                                : CHART_LOSS_COLOR
+                                ? chartProfitColor
+                                : chartLossColor
                           }
                         />
                       ))}

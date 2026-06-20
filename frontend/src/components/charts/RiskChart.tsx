@@ -1,9 +1,11 @@
 'use client';
 
-// Recharts uses SVG presentation attributes; CSS custom properties don't resolve there.
-const CHART_SALES_COLOR  = '#4a90e2'; // --chart-primary
-const CHART_PROFIT_COLOR = '#059669'; // --chart-profit (success)
-const CHART_PEAK_COLOR   = '#fbbf24'; // highlight: highest-revenue bar
+// Recharts SVG fill/stroke attributes don't accept CSS custom properties.
+// Read resolved values at render time so they follow theme changes.
+function readCssVar(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
 
 import {
   BarChart,
@@ -86,6 +88,10 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export function RiskDistributionChart({ rounds, profitByRoundId = {} }: Props) {
+  const chartSalesColor  = readCssVar('--chart-primary', '#4a90e2');
+  const chartProfitColor = readCssVar('--chart-profit', '#4caf50');
+  const chartPeakColor   = '#fbbf24'; // no token; intentional one-off highlight
+
   const data = rounds
     .slice()
     .reverse()
@@ -156,8 +162,8 @@ export function RiskDistributionChart({ rounds, profitByRoundId = {} }: Props) {
             wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
             iconType="square"
             payload={[
-              { value: 'ยอดขาย', type: 'square', id: 'sales', color: CHART_SALES_COLOR },
-              { value: 'กำไร', type: 'square', id: 'profit', color: CHART_PROFIT_COLOR },
+              { value: 'ยอดขาย', type: 'square', id: 'sales', color: chartSalesColor },
+              { value: 'กำไร', type: 'square', id: 'profit', color: chartProfitColor },
             ]}
           />
           <ReferenceLine y={0} stroke="var(--chart-ref-line)" />
@@ -166,7 +172,7 @@ export function RiskDistributionChart({ rounds, profitByRoundId = {} }: Props) {
               <Cell
                 key={`s-${index}`}
                 fill={
-                  maxRev > 0 && entry.sales === maxRev ? CHART_PEAK_COLOR : 'url(#riskBarSales)'
+                  maxRev > 0 && entry.sales === maxRev ? chartPeakColor : 'url(#riskBarSales)'
                 }
               />
             ))}

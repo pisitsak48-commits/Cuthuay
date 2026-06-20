@@ -88,16 +88,9 @@ export default function LoginPage() {
     <div className="min-h-dvh flex flex-col items-center justify-center relative overflow-hidden px-4 py-10 sm:py-14"
       style={{ background: 'var(--gradient-page)' }}
     >
-      {/* ── Decorative background blobs ── */}
+      {/* ── Decorative background ── */}
       <div aria-hidden className="pointer-events-none absolute inset-0">
-        {/* Grid */}
         <div className="absolute inset-0 bg-grid-pattern bg-grid-40 opacity-[0.28]" />
-        {/* Top-right glow */}
-        <div className="absolute -top-40 -right-40 w-[28rem] h-[28rem] rounded-full bg-[var(--color-accent)]/[0.12] blur-3xl" />
-        {/* Bottom-left glow */}
-        <div className="absolute -bottom-32 -left-32 w-[24rem] h-[24rem] rounded-full bg-primary-200/20 blur-3xl" />
-        {/* Center top accent */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[26rem] h-24 bg-gradient-to-b from-[var(--color-accent)]/[0.07] to-transparent" />
       </div>
 
       {/* ── Card ── */}
@@ -125,7 +118,7 @@ export default function LoginPage() {
               transition={{ delay: 0.15, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
               className="relative"
             >
-              <div className="absolute -inset-2 rounded-2xl bg-gradient-to-b from-[var(--color-accent)]/10 to-transparent blur-xl pointer-events-none" />
+              <div className="absolute -inset-2 rounded-2xl bg-gradient-to-b from-[var(--color-accent)]/10 to-transparent blur-lg pointer-events-none" />
               <div className="relative w-[13rem] sm:w-[14.5rem] rounded-2xl bg-[var(--color-card-bg-solid)] shadow-sm ring-1 ring-[var(--color-border)] px-5 py-4 sm:py-5">
                 <Image
                   src={APP_LOGO_PUBLIC_PATH}

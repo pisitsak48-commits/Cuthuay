@@ -1404,6 +1404,7 @@ function BetsPageContent() {
           <span className="md:hidden text-[11px] text-theme-text-muted">โหมดย่อสำหรับมือถือ/แท็บเล็ต</span>
           <div className="w-px h-4 bg-surface-300" />
           <select value={selectedRoundId} onChange={e => setSelectedRoundId(e.target.value)}
+            aria-label="เลือกงวด"
             className="h-7 rounded bg-surface-200 border border-border px-2 text-sm text-theme-text-primary focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]">
             {roundsForPicker.length === 0
               ? <option value="">{showClosedRoundsInPicker ? '— ไม่มีงวด (หรือซ่อนหมด) —' : '— ไม่มีงวดที่เปิดรับ —'}</option>

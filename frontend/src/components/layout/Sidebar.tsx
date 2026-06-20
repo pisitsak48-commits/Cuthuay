@@ -142,7 +142,7 @@ export function Sidebar() {
 
     <aside
       className={cn(
-        'fixed top-0 left-0 h-dvh max-h-dvh flex flex-col border-0 border-r-0 bg-[var(--color-sidebar-bg)] backdrop-blur-[18px]',
+        'fixed top-0 left-0 h-dvh max-h-dvh flex flex-col border-0 border-r-0 bg-[var(--color-sidebar-bg)] [backdrop-filter:blur(var(--blur-glass-strong))]',
         'transition-[width,transform] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
         // Desktop: always visible, can be collapsed to icon-only
         'md:z-30 md:translate-x-0 md:shadow-[4px_0_24px_-8px_rgba(15,23,42,0.08)]',

@@ -358,7 +358,7 @@ export const BetKeyInputPanel = forwardRef<BetKeyInputHandle, BetKeyInputPanelPr
     }
 
     return (
-      <div className="flex min-w-0 max-w-full items-stretch gap-2.5 border-b border-[var(--color-border)] bg-gradient-to-b from-[var(--gray-100)] to-[var(--gray-50)] px-3 py-3 shrink-0 select-none z-[1] overflow-x-auto">
+      <div className="flex min-w-0 max-w-full items-stretch gap-2.5 border-b border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-3 shrink-0 select-none z-[1] overflow-x-auto">
         <div
           style={{ width: numWidth, minWidth: 100, maxWidth: 400 }}
           className={[
