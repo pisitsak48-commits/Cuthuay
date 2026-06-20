@@ -378,7 +378,7 @@ export function SummaryPrizeBar({
     >
       <div className="flex flex-col gap-3 lg:flex-row lg:items-stretch lg:gap-4">
         <div className="flex shrink-0 items-center gap-2 lg:flex-col lg:items-start lg:justify-center lg:min-w-[5.5rem] lg:border-r lg:border-[var(--color-border)]/80 lg:pr-4">
-          <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-theme-text-muted">ผลรางวัล</span>
+          <span className="text-[11px] font-bold text-theme-text-muted">ผลรางวัล</span>
           <span className="hidden lg:inline text-[11px] text-theme-text-muted leading-snug">งวด {data.round.name}</span>
         </div>
 

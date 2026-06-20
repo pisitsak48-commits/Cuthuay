@@ -61,7 +61,7 @@ export function SaveDealerModal({
           <div>
             <h3 id="send-confirm-title" className="font-bold text-theme-text-primary text-base">บันทึกส่ง</h3>
             <p className="text-xs text-theme-text-muted mt-0.5">
-              {betTypeLabel} · {cutItemsCount} รายการ · <span className=" tracking-tight text-[var(--color-accent-hover)]">{formatBaht(totalSend)}</span>
+              {betTypeLabel} · {cutItemsCount} รายการ · <span className="tracking-tight text-[var(--color-accent-hover)]">{formatBaht(totalSend)}</span>
             </p>
           </div>
           <button type="button" onClick={onClose} aria-label="ปิด" className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text-secondary hover:bg-surface-200 transition-colors">✕</button>
@@ -81,9 +81,9 @@ export function SaveDealerModal({
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-semibold text-theme-text-primary">{dealer.name}</p>
                   <div className="flex flex-wrap gap-4 mt-1 text-xs text-theme-text-muted">
-                    <span>จ่าย: <span className=" tracking-tight text-risk-medium">{rate ?? '—'}</span></span>
-                    <span>ลด: <span className=" tracking-tight text-theme-text-secondary">{pct ?? 0}%</span></span>
-                    <span>เก็บสุทธิ: <span className=" tracking-tight text-theme-text-secondary">{dealer.keep_net_pct}%</span></span>
+                    <span>จ่าย: <span className="tracking-tight text-risk-medium">{rate ?? '—'}</span></span>
+                    <span>ลด: <span className="tracking-tight text-theme-text-secondary">{pct ?? 0}%</span></span>
+                    <span>เก็บสุทธิ: <span className="tracking-tight text-theme-text-secondary">{dealer.keep_net_pct}%</span></span>
                   </div>
                 </div>
               </label>

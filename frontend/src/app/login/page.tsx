@@ -138,10 +138,8 @@ export default function LoginPage() {
               transition={{ delay: 0.25, duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               className="mt-5 space-y-1.5"
             >
-              <p className="text-[10.5px] font-bold uppercase tracking-[0.26em] text-theme-text-primary/80 flex items-center justify-center gap-2.5">
-                <span className="w-8 h-px bg-gradient-to-r from-transparent to-[var(--color-accent)]/70" />
+              <p className="text-[10.5px] font-semibold text-theme-text-muted text-center tracking-wide">
                 {APP_BRAND_TAGLINE}
-                <span className="w-8 h-px bg-gradient-to-l from-transparent to-[var(--color-accent)]/70" />
               </p>
               <p className="text-[12.5px] text-theme-text-muted leading-snug">
                 ระบบจัดการความเสี่ยงยอดหวย

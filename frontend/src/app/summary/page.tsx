@@ -371,7 +371,7 @@ function SummaryPageInner() {
 
               {rTop3 && (
                 <div className="rounded-2xl border border-[var(--color-semantic-success)]/30 bg-[var(--color-semantic-success)]/[0.05] px-4 py-3.5 shadow-sm">
-                  <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--color-semantic-success)] mb-2">สรุปจากเลขรางวัลที่ 1</div>
+                  <div className="text-[11px] font-bold text-[var(--color-semantic-success)] mb-2">สรุปจากเลขรางวัลที่ 1</div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs sm:text-sm">
                     <div className="text-theme-text-muted">3 ตัวบน <span className="text-profit font-bold tabular-nums ml-1">{rTop3}</span></div>
                     <div className="text-theme-text-muted">2 ตัวบน <span className="text-profit font-bold tabular-nums ml-1">{rTop2}</span></div>
