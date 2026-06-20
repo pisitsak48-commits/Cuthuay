@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import type { Dispatch, MutableRefObject, RefObject, SetStateAction, MouseEvent } from 'react';
 import { Card, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { BetType, BET_TYPE_LABELS, type RangeSimRow } from '@/types';
 import type { RangeSimResponse } from '@/types';
 import type { ChartBar } from '@/components/cut/cutChartParts';
@@ -143,6 +144,8 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
     handleDownloadPendingSlipPng,
     setStagedCuts,
   } = props;
+
+  const confirm = useConfirm();
 
   return (
 <div className="relative flex flex-col min-w-0 min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-4 gap-4">
@@ -472,8 +475,8 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
         {stagedCuts.length > 0 && (
           <button
             type="button"
-            onClick={() => {
-              if (!confirm('ล้างรายการที่บันทึกรอส่งทั้งหมด?')) return;
+            onClick={async () => {
+              if (!await confirm({ message: 'ล้างรายการที่บันทึกรอส่งทั้งหมด?', danger: true })) return;
               setStagedCuts([]);
             }}
             className="h-8 px-2.5 rounded-lg text-[11px] text-risk-medium/95 hover:text-risk-medium hover:bg-risk-medium/90/10 transition-colors">

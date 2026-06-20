@@ -109,7 +109,7 @@ export default function LoginPage() {
       >
         <h1 className="sr-only">{APP_BRAND_NAME} — เข้าสู่ระบบ</h1>
 
-        <div className="rounded-3xl bg-[var(--color-card-bg-solid)] shadow-[0_8px_40px_rgba(30,41,59,0.12),0_1px_3px_rgba(30,41,59,0.06)] overflow-hidden ring-1 ring-[var(--color-border)]">
+        <div className="rounded-2xl bg-[var(--color-card-bg-solid)] shadow-[0_8px_40px_rgba(30,41,59,0.12),0_1px_3px_rgba(30,41,59,0.06)] overflow-hidden">
 
           {/* ── Brand zone ── */}
           <div className="relative flex flex-col items-center text-center px-8 sm:px-10 pt-10 pb-8">

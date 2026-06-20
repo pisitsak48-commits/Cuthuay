@@ -442,7 +442,7 @@ export function ProfitTab({ data }: { data: ProfitSummary }) {
             <button
               type="button"
               onClick={handlePrint}
-              className="flex-1 flex items-center justify-center gap-2 rounded-2xl border-0 bg-[var(--color-card-bg-solid)] text-theme-text-primary font-semibold text-sm py-3 px-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-[background-color,box-shadow,transform] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]"
+              className="flex-1 flex items-center justify-center gap-2 rounded-2xl border-0 bg-[var(--color-card-bg-solid)] text-theme-text-primary font-semibold text-sm py-3 px-4 shadow-sm hover:shadow-md hover:bg-[var(--bg-hover)] transition-[background-color,box-shadow] duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />

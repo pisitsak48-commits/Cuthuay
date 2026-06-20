@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/useStore';
 import { Customer, Dealer, DEFAULT_PAYOUT_RATES } from '@/types';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 // ─── Shared bet-type rows ─────────────────────────────────────────────────────
 const BET_TYPES = [
@@ -92,6 +93,7 @@ function cFormToPayload(f: CForm): Record<string, unknown> {
 }
 
 function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
+  const confirm = useConfirm();
   const [list, setList]       = useState<Customer[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving]   = useState(false);
@@ -124,7 +126,7 @@ function CustomerSection({ reloadToken = 0 }: { reloadToken?: number }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('ลบลูกค้านี้?')) return;
+    if (!await confirm({ message: 'ลบลูกค้านี้?', danger: true })) return;
     try { await customersApi.delete(id); await fetchList(); if (edit?.id === id) startNew(); }
     catch (err) { setError(formatApiErrorMessage(err, 'ลบไม่สำเร็จ')); }
   };
@@ -376,6 +378,7 @@ function dFormToPayload(f: DForm): Record<string, unknown> {
 }
 
 function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
+  const confirm = useConfirm();
   const [list, setList]       = useState<Dealer[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving]   = useState(false);
@@ -408,7 +411,7 @@ function DealerSection({ reloadToken = 0 }: { reloadToken?: number }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('ลบเจ้ามือนี้?')) return;
+    if (!await confirm({ message: 'ลบเจ้ามือนี้?', danger: true })) return;
     try { await dealersApi.delete(id); await fetchList(); if (edit?.id === id) startNew(); }
     catch (err) { setError(formatApiErrorMessage(err, 'ลบไม่สำเร็จ')); }
   };

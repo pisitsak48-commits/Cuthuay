@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useFocusTrap } from '@/lib/useFocusTrap';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { useQueryClient } from '@tanstack/react-query';
 import { roundsApi, betsApi, customersApi } from '@/lib/api';
 import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
@@ -119,6 +120,7 @@ export default function BetsPage() {
 }
 
 function BetsPageContent() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const { data: rounds = [] } = useRoundsQuery();
   /** ค่าเริ่มต้น: เลือกได้เฉพาะงวด open — ติ๊กเพิ่มเพื่อแสดมงวดปิด/ออกผล (ไม่รวม archived) */
@@ -805,7 +807,7 @@ function BetsPageContent() {
   }, [commitLineWith]);
 
   const deleteSavedGroup = useCallback(async (bets: Bet[]) => {
-    if (!confirm('ลบโพยนี้?')) return;
+    if (!await confirm({ message: 'ลบโพยนี้?', danger: true })) return;
     try {
       const ids = bets.map(b => b.id);
       await betsApi.bulkDelete(ids);
@@ -818,7 +820,7 @@ function BetsPageContent() {
 
   const deleteSelectedGroups = useCallback(async () => {
     if (selectedGroups.size === 0) return;
-    if (!confirm(`ลบ ${selectedGroups.size} รายการที่เลือก?`)) return;
+    if (!await confirm({ message: `ลบ ${selectedGroups.size} รายการที่เลือก?`, danger: true })) return;
     try {
       const toDelete = sheetGroupedRef.current.filter(g => selectedGroups.has(betSheetGroupKey(g)));
       const ids = toDelete.flatMap(g => g.bets.map(b => b.id));
@@ -1209,7 +1211,7 @@ function BetsPageContent() {
     });
     const rate = Math.min(Math.max(voiceAuditRateRef.current, 0.5), 3);
     let cancelled = false;
-    const started = speakVoiceAudit(text, rate, () => {
+    speakVoiceAudit(text, rate, () => {
       if (cancelled || !voiceAuditModeRef.current || !soundOnRef.current || voiceAuditPausedRef.current) return;
       requestAnimationFrame(() => {
         if (cancelled || !voiceAuditModeRef.current || !soundOnRef.current || voiceAuditPausedRef.current) return;
@@ -1222,7 +1224,6 @@ function BetsPageContent() {
         });
       });
     });
-    if (!started) return;
     return () => {
       cancelled = true;
       cancelSpeech();
@@ -1438,7 +1439,7 @@ function BetsPageContent() {
           style={{ '--bets-right-panel-px': `${rightPanelPx}px` } as React.CSSProperties}
         >
           <div className="bets-main-split-inner">
-          <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden">
+          <div className="flex flex-col flex-1 min-w-0 min-h-0 overflow-hidden" aria-busy={loading}>
 
             {/* Warning: no customer selected */}
             {!selectedCustomerId && (
@@ -1694,7 +1695,7 @@ function BetsPageContent() {
         <div
           role="status"
           className={cn(
-            'fixed bottom-5 left-1/2 z-[60] flex max-w-[min(92vw,26rem)] -translate-x-1/2 items-center gap-2 rounded-xl border px-4 py-3 shadow-lg pointer-events-auto',
+            'fixed bottom-safe-5 left-1/2 z-[60] flex max-w-[min(92vw,26rem)] -translate-x-1/2 items-center gap-2 rounded-xl border px-4 py-3 shadow-lg pointer-events-auto',
             lineImportToast.ok
               ? 'border-profit/45 bg-[var(--color-card-bg-solid)] text-profit'
               : 'border-loss/45 bg-[var(--color-card-bg-solid)] text-loss',

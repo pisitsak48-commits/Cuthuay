@@ -24,7 +24,7 @@ import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
 import { showApiError } from '@/lib/apiErrorToast';
 import { roundsApi, cutApi, dealersApi } from '@/lib/api';
 import { filterRoundsForSummaryCutPicker } from '@/lib/roundPickerFilter';
-import { cn, formatBaht } from '@/lib/utils';
+import { cn, formatBaht, moneyToNumber } from '@/lib/utils';
 import { useAuthStore } from '@/store/useStore';
 import {
   readPanelWidth,
@@ -87,8 +87,21 @@ function ThresholdPerNumberPill({ amount }: { amount: number }) {
 
 /** รายการตัดที่เก็บไว้ส่งภายหลัง (รวมหลายประเภทก่อนกดบันทึกส่ง) — type ใน cutTypes.ts */
 
+function normalizeSendBatch(batch: SendBatch): SendBatch {
+  return {
+    ...batch,
+    threshold: moneyToNumber(batch.threshold),
+    total: moneyToNumber(batch.total),
+    items: (batch.items ?? []).map((it) => ({
+      number: it.number,
+      amount: moneyToNumber(it.amount),
+    })),
+  };
+}
+
 // ─── Main page ────────────────────────────────────────────────────────────────
 function CutPageInner() {
+  const confirm = useConfirm();
   const searchParams = useSearchParams();
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
   /** ซ่อน archived และงวดเก่าตามวันออก — admin ติ๊กเพื่อโชว์ทั้งหมด */
@@ -156,7 +169,7 @@ function CutPageInner() {
   const [prefersTouchUi, setPrefersTouchUi]   = useState(false);
 
   const totalSentAllBatches = useMemo(
-    () => sendBatches.reduce((s, b) => s + Number(b.total), 0),
+    () => sendBatches.reduce((s, b) => s + moneyToNumber(b.total), 0),
     [sendBatches],
   );
 
@@ -220,7 +233,7 @@ function CutPageInner() {
     if (!selectedRoundId) { setSendBatches([]); return; }
     try {
       const res = await cutApi.listSendBatches(selectedRoundId);
-      setSendBatches(res.data.batches ?? []);
+      setSendBatches((res.data.batches ?? []).map(normalizeSendBatch));
     } catch (err) {
       showApiError(err, 'โหลดรายการส่งไม่สำเร็จ');
       setSendBatches([]);
@@ -365,7 +378,7 @@ function CutPageInner() {
 
   // ── Delete a saved send batch
   const handleDeleteBatch = async (batchId: string) => {
-    if (!confirm('ลบรายการส่งนี้?')) return;
+    if (!await confirm({ message: 'ลบรายการส่งนี้?', danger: true })) return;
     setDeletingBatchId(batchId);
     try {
       await cutApi.deleteSendBatch(selectedRoundId, batchId);
@@ -380,7 +393,7 @@ function CutPageInner() {
   // ── Delete ALL saved batches (recalculation is automatic: alreadySentMap / committedThreshold re-derive from sendBatches state)
   const handleDeleteAllBatches = async () => {
     if (!sendBatches.length) return;
-    if (!confirm(`ลบรายการส่งทั้งหมด ${sendBatches.length} รายการ? ระบบจะคำนวณใหม่อัตโนมัติ`)) return;
+    if (!await confirm({ message: `ลบรายการส่งทั้งหมด ${sendBatches.length} รายการ? ระบบจะคำนวณใหม่อัตโนมัติ`, danger: true })) return;
     setDeletingBatchId('all');
     try {
       await Promise.all(sendBatches.map(b => cutApi.deleteSendBatch(selectedRoundId, b.id)));
@@ -394,17 +407,17 @@ function CutPageInner() {
   // User can only lower threshold (cut more), not raise (would undo already-sent items)
   const batchesForType = sendBatches.filter(b => b.bet_type === activeBetType);
   const committedThreshold: number | null = batchesForType.length > 0
-    ? Math.min(...batchesForType.map(b => b.threshold))
+    ? Math.min(...batchesForType.map(b => moneyToNumber(b.threshold)))
     : null;
 
   // ── Already-sent amounts per number across all saved batches
   const alreadySentMap = new Map<string, number>();
   for (const b of batchesForType) {
     for (const item of b.items) {
-      alreadySentMap.set(item.number, (alreadySentMap.get(item.number) ?? 0) + item.amount);
+      alreadySentMap.set(item.number, (alreadySentMap.get(item.number) ?? 0) + moneyToNumber(item.amount));
     }
   }
-  const totalAlreadySent = batchesForType.reduce((s, b) => s + b.total, 0);
+  const totalAlreadySent = batchesForType.reduce((s, b) => s + moneyToNumber(b.total), 0);
 
   // ── Threshold: จำกัดไม่เกินขีด “ส่งแล้ว” (รวมกรณีส่งที่เก็บ 0 — committed = 0)
   const selectedRow: RangeSimRow | null = rangeResult?.rows[selectedRowIdx ?? -1] ?? null;
@@ -576,7 +589,7 @@ function CutPageInner() {
     const ent = stagedCuts.find((s) => s.bet_type === activeBetType);
     const m = new Map<string, number>();
     if (!ent) return m;
-    for (const it of ent.items) m.set(it.number, it.amount);
+    for (const it of ent.items) m.set(it.number, moneyToNumber(it.amount));
     return m;
   }, [stagedCuts, activeBetType]);
 
@@ -596,8 +609,8 @@ function CutPageInner() {
     })
     .filter(d => d.amount > 0);
   const sentBetTypeSet = new Set(sendBatches.map(b => b.bet_type));
-  const totalSend = cutItems.reduce((s, d) => s + d.amount, 0);
-  const totalRevenue = rangeResult?.total_revenue ?? 0;
+  const totalSend = cutItems.reduce((s, d) => s + moneyToNumber(d.amount), 0);
+  const totalRevenue = moneyToNumber(rangeResult?.total_revenue);
 
   /** แถวในตารางรายการรอส่ง: คิวบันทึกแล้ว + ยอดค้างส่งของประเภทที่กำลังดู */
   const pendingQueueRows = useMemo(() => {
@@ -627,7 +640,7 @@ function CutPageInner() {
   const handleDeleteSendSelection = useCallback(async () => {
     if (!selectedRoundId || selectedBatchIds.size === 0) return;
     const ids = [...selectedBatchIds];
-    if (!confirm(`ลบรายการส่งที่เลือก ${ids.length} รายการ?`)) return;
+    if (!await confirm({ message: `ลบรายการส่งที่เลือก ${ids.length} รายการ?`, danger: true })) return;
     setDeletingBatchId('all');
     try {
       await Promise.all(ids.map((id) => cutApi.deleteSendBatch(selectedRoundId, id)));
@@ -840,7 +853,7 @@ function CutPageInner() {
       <div className="h-full min-h-0 flex flex-col overflow-hidden min-w-0 w-full max-w-full">
       <Header title="ตัดหวย" subtitle={round ? `งวด ${round.name}` : 'เลือกงวดเพื่อเริ่ม'} />
 
-      <main className="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-full overflow-hidden">
+      <main className="flex-1 flex flex-col min-h-0 min-w-0 w-full max-w-full overflow-hidden" aria-busy={rangeLoading}>
         <CutToolbar
           roundsForPicker={roundsForPicker}
           selectedRoundId={selectedRoundId}

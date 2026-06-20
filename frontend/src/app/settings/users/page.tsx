@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useFocusTrap } from '@/lib/useFocusTrap';
 import { AppShell } from '@/components/layout/AppShell';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { Header } from '@/components/layout/Header';
 import { Card, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -50,6 +51,7 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
 }
 
 export default function UsersPage() {
+  const confirm = useConfirm();
   const [users, setUsers]       = useState<UserRow[]>([]);
   const [loading, setLoading]   = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -133,7 +135,7 @@ export default function UsersPage() {
   };
 
   const handleDelete = async (u: UserRow) => {
-    if (!confirm(`ลบผู้ใช้ "${u.username}" ถาวรจากระบบ?\nรายการโพยที่อ้างถึงผู้ใช้นี้จะไม่ถูกลบ แต่จะไม่แสดงผู้สร้าง`)) return;
+    if (!await confirm({ message: `ลบผู้ใช้ "${u.username}" ถาวรจากระบบ?\nรายการโพยที่อ้างถึงผู้ใช้นี้จะไม่ถูกลบ แต่จะไม่แสดงผู้สร้าง`, danger: true })) return;
     try {
       await apiFetch(`/auth/users/${u.id}`, { method: 'DELETE' });
       fetchUsers();

@@ -17,23 +17,23 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const variants = {
       primary: cn(
         ease,
-        'border-0 bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white shadow-md hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 hover:brightness-[1.02]',
+        'border-0 bg-[var(--color-accent)] text-white shadow-sm hover:brightness-[1.06]',
       ),
       ghost: cn(
         ease,
-        'bg-[var(--color-card-bg-solid)] border-0 text-theme-text-primary shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
+        'bg-[var(--color-card-bg-solid)] border-0 text-theme-text-primary shadow-sm hover:shadow-md hover:bg-[var(--bg-hover)]',
       ),
       danger: cn(
         ease,
-        'bg-[rgb(var(--color-loss)/1)] text-[var(--text-inverse)] border border-[rgb(var(--color-validation-error-border)/0.35)] shadow-btn-danger hover:shadow-[var(--shadow-hover)] hover:-translate-y-0.5 active:translate-y-0 hover:brightness-90',
+        'bg-[rgb(var(--color-loss)/1)] text-[var(--text-inverse)] border border-[rgb(var(--color-validation-error-border)/0.35)] shadow-btn-danger hover:shadow-[var(--shadow-hover)] hover:brightness-90',
       ),
       success: cn(
         ease,
-        'bg-[rgb(var(--color-profit)/1)] text-[var(--text-inverse)] border border-profit/30 shadow-btn-success hover:shadow-btn-success-hover hover:-translate-y-0.5 active:translate-y-0 hover:brightness-90',
+        'bg-[rgb(var(--color-profit)/1)] text-[var(--text-inverse)] shadow-sm hover:brightness-90',
       ),
       outline: cn(
         ease,
-        'bg-[var(--color-surface-muted)] border-0 text-theme-text-primary shadow-sm hover:bg-[var(--bg-hover)] hover:shadow-md hover:-translate-y-0.5 active:translate-y-0',
+        'bg-[var(--color-surface-muted)] border-0 text-theme-text-primary shadow-sm hover:bg-[var(--bg-hover)] hover:shadow-md',
       ),
     };
 

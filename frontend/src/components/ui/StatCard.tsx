@@ -57,7 +57,7 @@ export function StatCard({
       className={cn(
         'rounded-2xl border-0 bg-[var(--color-card-bg-solid)] shadow-sm overflow-hidden',
         'transition-[transform,box-shadow] duration-[200ms] [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))]',
-        'hover:shadow-md hover:-translate-y-0.5',
+        'hover:shadow-md',
         className,
       )}
     >

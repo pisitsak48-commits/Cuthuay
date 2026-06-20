@@ -13,6 +13,7 @@ import { showApiError } from '@/lib/apiErrorToast';
 import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
 import { queryKeys } from '@/hooks/queries/queryKeys';
 import { Modal } from '@/components/ui/Modal';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { formatBaht } from '@/lib/utils';
 import { Round } from '@/types';
 import { useAuthStore } from '@/store/useStore';
@@ -22,6 +23,7 @@ function formatRoundsBackupError(err: unknown): string {
 }
 
 export default function RoundsPage() {
+  const confirm = useConfirm();
   const router = useRouter();
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
   const queryClient = useQueryClient();
@@ -91,7 +93,7 @@ export default function RoundsPage() {
   };
 
   const handleDelete = async (round: Round) => {
-    if (!confirm(`ลบงวด "${round.name}" และโพยทั้งหมดในงวดนี้? ไม่สามารถกู้คืนได้`)) return;
+    if (!await confirm({ message: `ลบงวด "${round.name}" และโพยทั้งหมดในงวดนี้? ไม่สามารถกู้คืนได้`, danger: true })) return;
     setDeletingId(round.id);
     try {
       await roundsApi.delete(round.id);

@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useFocusTrap } from '@/lib/useFocusTrap';
 import { AppShell } from '@/components/layout/AppShell';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { Header } from '@/components/layout/Header';
 import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
 import { showApiError } from '@/lib/apiErrorToast';
@@ -707,6 +708,7 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
 }
 
 export default function LimitsPage() {
+  const confirm = useConfirm();
   const { data: rounds = [] } = useRoundsQuery();
   const [roundId, setRoundId]     = useState('');
   const [tab, setTab]             = useState<Tab>('customer');
@@ -801,7 +803,7 @@ export default function LimitsPage() {
 
   const handleDeleteAll = async () => {
     if (!roundId) return;
-    if (!confirm('ลบเลขอั้นทั้งหมดในแท็บนี้?')) return;
+    if (!await confirm({ message: 'ลบเลขอั้นทั้งหมดในแท็บนี้?', danger: true })) return;
     try {
       if (tab === 'dealer') {
         await Promise.all([
@@ -822,10 +824,7 @@ export default function LimitsPage() {
   /** ลบทุก entity_type ในงวด (ลูกค้า + เจ้ามือ + ทั่วไป) — หน้าตัดอ้างอิงแค่ all+dealer แต่ล้างครบกันข้อมูลค้าง */
   const handlePurgeAllLimitsInRound = async () => {
     if (!roundId) return;
-    if (!confirm(
-      'ลบเลขอั้นทั้งหมดของงวดนี้ทุกประเภท (ลูกค้า + เจ้ามือ + ทั่วไป)?\n'
-      + 'ปุ่ม "ลบทั้งหมด" ในแต่ละแท็บลบเฉพาะแท็บนั้น — ปุ่มนี้เคลียร์ทั้งฐานข้อมูลของงวด',
-    )) return;
+    if (!await confirm({ message: 'ลบเลขอั้นทั้งหมดของงวดนี้ทุกประเภท (ลูกค้า + เจ้ามือ + ทั่วไป)?\nปุ่ม "ลบทั้งหมด" ในแต่ละแท็บลบเฉพาะแท็บนั้น — ปุ่มนี้เคลียร์ทั้งฐานข้อมูลของงวด', danger: true })) return;
     try {
       await limitsApi.deleteAll(roundId);
     } catch (err: unknown) {
@@ -860,7 +859,7 @@ export default function LimitsPage() {
               onClick={() => setTab('customer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === 'customer'
-                  ? 'bg-gradient-to-r from-[var(--gradient-btn-from)] to-[var(--gradient-btn-to)] text-white shadow-sm'
+                  ? 'bg-[var(--color-accent)] text-white shadow-sm'
                   : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
               }`}
             >
@@ -871,7 +870,7 @@ export default function LimitsPage() {
               onClick={() => setTab('dealer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === 'dealer'
-                  ? 'bg-gradient-to-r from-[var(--gradient-btn-from)] to-[var(--gradient-btn-to)] text-white shadow-sm'
+                  ? 'bg-[var(--color-accent)] text-white shadow-sm'
                   : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
               }`}
             >

@@ -152,8 +152,11 @@ export function Sidebar() {
         sidebarMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
       )}
     >
-      {/* Logo + collapse */}
-      <div className={cn('flex items-center border-b border-[var(--color-border)] shrink-0', expanded ? 'gap-3 px-5 py-5' : 'flex-col gap-2 px-2 py-4')}>
+      {/* Logo + collapse — padding-top extends into safe-area on notched phones */}
+      <div
+        className={cn('flex items-center border-b border-[var(--color-border)] shrink-0', expanded ? 'gap-3 px-5 py-5' : 'flex-col gap-2 px-2 py-4')}
+        style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top, 0px))' }}
+      >
         <div
           className="w-9 h-9 rounded-3xl border border-accent/20 flex items-center justify-center shadow-[var(--color-nav-active-shadow)] shrink-0"
           style={{ background: 'var(--gradient-sidebar-logo)' }}

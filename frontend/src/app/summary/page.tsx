@@ -2,6 +2,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo, Suspense } from 'react';
 import { useFocusTrap } from '@/lib/useFocusTrap';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import Link from 'next/link';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
@@ -20,6 +21,7 @@ import { DealerTab } from '@/components/summary/DealerTab';
 import { SummaryPrizeBar, totePerms } from '@/components/summary/summaryShared';
 
 function SummaryPageInner() {
+  const confirm = useConfirm();
   const searchParams = useSearchParams();
   const router = useRouter();
   const isAdmin = useAuthStore((s) => s.user?.role === 'admin');
@@ -110,7 +112,7 @@ function SummaryPageInner() {
   }
 
   async function handleResetResult() {
-    if (!confirm('รีเซ็ตผลสลาก?\nงวดจะกลับสู่สถานะปิด และข้อมูลสรุปผลจะถูกล้างทั้งหมด')) return;
+    if (!await confirm({ message: 'รีเซ็ตผลสลาก?\nงวดจะกลับสู่สถานะปิด และข้อมูลสรุปผลจะถูกล้างทั้งหมด', danger: true })) return;
     try {
       await roundsApi.resetResult(roundId);
       setShowResultModal(false);
@@ -132,7 +134,7 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
+        'bg-[var(--color-accent)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
       dotClass: 'bg-white',
     },
     {
@@ -144,7 +146,7 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
+        'bg-[var(--color-accent)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
       dotClass: 'bg-white',
     },
     {
@@ -156,7 +158,7 @@ function SummaryPageInner() {
         </svg>
       ),
       activeClass:
-        'bg-gradient-to-r from-[var(--color-accent)] to-[var(--color-accent-hover)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
+        'bg-[var(--color-accent)] text-white font-semibold border-0 shadow-sm transition-[color,background-color,box-shadow] duration-200 ease-out',
       dotClass: 'bg-white',
     },
   ] as const;
@@ -278,7 +280,7 @@ function SummaryPageInner() {
             ref={resultModalRef}
             role="dialog" aria-modal="true" aria-label="ผลรางวัลงวดนี้"
             tabIndex={-1}
-            className="relative z-10 w-full max-w-xl overflow-hidden rounded-3xl border border-[var(--color-border)]/80 bg-[var(--color-card-bg-solid)] shadow-[0_24px_60px_-12px_rgba(0,0,0,0.28)] ring-1 ring-black/[0.04] focus:outline-none"
+            className="relative z-10 w-full max-w-xl overflow-hidden rounded-2xl bg-[var(--color-card-bg-solid)] shadow-xl focus:outline-none"
             onClick={e => e.stopPropagation()}
           >
             <div className="relative px-6 pt-6 pb-5 border-b border-[var(--color-border)]/90 bg-gradient-to-br from-[var(--color-card-bg-solid)] via-white to-[var(--bg-glass-subtle)]">

@@ -1,7 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import { QueryProvider } from '@/components/providers/QueryProvider';
+import { ConfirmDialogProvider } from '@/components/ui/ConfirmDialog';
 import { THEME_INIT_SCRIPT } from '@/lib/theme-script';
 
 /** โหลดฟอนต์ผ่าน stylesheet (ไม่ใช้ next/font/google) — ให้ `next build` / Docker ไม่ต้อง fetch fonts.googleapis.com */
@@ -11,6 +12,12 @@ const GOOGLE_FONTS_HREF =
 export const metadata: Metadata = {
   title: 'AuraX — Lottery Risk Management',
   description: 'Professional lottery exposure management and cut hedging system',
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
       </head>
       <body className="bg-app-ambient font-sans text-theme-text-primary antialiased min-h-dvh">
-        <QueryProvider><ThemeProvider>{children}</ThemeProvider></QueryProvider>
+        <QueryProvider><ThemeProvider><ConfirmDialogProvider>{children}</ConfirmDialogProvider></ThemeProvider></QueryProvider>
       </body>
     </html>
   );

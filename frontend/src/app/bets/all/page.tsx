@@ -430,7 +430,7 @@ function BetsAllInner() {
             <button key={k} type="button" onClick={() => setTab(k)}
               className={`px-4 py-2 text-sm font-medium rounded-full transition-all ${
                 tab === k
-                  ? 'bg-gradient-to-r from-[var(--gradient-btn-from)] to-[var(--gradient-btn-to)] text-white shadow-sm'
+                  ? 'bg-[var(--color-accent)] text-white shadow-sm'
                   : 'bg-[var(--color-surface-muted)] text-theme-text-secondary hover:bg-[var(--bg-hover)]'
               }`}>
               {label}

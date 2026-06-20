@@ -3,6 +3,7 @@
 import type { Dispatch, MutableRefObject, SetStateAction } from 'react';
 import { BetType, SendBatch } from '@/types';
 import { cn, formatBaht } from '@/lib/utils';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { writePanelLock, STORAGE_CUT_RIGHT_PANEL_LOCK } from '@/lib/panelResize';
 import type { PendingCutSlice } from '@/components/cut/cutTypes';
 
@@ -81,6 +82,8 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
     setSelectedRowIdx,
     lastManualByTypeRef,
   } = props;
+
+  const confirm = useConfirm();
 
   return (
 <div
@@ -328,8 +331,8 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
           type="button"
           className="btn-toolbar-glow btn-toolbar-danger !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           disabled={!stagedCuts.length && !cutItems.length}
-          onClick={() => {
-            if (!confirm('ลบข้อมูลรอส่งและรีเซ็ตการตัดบนกราฟ?')) return;
+          onClick={async () => {
+            if (!await confirm({ message: 'ลบข้อมูลรอส่งและรีเซ็ตการตัดบนกราฟ?', danger: true })) return;
             setStagedCuts([]);
             setManualThreshold(null);
             setSelectedRowIdx(null);
@@ -341,9 +344,9 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
           type="button"
           className="btn-toolbar-glow btn-toolbar-amber !h-9 shrink-0 px-3 text-[11px] font-semibold whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           disabled={!stagedCuts.length}
-          onClick={() => {
+          onClick={async () => {
             if (!stagedCuts.length) return;
-            if (!confirm('ยกเลิกรายการที่บันทึกรอส่ง (คิว) เท่านั้น?')) return;
+            if (!await confirm({ message: 'ยกเลิกรายการที่บันทึกรอส่ง (คิว) เท่านั้น?', danger: true })) return;
             setStagedCuts([]);
           }}>
           ยกเลิกการรอส่ง
