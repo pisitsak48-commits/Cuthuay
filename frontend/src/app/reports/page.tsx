@@ -140,12 +140,12 @@ export default function ReportsPage() {
                     className="flex items-center justify-between py-1.5 border-b border-border/30"
                   >
                     <div className="flex items-center gap-2">
-                      <span className=" tracking-tight font-bold text-theme-text-primary text-base w-12 tracking-widest">
+                      <span className="tracking-tight font-bold text-theme-text-primary text-base w-12 tracking-widest">
                         {exp.number}
                       </span>
                       <span className="text-xs text-theme-text-muted">{BET_TYPE_TH[exp.bet_type]}</span>
                     </div>
-                    <span className={` tracking-tight text-sm font-semibold ${exp.net_pl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    <span className={`tracking-tight text-sm font-semibold ${exp.net_pl >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {exp.net_pl >= 0 ? '+' : ''}{formatBaht(exp.net_pl)}
                     </span>
                   </motion.div>
@@ -175,19 +175,19 @@ export default function ReportsPage() {
                 {rounds.map((round, i) => (
                   <tr key={round.id} className="border-b border-border/40 table-row-hover">
                     <td className="py-3 px-4 font-medium text-theme-text-primary">{round.name}</td>
-                    <td className="py-3 px-4 text-theme-text-secondary  tracking-tight text-xs">
+                    <td className="py-3 px-4 text-theme-text-secondary tracking-tight text-xs">
                       {new Date(round.draw_date).toLocaleDateString('th-TH')}
                     </td>
-                    <td className="py-3 px-4  tracking-tight text-theme-text-secondary">
+                    <td className="py-3 px-4 tracking-tight text-theme-text-secondary">
                       {(round.bet_count ?? 0).toLocaleString()}
                     </td>
-                    <td className="py-3 px-4  tracking-tight text-profit">
+                    <td className="py-3 px-4 tracking-tight text-profit">
                       {formatBaht(round.total_revenue ?? 0)}
                     </td>
                     <td className="py-3 px-4">
                       <RoundStatusBadge status={round.status} />
                     </td>
-                    <td className="py-3 px-4  tracking-tight font-bold text-theme-text-primary text-lg tracking-widest">
+                    <td className="py-3 px-4 tracking-tight font-bold text-theme-text-primary text-lg tracking-widest">
                       {round.result_number ?? <span className="text-theme-text-muted text-xs font-normal">-</span>}
                     </td>
                   </tr>

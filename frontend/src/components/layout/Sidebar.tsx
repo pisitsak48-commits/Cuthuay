@@ -417,7 +417,7 @@ export function Sidebar() {
               <p className="text-[11px] text-theme-text-muted capitalize">{user?.role}</p>
             </div>
           )}
-          <button onClick={logout} aria-label="ออกจากระบบ" className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] transition-colors duration-theme" title="ออกจากระบบ">
+          <button type="button" onClick={logout} aria-label="ออกจากระบบ" className="rounded-full border border-[var(--color-border)] bg-[var(--color-input-bg)] p-2 text-[var(--color-nav-inactive)] hover:text-[rgb(var(--color-loss)/1)] hover:border-[rgb(var(--color-loss)/0.35)] transition-colors duration-theme" title="ออกจากระบบ">
             <LogoutIcon />
           </button>
         </div>

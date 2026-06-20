@@ -257,7 +257,7 @@ export function CutPdfDialog({ roundName, betType, dealerName, threshold, cutIte
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4">
       <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
         ref={panelRef}
         role="dialog" aria-modal="true" aria-labelledby="pdf-dialog-title"

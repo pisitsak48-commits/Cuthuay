@@ -88,11 +88,11 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
   return (
 <div
   className={cn(
-    'flex flex-col min-h-0 min-w-0 overflow-hidden overflow-x-hidden bg-surface-100/50 border-border',
-    sideBySideLayout
-      ? 'border-t-0 border-l w-auto max-w-[min(100%,580px)] shrink-0'
-      : 'border-t w-full max-w-full shrink-0',
-  )}
+ 'flex flex-col min-h-0 min-w-0 overflow-hidden overflow-x-hidden bg-surface-100/50 border-border',
+ sideBySideLayout
+ ? 'border-t-0 border-l w-auto max-w-[min(100%,580px)] shrink-0'
+ : 'border-t w-full max-w-full shrink-0',
+ )}
   style={sideBySideLayout ? { width: rightPanelPx, minWidth: 260, maxWidth: 580 } : undefined}
 >
 
@@ -112,7 +112,7 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
         <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px]">
           {sendBatches.length > 0 && (
             <span className="text-theme-text-muted ">
-              รวม <span className=" tracking-tight font-semibold text-[var(--color-accent-hover)]">{formatBaht(totalSentAllBatches)}</span>
+              รวม <span className="tracking-tight font-semibold text-[var(--color-accent-hover)]">{formatBaht(totalSentAllBatches)}</span>
             </span>
           )}
           {sendBatches.length > 0 && (
@@ -120,7 +120,7 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
               type="button"
               onClick={handleDeleteAllBatches}
               disabled={deletingBatchId === 'all'}
-              className="text-risk-high/90 hover:text-loss disabled:opacity-40 transition-colors">
+              className="text-risk-high/90 hover:text-loss disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
               {deletingBatchId === 'all' ? 'กำลังลบ…' : 'ลบทั้งหมด'}
             </button>
           )}
@@ -137,10 +137,10 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
               });
             }}
             className={`text-[11px] px-1 rounded transition-colors ${
-              rightPanelLocked
-                ? 'text-theme-text-secondary hover:text-theme-text-primary'
-                : 'text-theme-text-muted hover:text-theme-text-secondary'
-            }`}
+ rightPanelLocked
+ ? 'text-theme-text-secondary hover:text-theme-text-primary'
+ : 'text-theme-text-muted hover:text-theme-text-secondary'
+ }`}
             title={
               rightPanelLocked
                 ? 'ปลดล็อก — ลากขอบซ้ายของแผงนี้เพื่อปรับความกว้าง'
@@ -188,8 +188,8 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
                     })
                   }
                   className={`border-b border-border/25 cursor-pointer transition-colors ${
-                    selectedBatchIds.has(b.id) ? 'bg-accent/20' : i % 2 === 0 ? 'bg-transparent' : 'bg-surface-200/15'
-                  }`}>
+ selectedBatchIds.has(b.id) ? 'bg-accent/20' : i % 2 === 0 ? 'bg-transparent' : 'bg-surface-200/15'
+ }`}>
                   <td className="py-2 px-2 text-center" onClick={(e) => e.stopPropagation()}>
                     <input
                       type="checkbox"
@@ -303,10 +303,10 @@ export function CutSendBatchesPanel(props: CutSendBatchesPanelProps) {
             <tbody>
               {pendingQueueRows.map((row, idx) => (
                 <tr key={row.key} className={`border-b border-[var(--color-border)] ${idx % 2 === 0 ? 'bg-surface-50' : 'bg-[var(--color-surface)]'}`}>
-                  <td className="py-1.5 px-2  tracking-tight text-theme-text-muted">{idx + 1}</td>
+                  <td className="py-1.5 px-2 tracking-tight text-theme-text-muted">{idx + 1}</td>
                   <td className="py-1.5 px-2 text-theme-text-secondary">{row.typeLabel}</td>
-                  <td className="py-1.5 px-2  tracking-tight text-theme-text-primary text-center tracking-wide font-semibold">{row.number}</td>
-                  <td className="py-1.5 px-2  tracking-tight text-theme-text-primary text-right  font-semibold">{formatBaht(row.amount)}</td>
+                  <td className="py-1.5 px-2 tracking-tight text-theme-text-primary text-center tracking-wide font-semibold">{row.number}</td>
+                  <td className="py-1.5 px-2 tracking-tight text-theme-text-primary text-right font-semibold">{formatBaht(row.amount)}</td>
                 </tr>
               ))}
             </tbody>

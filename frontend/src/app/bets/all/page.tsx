@@ -188,7 +188,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
                 type="number" min={1} value={draftAmounts[t.id] ?? t.amount}
                 onChange={e => setDraftAmounts(d => ({ ...d, [t.id]: e.target.value }))}
                 onBlur={() => commitAmount(t.id)}
-                className="w-24 h-7 bg-surface-default border border-border rounded px-2 text-xs  tracking-tight text-theme-text-primary text-right focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]"
+                className="w-24 h-7 bg-surface-default border border-border rounded px-2 text-xs tracking-tight text-theme-text-primary text-right focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]"
               />
               <span className="text-xs text-theme-text-muted shrink-0">สี</span>
               <div className="flex gap-1.5 flex-wrap flex-1">
@@ -215,7 +215,7 @@ function ThresholdPanel({ thresholds, onChange, onClose }: { thresholds: Thresho
             <div className="flex gap-1.5 items-center flex-1 flex-wrap">
               <span className="text-xs text-theme-text-muted">ตัวอย่าง:</span>
               {[...thresholds].sort((a, b) => a.amount - b.amount).map(t => (
-                <span key={t.id} className="text-xs  tracking-tight font-semibold px-2 py-0.5 rounded"
+                <span key={t.id} className="text-xs tracking-tight font-semibold px-2 py-0.5 rounded"
                   style={{ color: t.color, backgroundColor: `${t.color}22` }}>
                   {t.amount.toLocaleString()}
                 </span>
@@ -429,10 +429,10 @@ function BetsAllInner() {
           {([['by_type', 'ยอดขายตามประเภท'], ['total', 'ยอดขายรวม']] as const).map(([k, label]) => (
             <button key={k} type="button" onClick={() => setTab(k)}
               className={`px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                tab === k
-                  ? 'bg-[var(--color-accent)] text-white shadow-sm'
-                  : 'bg-[var(--color-surface-muted)] text-theme-text-secondary hover:bg-[var(--bg-hover)]'
-              }`}>
+ tab === k
+ ? 'bg-[var(--color-accent)] text-white shadow-sm'
+ : 'bg-[var(--color-surface-muted)] text-theme-text-secondary hover:bg-[var(--bg-hover)]'
+ }`}>
               {label}
             </button>
           ))}
@@ -485,10 +485,10 @@ function BetsAllInner() {
                     type="button"
                     onClick={() => handleLayoutModeChange(mode)}
                     className={`h-8 px-2.5 text-[11px] transition-colors ${
-                      layoutMode === mode
-                        ? 'bg-[var(--color-accent)] text-white font-medium'
-                        : 'bg-[var(--color-input-bg)] text-theme-text-secondary hover:bg-surface-200/80'
-                    }`}
+ layoutMode === mode
+ ? 'bg-[var(--color-accent)] text-white font-medium'
+ : 'bg-[var(--color-input-bg)] text-theme-text-secondary hover:bg-surface-200/80'
+ }`}
                   >
                     {label}
                   </button>
@@ -507,7 +507,7 @@ function BetsAllInner() {
               <div className="flex items-center gap-0.5">
                 <button type="button" onClick={() => setFontSize(f => Math.max(9, f - 1))}
                   className="h-8 w-8 rounded-lg border border-border bg-surface-200/90 text-theme-text-secondary hover:bg-surface-300/80 text-sm leading-none transition-colors">−</button>
-                <span className="text-xs  tracking-tight text-theme-text-primary w-7 text-center ">{fontSize}</span>
+                <span className="text-xs tracking-tight text-theme-text-primary w-7 text-center ">{fontSize}</span>
                 <button type="button" onClick={() => setFontSize(f => Math.min(16, f + 1))}
                   className="h-8 w-8 rounded-lg border border-border bg-surface-200/90 text-theme-text-secondary hover:bg-surface-300/80 text-sm leading-none transition-colors">+</button>
               </div>
@@ -515,12 +515,12 @@ function BetsAllInner() {
               <input type="number" min={1} max={60} value={autoRefreshMin}
                 title="ดึงข้อมูลอัตโนมัติ"
                 onChange={e => setAutoRefreshMin(Math.max(1, parseInt(e.target.value) || 5))}
-                className="h-8 w-12 rounded-lg bg-[var(--color-input-bg)] border border-border px-1 text-xs  tracking-tight text-theme-text-primary text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]" />
+                className="h-8 w-12 rounded-lg bg-[var(--color-input-bg)] border border-border px-1 text-xs tracking-tight text-theme-text-primary text-center focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)]" />
               <span className="text-[11px] text-theme-text-muted hidden md:inline">นาที</span>
             </div>
 
             <div className="flex flex-wrap items-center gap-2 ml-auto">
-              <span className="text-xs text-theme-text-muted  whitespace-nowrap">{displayRows.length} เลข</span>
+              <span className="text-xs text-theme-text-muted whitespace-nowrap">{displayRows.length} เลข</span>
               {isAdmin && (
                 <>
                   <button
@@ -585,15 +585,15 @@ function BetsAllInner() {
         <div className="shrink-0 border-t border-border bg-surface-100/80 px-4 sm:px-6 py-2.5 flex flex-wrap gap-6 sm:gap-10 justify-center items-baseline">
           <div className="flex items-baseline gap-2">
             <span className="text-xs text-theme-text-muted">รวมขาย</span>
-            <span className="text-base font-bold  tracking-tight text-theme-text-primary">{formatN(totalSold)}</span>
+            <span className="text-base font-bold tracking-tight text-theme-text-primary">{formatN(totalSold)}</span>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xs text-theme-text-muted">รวมส่ง</span>
-            <span className="text-base font-bold  tracking-tight text-neutral">{formatN(totalSent)}</span>
+            <span className="text-base font-bold tracking-tight text-neutral">{formatN(totalSent)}</span>
           </div>
           <div className="flex items-baseline gap-2">
             <span className="text-xs text-theme-text-muted">รวมเหลือ</span>
-            <span className="text-base font-bold  tracking-tight text-theme-text-primary">{formatN(totalRemaining)}</span>
+            <span className="text-base font-bold tracking-tight text-theme-text-primary">{formatN(totalRemaining)}</span>
           </div>
         </div>
       </main>

@@ -368,7 +368,7 @@ function BetSheetEditableGridInner(props: BetSheetEditableGridProps) {
 <div className="shrink-0 bg-surface-default border-t border-border px-3 py-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-theme-text-muted">
   <span>แผ่น {sheet}</span>
   <span className="text-theme-text-muted">|</span>
-  <span className=" tracking-tight text-profit">{customerBets.filter(b => (b.sheet_no ?? 1) === sheet).reduce((s, b) => s + Number(b.amount), 0).toLocaleString()}</span>
+  <span className="tracking-tight text-profit">{customerBets.filter(b => (b.sheet_no ?? 1) === sheet).reduce((s, b) => s + Number(b.amount), 0).toLocaleString()}</span>
   {roundDrawWinKeys.size > 0 && (
     <>
       <span className="text-theme-text-muted hidden sm:inline">|</span>

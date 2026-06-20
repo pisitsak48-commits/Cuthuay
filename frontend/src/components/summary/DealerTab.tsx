@@ -304,9 +304,9 @@ export function DealerTab({ data, roundId }: { data: ProfitSummary; roundId: str
                               <Td cls="text-center align-middle py-2">
                                 <span
                                   className={cn(
-                                    'inline-flex min-w-[1.95rem] justify-center rounded-md border px-1.5 py-0.5  tracking-tight text-[0.8125rem] font-bold  tracking-wide sm:min-w-[2.15rem] sm:px-1.5 sm:py-0.5 sm:text-sm',
-                                    winBetTypeBadgeClass(b.bet_type),
-                                  )}
+ 'inline-flex min-w-[1.95rem] justify-center rounded-md border px-1.5 py-0.5 tracking-tight text-[0.8125rem] font-bold tracking-wide sm:min-w-[2.15rem] sm:px-1.5 sm:py-0.5 sm:text-sm',
+ winBetTypeBadgeClass(b.bet_type),
+ )}
                                 >
                                   {b.number}
                                 </span>
@@ -470,7 +470,7 @@ export function DealerTab({ data, roundId }: { data: ProfitSummary; roundId: str
                                 {vals.map((v, i) => (
                                   <td key={i} className={`py-1.5 px-3 text-right tabular-nums tracking-tight ${cls}`}>{fNum(v)}</td>
                                 ))}
-                                <td className={`py-1.5 px-3 text-right tabular-nums tracking-tight font-semibold  ${cls}`}>{fNum(total)}</td>
+                                <td className={`py-1.5 px-3 text-right tabular-nums tracking-tight font-semibold ${cls}`}>{fNum(total)}</td>
                               </tr>
                             ))}
                           </tbody>

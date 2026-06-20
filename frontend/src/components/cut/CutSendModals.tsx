@@ -47,7 +47,7 @@ export function SaveDealerModal({
   }, [initialDealerId, dealers]);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4" onClick={onClose}>
       <motion.div
         ref={panelRef}
         initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
@@ -117,7 +117,7 @@ export function SendBatchItemsModal({
 }) {
   const panelRef = useFocusTrap(true, onClose);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)]  p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--color-backdrop-overlay)] p-4" onClick={onClose}>
       <motion.div
         ref={panelRef}
         initial={{ scale: 0.96, opacity: 0 }}
@@ -152,8 +152,8 @@ export function SendBatchItemsModal({
                 .sort((a, b) => a.number.localeCompare(b.number, 'th', { numeric: true }))
                 .map((it, idx) => (
                   <tr key={`${it.number}-${idx}`} className={`border-b border-border/30 ${idx % 2 === 1 ? 'bg-surface-200/30' : ''}`}>
-                    <td className="py-1.5 px-3  tracking-tight font-bold tracking-widest text-theme-text-primary">{it.number}</td>
-                    <td className="py-1.5 px-3 text-right  tracking-tight text-accent-glow">{formatBaht(it.amount)}</td>
+                    <td className="py-1.5 px-3 tracking-tight font-bold tracking-widest text-theme-text-primary">{it.number}</td>
+                    <td className="py-1.5 px-3 text-right tracking-tight text-accent-glow">{formatBaht(it.amount)}</td>
                   </tr>
                 ))}
             </tbody>

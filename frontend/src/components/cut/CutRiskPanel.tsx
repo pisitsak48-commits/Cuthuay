@@ -155,7 +155,7 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
       <span className="text-loss">🔒</span>
       <span className="text-theme-text-secondary">
         ส่งแล้วที่{' '}
-        <span className=" tracking-tight text-risk-medium font-bold">
+        <span className="tracking-tight text-risk-medium font-bold">
           {committedThreshold > 0 ? formatBaht(committedThreshold) : '0'}
         </span>{' '}
         บ/เลข
@@ -171,27 +171,27 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
       <div className="text-xs font-bold tracking-wide text-theme-text-primary mb-2 pb-1.5 border-b border-border/50">ภาพรวม</div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">ยอดขาย</span>
-        <span className="text-sm  tracking-tight font-semibold text-profit">{rangeResult ? formatBaht(rangeResult.total_revenue) : '—'}</span>
+        <span className="text-sm tracking-tight font-semibold text-profit">{rangeResult ? formatBaht(rangeResult.total_revenue) : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">ยอดตัด</span>
-        <span className="text-sm  tracking-tight text-[var(--color-accent-hover)]">{formatBaht(totalSend + totalAlreadySent)}</span>
+        <span className="text-sm tracking-tight text-[var(--color-accent-hover)]">{formatBaht(totalSend + totalAlreadySent)}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">คงเหลือ</span>
-        <span className="text-sm  tracking-tight text-theme-text-primary">{formatBaht(totalRevenue - totalSend - totalAlreadySent)}</span>
+        <span className="text-sm tracking-tight text-theme-text-primary">{formatBaht(totalRevenue - totalSend - totalAlreadySent)}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">เก็บตัวละ</span>
-        <span className="text-sm  tracking-tight font-bold text-risk-medium">{rangeResult ? formatBaht(activeThreshold) : '—'}</span>
+        <span className="text-sm tracking-tight font-bold text-risk-medium">{rangeResult ? formatBaht(activeThreshold) : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">% ได้</span>
-        <span className="text-sm  tracking-tight font-semibold text-profit">{s ? `${s.pct_win.toFixed(1)}%` : '—'}</span>
+        <span className="text-sm tracking-tight font-semibold text-profit">{s ? `${s.pct_win.toFixed(1)}%` : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1">
         <span className="text-xs sm:text-sm text-theme-text-secondary">% เสีย</span>
-        <span className="text-sm  tracking-tight font-semibold text-loss">{s ? `${s.pct_lose.toFixed(1)}%` : '—'}</span>
+        <span className="text-sm tracking-tight font-semibold text-loss">{s ? `${s.pct_lose.toFixed(1)}%` : '—'}</span>
       </div>
     </div>
 
@@ -199,27 +199,27 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
       <div className="text-xs font-bold tracking-wide text-theme-text-primary mb-2 pb-1.5 border-b border-border/50">สถานะเลข</div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">เลขยอดเกิน</span>
-        <span className="text-sm  tracking-tight text-loss">{s ? `${overThresholdNumbers.toLocaleString('th-TH')} เลข` : '—'}</span>
+        <span className="text-sm tracking-tight text-loss">{s ? `${overThresholdNumbers.toLocaleString('th-TH')} เลข` : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">เลขยอดไม่เกิน</span>
-        <span className="text-sm  tracking-tight text-theme-text-secondary">{rangeResult ? `${underThresholdNumbers.toLocaleString('th-TH')} เลข` : '—'}</span>
+        <span className="text-sm tracking-tight text-theme-text-secondary">{rangeResult ? `${underThresholdNumbers.toLocaleString('th-TH')} เลข` : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">เลขไม่ได้ขาย</span>
-        <span className="text-sm  tracking-tight text-theme-text-secondary">{`${unsoldNumbers.toLocaleString('th-TH')} เลข`}</span>
+        <span className="text-sm tracking-tight text-theme-text-secondary">{`${unsoldNumbers.toLocaleString('th-TH')} เลข`}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">จำนวนเลขที่ส่งแล้ว</span>
-        <span className="text-sm  tracking-tight text-accent-glow">{`${sentNumbers.toLocaleString('th-TH')} เลข`}</span>
+        <span className="text-sm tracking-tight text-accent-glow">{`${sentNumbers.toLocaleString('th-TH')} เลข`}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">สูงสุดต่อเลข</span>
-        <span className="text-sm  tracking-tight text-risk-medium">{rangeResult ? formatBaht(rangeResult.max_single_bet) : '—'}</span>
+        <span className="text-sm tracking-tight text-risk-medium">{rangeResult ? formatBaht(rangeResult.max_single_bet) : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1">
         <span className="text-xs sm:text-sm text-theme-text-secondary">ต่ำสุดต่อเลข</span>
-        <span className="text-sm  tracking-tight text-theme-text-secondary">{rangeResult ? formatBaht(minSingleBet) : '—'}</span>
+        <span className="text-sm tracking-tight text-theme-text-secondary">{rangeResult ? formatBaht(minSingleBet) : '—'}</span>
       </div>
     </div>
 
@@ -227,21 +227,21 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
       <div className="text-xs font-bold tracking-wide text-theme-text-primary mb-2 pb-1.5 border-b border-border/50">ผลได้เสีย</div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">ยอดได้สูงสุด</span>
-        <span className="text-sm  tracking-tight text-profit">{s ? formatBaht(s.max_gain) : '—'}</span>
+        <span className="text-sm tracking-tight text-profit">{s ? formatBaht(s.max_gain) : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">ยอดเสียสูงสุด</span>
-        <span className={`text-sm  tracking-tight ${s?.max_loss != null ? 'text-loss' : 'text-profit'}`}>
+        <span className={`text-sm tracking-tight ${s?.max_loss != null ? 'text-loss' : 'text-profit'}`}>
           {s ? (s.max_loss != null ? formatBaht(s.max_loss) : 'ไม่เสีย') : '—'}
         </span>
       </div>
       <div className="flex items-center justify-between py-1 border-b border-border/30">
         <span className="text-xs sm:text-sm text-theme-text-secondary">ยอดได้ต่ำสุด</span>
-        <span className="text-sm  tracking-tight text-profit">{s && s.min_gain != null ? formatBaht(s.min_gain) : '—'}</span>
+        <span className="text-sm tracking-tight text-profit">{s && s.min_gain != null ? formatBaht(s.min_gain) : '—'}</span>
       </div>
       <div className="flex items-center justify-between py-1">
         <span className="text-xs sm:text-sm text-theme-text-secondary">ยอดเสียต่ำสุด</span>
-        <span className="text-sm  tracking-tight text-loss">{s && s.min_loss != null ? formatBaht(s.min_loss) : '—'}</span>
+        <span className="text-sm tracking-tight text-loss">{s && s.min_loss != null ? formatBaht(s.min_loss) : '—'}</span>
       </div>
     </div>
   </div>
@@ -268,8 +268,8 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
             <button
               onClick={() => setChartSortMode('amount_desc')}
               className={`h-6 px-2 rounded-md text-[11px] font-semibold transition-[color,background-color,box-shadow] duration-200 ease-out ${
-                chartSortMode === 'amount_desc' ? CHART_SEG_ACTIVE : CHART_SEG_IDLE
-              }`}
+ chartSortMode === 'amount_desc' ? CHART_SEG_ACTIVE : CHART_SEG_IDLE
+ }`}
               title="เรียงตามยอดมากไปน้อย"
             >
               ยอดมาก→น้อย
@@ -277,8 +277,8 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
             <button
               onClick={() => setChartSortMode('number_asc')}
               className={`h-6 px-2 rounded-md text-[11px] font-semibold transition-[color,background-color,box-shadow] duration-200 ease-out ${
-                chartSortMode === 'number_asc' ? CHART_SEG_ACTIVE : CHART_SEG_IDLE
-              }`}
+ chartSortMode === 'number_asc' ? CHART_SEG_ACTIVE : CHART_SEG_IDLE
+ }`}
               title="เรียงตามเลข 00-99 / 000-999"
             >
               เรียงตามเลข
@@ -290,7 +290,7 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
             {([180, 260, 360, 480] as const).map(h => (
               <button type="button" key={h} onClick={() => setChartHeight(h)}
                 className={`w-8 h-8 rounded-md text-[9px] font-bold transition-[color,background-color,box-shadow] duration-200 ease-out ${
-                  eff === h ? CHART_SEG_ACTIVE : `${CHART_SEG_IDLE} hover:bg-[var(--color-nav-hover-bg)]`
+ eff === h ? CHART_SEG_ACTIVE : `${CHART_SEG_IDLE} hover:bg-[var(--color-nav-hover-bg)]`
                 }`}>
                 {h === 180 ? 'S' : h === 260 ? 'M' : h === 360 ? 'L' : 'XL'}
               </button>
@@ -431,11 +431,11 @@ export function CutRiskPanel(props: CutRiskPanelProps) {
     <div className="shrink-0 rounded-xl border border-border/60 bg-surface-200/40 px-3 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-2">
       <div className="flex flex-wrap items-center gap-3 text-xs">
         <span className="text-theme-text-muted">
-          ค้างส่ง <span className=" tracking-tight font-bold text-[var(--color-accent-hover)] ">{formatBaht(totalSend)}</span>
+          ค้างส่ง <span className="tracking-tight font-bold text-[var(--color-accent-hover)]">{formatBaht(totalSend)}</span>
         </span>
         <span className="text-theme-text-muted">·</span>
         <span className="text-theme-text-muted">
-          เก็บ <span className=" tracking-tight font-semibold text-risk-medium ">{formatBaht(activeThreshold)}</span> บ/เลข
+          เก็บ <span className="tracking-tight font-semibold text-risk-medium">{formatBaht(activeThreshold)}</span> บ/เลข
         </span>
         {stagedCuts.length > 0 && (
           <span className="text-[11px] text-accent-hover/95 max-w-[min(100%,28rem)] truncate" title={stagedCuts.map((s) => `${BET_TYPE_SHORT[s.bet_type]} ${formatBaht(s.total)}`).join(' · ')}>

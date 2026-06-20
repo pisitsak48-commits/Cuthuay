@@ -147,8 +147,8 @@ function LimitTable({ limits, customers, dealers, dealerLimits, selectedId, tab,
               key={l.id}
               onClick={() => onSelect(l.id)}
               className={`cursor-pointer border-b border-border/50 transition-colors duration-200 [transition-timing-function:var(--ease-premium,cubic-bezier(0.22,1,0.36,1))] ${
-                l.id === selectedId ? 'bg-[var(--color-nav-active-bg)]' : 'hover:bg-[var(--bg-hover)]'
-              }`}
+ l.id === selectedId ? 'bg-[var(--color-nav-active-bg)]' : 'hover:bg-[var(--bg-hover)]'
+ }`}
             >
               <td className="px-3 py-2 text-theme-text-secondary">{BET_TYPE_LABELS[l.bet_type]}</td>
               <td className="px-3 py-2 text-center tabular-nums tracking-tight font-semibold text-theme-text-primary">{l.number}</td>
@@ -435,7 +435,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
             onChange={(e) => handleNumberChange(e.target.value.replace(/\D/g, ''))}
             maxLength={3}
             placeholder="000"
-            className="flex-1 bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary  tracking-tight text-center"
+            className="flex-1 bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary tracking-tight text-center"
           />
           <label className="flex items-center gap-1 text-sm text-theme-text-secondary whitespace-nowrap cursor-pointer">
             <input
@@ -466,7 +466,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 : String(Math.round((payout / defaultRate) * 100));
               setForm((p) => ({ ...p, customPayout: raw, payoutPct: newPct }));
             }}
-            className="flex-1 bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary  tracking-tight text-center"
+            className="flex-1 bg-surface-200 border border-border rounded px-2 py-1.5 text-sm text-theme-text-primary tracking-tight text-center"
           />
           <div className="flex items-center gap-1">
             {/* % spinner: changing here recomputes จ่าย */}
@@ -489,7 +489,7 @@ function RightForm({ tab, customers, dealers, dealerLimits, roundId, selectedLim
                 const newPayout = parseFloat((defaultRate * Math.min(pct, 100) / 100).toFixed(2));
                 setForm((p) => ({ ...p, payoutPct: raw, customPayout: String(newPayout) }));
               }}
-              className="w-12 bg-surface-200 border border-border rounded px-1 py-1.5 text-sm text-theme-text-primary  tracking-tight text-center"
+              className="w-12 bg-surface-200 border border-border rounded px-1 py-1.5 text-sm text-theme-text-primary tracking-tight text-center"
             />
             <button
               type="button"
@@ -643,7 +643,7 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
                     {dealerLimits.map((l, i) => (
                       <tr key={l.id} className={`border-b border-border/40 ${i % 2 === 0 ? '' : 'bg-surface-200/20'}`}>
                         <td className="px-3 py-1.5 text-theme-text-secondary">{BET_TYPE_LABELS[l.bet_type]}</td>
-                        <td className="px-3 py-1.5 text-center  tracking-tight font-semibold text-theme-text-primary">{l.number}</td>
+                        <td className="px-3 py-1.5 text-center tracking-tight font-semibold text-theme-text-primary">{l.number}</td>
                         <td className="px-3 py-1.5 text-center text-theme-text-secondary ">
                           {l.is_blocked ? '—' : formatLimitPayoutCell(l)}
                         </td>
@@ -662,14 +662,14 @@ function CopyFromDealerModal({ dealerLimits, customers, roundId, onClose, onDone
             <div className="px-3 py-2 text-[11px] text-theme-text-muted uppercase tracking-wider border-b border-border">ใช้กับ</div>
             <div className="flex-1 overflow-auto p-3 space-y-2">
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
-                allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
-              }`}>
+ allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
+ }`}>
                 <input type="radio" name="limit-scope" checked={allCustomers} onChange={() => setAllCustomers(true)} className="accent" />
                 ลูกค้าทุกคน
               </label>
               <label className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition-colors text-sm ${
-                !allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
-              }`}>
+ !allCustomers ? 'bg-accent/15 border-accent/35 text-accent-hover' : 'border-border text-theme-text-secondary hover:border-border'
+ }`}>
                 <input type="radio" name="limit-scope" checked={!allCustomers} onChange={() => setAllCustomers(false)} className="accent" />
                 เลือกลูกค้า
               </label>
@@ -858,10 +858,10 @@ export default function LimitsPage() {
               type="button"
               onClick={() => setTab('customer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                tab === 'customer'
-                  ? 'bg-[var(--color-accent)] text-white shadow-sm'
-                  : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
-              }`}
+ tab === 'customer'
+ ? 'bg-[var(--color-accent)] text-white shadow-sm'
+ : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
+ }`}
             >
               อั้นเลขลูกค้า
             </button>
@@ -869,10 +869,10 @@ export default function LimitsPage() {
               type="button"
               onClick={() => setTab('dealer')}
               className={`flex-1 min-w-0 px-4 py-2 text-sm font-medium rounded-full transition-colors ${
-                tab === 'dealer'
-                  ? 'bg-[var(--color-accent)] text-white shadow-sm'
-                  : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
-              }`}
+ tab === 'dealer'
+ ? 'bg-[var(--color-accent)] text-white shadow-sm'
+ : 'text-theme-text-secondary hover:bg-[var(--color-card-bg)]/90'
+ }`}
             >
               เลขอั้นเจ้ามือ
             </button>

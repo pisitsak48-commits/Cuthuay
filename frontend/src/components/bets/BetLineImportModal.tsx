@@ -198,14 +198,14 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
                     key={row.number + idx}
                     className={`border-b border-[var(--chart-neutral-light)] ${idx % 2 === 0 ? 'bg-[var(--bg-glass-subtle)]' : 'bg-transparent'} hover:bg-[var(--color-nav-hover-bg)] transition-colors`}
                   >
-                    <td className="py-1.5 px-2 text-[var(--chart-neutral-mid)] w-7  font-medium">{idx + 1}</td>
+                    <td className="py-1.5 px-2 text-[var(--chart-neutral-mid)] w-7 font-medium">{idx + 1}</td>
                     <td className="py-1.5 px-2 w-14 align-middle text-center">
-                      <span className="inline-flex min-w-[2.25rem] justify-center rounded-md border border-[var(--chart-neutral-light)] bg-[var(--color-input-bg)] px-1 py-0.5  tracking-tight text-[0.85em] font-extrabold  text-[var(--chart-neutral-dark)] shadow-[inset_0_1px_0_var(--color-border-strong)]">
+                      <span className="inline-flex min-w-[2.25rem] justify-center rounded-md border border-[var(--chart-neutral-light)] bg-[var(--color-input-bg)] px-1 py-0.5 tracking-tight text-[0.85em] font-extrabold text-[var(--chart-neutral-dark)] shadow-[inset_0_1px_0_var(--color-border-strong)]">
                         {row.number}
                       </span>
                     </td>
                     {COL_TYPES.map(c => (
-                      <td key={c.key} className="py-1.5 px-1.5 text-right  tracking-tight text-[var(--chart-neutral-dark)]  font-medium">
+                      <td key={c.key} className="py-1.5 px-1.5 text-right tracking-tight text-[var(--chart-neutral-dark)] font-medium">
                         {(row.amounts[c.key] ?? 0) > 0
                           ? row.amounts[c.key].toLocaleString()
                           : <span className="text-[var(--chart-neutral-mid)]">·</span>}
@@ -221,7 +221,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
         {preview && preview.parsedCount > 0 && (
           <div className="text-[11px] text-[var(--chart-neutral-mid)] shrink-0">
             นำเข้าให้ <span className="text-[var(--chart-neutral-dark)] font-semibold">{currentCustomer?.name ?? '(ไม่ระบุลูกค้า)'}</span>
-            <span> · แผ่น </span><span className=" tracking-tight text-[var(--chart-neutral-dark)] font-semibold">{sheet}</span>
+            <span> · แผ่น </span><span className="tracking-tight text-[var(--chart-neutral-dark)] font-semibold">{sheet}</span>
           </div>
         )}
       </div>
@@ -276,7 +276,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
                     setSelectedGroups(new Set());
                   }}
                   disabled={!selectedCustomerId}
-                  className="flex-1 h-8 min-w-0 rounded-lg bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] px-2 text-xs text-[var(--chart-neutral-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)]  tracking-tight disabled:opacity-45"
+                  className="flex-1 h-8 min-w-0 rounded-lg bg-[var(--color-input-bg)] border-2 border-[var(--chart-neutral-light)] px-2 text-xs text-[var(--chart-neutral-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)] tracking-tight disabled:opacity-45"
                 >
                   {Array.from({ length: effectiveMaxSheets }, (_, i) => effectiveMaxSheets - i).map((n) => (
                     <option key={n} value={n}>
@@ -349,7 +349,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
             });
           }}
           placeholder={"วางข้อความจากไลน์\nเช่น:\n12=100×100\n38=50×50\n470 บ50 ต50\n\n21\n26\n60=50×50"}
-          className="flex-1 min-h-[140px] lg:min-h-[200px] max-h-[40dvh] lg:max-h-none rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)]  tracking-tight resize-y focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)] shadow-[var(--shadow-input-inner)]"
+          className="flex-1 min-h-[140px] lg:min-h-[200px] max-h-[40dvh] lg:max-h-none rounded-xl bg-[var(--color-surface)] border border-[var(--color-border)] px-3 py-2.5 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] tracking-tight resize-y focus:outline-none focus:ring-2 focus:ring-[var(--color-accent-ring)] focus:border-[var(--chart-primary)] shadow-[var(--shadow-input-inner)]"
         />
 
         <div className="flex gap-2 shrink-0 items-stretch">
@@ -412,7 +412,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
           onDrop={e => { e.preventDefault(); setImgDragOver(false); const f = e.dataTransfer.files[0]; if (f) handleImageFile(f); }}
           onClick={() => imgInputRef.current?.click()}
           className={`flex items-center justify-center min-h-[3.25rem] rounded-xl border-2 border-dashed px-3 cursor-pointer text-xs transition-colors duration-200 select-none font-medium
-            ${imgDragOver ? 'border-[var(--chart-primary)] bg-[var(--chart-primary-soft)] text-[var(--chart-neutral-dark)]' : 'border-[var(--chart-neutral-mid)]/45 bg-[var(--color-input-bg)] hover:border-[var(--chart-primary)] hover:bg-[var(--color-nav-hover-bg)] text-[var(--chart-neutral-mid)] hover:text-[var(--chart-neutral-dark)]'}`}
+ ${imgDragOver ? 'border-[var(--chart-primary)] bg-[var(--chart-primary-soft)] text-[var(--chart-neutral-dark)]' : 'border-[var(--chart-neutral-mid)]/45 bg-[var(--color-input-bg)] hover:border-[var(--chart-primary)] hover:bg-[var(--color-nav-hover-bg)] text-[var(--chart-neutral-mid)] hover:text-[var(--chart-neutral-dark)]'}`}
         >
           {ocrLoading
             ? <span className="text-[var(--chart-neutral-dark)] animate-pulse">กำลังอ่านรูป…</span>
@@ -456,7 +456,7 @@ export function BetLineImportModal(props: BetLineImportModalProps) {
           }}
           onClick={() => pdfInputRef.current?.click()}
           className={`flex items-center justify-center min-h-[3.25rem] rounded-xl border-2 border-dashed px-3 cursor-pointer text-xs transition-colors duration-200 select-none font-medium
-            ${pdfDragOver ? 'border-[var(--chart-primary)] bg-[var(--chart-primary-soft)] text-[var(--chart-neutral-dark)]' : 'border-[var(--chart-neutral-mid)]/45 bg-[var(--color-input-bg)] hover:border-[var(--chart-primary)] hover:bg-[var(--color-nav-hover-bg)] text-[var(--chart-neutral-mid)] hover:text-[var(--chart-neutral-dark)]'}`}
+ ${pdfDragOver ? 'border-[var(--chart-primary)] bg-[var(--chart-primary-soft)] text-[var(--chart-neutral-dark)]' : 'border-[var(--chart-neutral-mid)]/45 bg-[var(--color-input-bg)] hover:border-[var(--chart-primary)] hover:bg-[var(--color-nav-hover-bg)] text-[var(--chart-neutral-mid)] hover:text-[var(--chart-neutral-dark)]'}`}
         >
           {pdfLoading
             ? <span className="text-[var(--chart-neutral-dark)] animate-pulse">กำลังอ่าน PDF…</span>

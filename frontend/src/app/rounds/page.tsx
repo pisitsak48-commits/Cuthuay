@@ -348,10 +348,11 @@ export default function RoundsPage() {
                       </td>
                       <td className="py-3 px-2">
                         <button
+                          type="button"
                           onClick={() => handleDelete(round)}
                           disabled={deletingId === round.id}
                           title="ลบงวดนี้"
-                          className="h-7 w-7 flex items-center justify-center rounded text-theme-text-muted hover:text-loss hover:bg-[var(--color-badge-danger-bg)] disabled:opacity-40 transition-colors text-sm"
+                          className="h-7 w-7 flex items-center justify-center rounded text-theme-text-muted hover:text-loss hover:bg-[var(--color-badge-danger-bg)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors text-sm"
                         >
                           {deletingId === round.id ? '…' : '✕'}
                         </button>
@@ -453,7 +454,7 @@ export default function RoundsPage() {
                       className="rounded border-border"
                     />
                     <span className="flex-1 text-theme-text-primary">{r.name}</span>
-                    <span className="text-xs text-theme-text-muted  tracking-tight">{r.draw_date?.slice(0, 10)}</span>
+                    <span className="text-xs text-theme-text-muted tracking-tight">{r.draw_date?.slice(0, 10)}</span>
                   </label>
                 ))
               )}
@@ -512,18 +513,18 @@ export default function RoundsPage() {
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={
-                            st === 'new'
-                              ? 'text-profit'
-                              : st === 'id_exists'
-                                ? 'text-theme-text-muted'
-                                : st === 'date_conflict'
-                                  ? 'text-risk-medium'
-                                  : 'text-loss'
-                          }
+ st === 'new'
+ ? 'text-profit'
+ : st === 'id_exists'
+ ? 'text-theme-text-muted'
+ : st === 'date_conflict'
+ ? 'text-risk-medium'
+ : 'text-loss'
+ }
                         >
                           {label}
                         </span>
-                        {'round_id' in row && <span className=" tracking-tight text-theme-text-secondary truncate max-w-[200px]">{row.round_id}</span>}
+                        {'round_id' in row && <span className="tracking-tight text-theme-text-secondary truncate max-w-[200px]">{row.round_id}</span>}
                       </div>
                       {'name' in row && row.name && (
                         <div className="text-theme-text-primary mt-0.5">{row.name}</div>

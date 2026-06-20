@@ -92,7 +92,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
             <div className="mx-0.5 h-5 w-px shrink-0 bg-[var(--color-border-muted)]" />
             <button type="button" title="ช้าลง" disabled={!soundOn}
               onClick={() => setSpeechRate(r => Math.max(0.8, parseFloat((r - 0.2).toFixed(1))))}
-              className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-[var(--color-surface)] text-sm font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35 shrink-0">
+              className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-[var(--color-surface)] text-sm font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35 disabled:cursor-not-allowed shrink-0">
               −
             </button>
             <span className={`min-w-[2.25rem] flex-1 text-center text-[11px] font-bold tabular-nums tracking-tight ${soundOn ? 'text-theme-text-primary' : 'text-theme-text-muted'}`}>
@@ -100,7 +100,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
             </span>
             <button type="button" title="เร็วขึ้น" disabled={!soundOn}
               onClick={() => setSpeechRate(r => Math.min(3.0, parseFloat((r + 0.2).toFixed(1))))}
-              className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] text-sm font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35 shrink-0">
+              className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] text-sm font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35 disabled:cursor-not-allowed shrink-0">
               +
             </button>
           </div>
@@ -124,7 +124,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
             });
           }}
           className={cn(
-            'relative w-full overflow-hidden rounded-xl !h-10 !px-3 text-[12px] font-extrabold tracking-wide shadow-md transition-[filter,border-color,box-shadow,opacity] duration-200 disabled:opacity-35',
+            'relative w-full overflow-hidden rounded-xl !h-10 !px-3 text-[12px] font-extrabold tracking-wide shadow-md transition-[filter,border-color,box-shadow,opacity] duration-200 disabled:opacity-35 disabled:cursor-not-allowed',
             voiceAuditMode
               ? 'border border-transparent bg-gradient-to-r from-[var(--primary-600)] via-[var(--chart-primary)] to-[var(--primary-600)] text-white shadow-[0_8px_22px_-10px_color-mix(in_srgb,var(--chart-primary)_65%,transparent)] hover:brightness-[1.06]'
               : 'border border-[color-mix(in_srgb,var(--chart-primary)_22%,var(--color-border))] bg-[color-mix(in_srgb,var(--color-surface)_96%,var(--primary-50))] text-[var(--primary-800)] hover:bg-[color-mix(in_srgb,var(--primary-50)_75%,var(--color-surface))]',
@@ -145,7 +145,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
                     return next;
                   });
                 }}
-                className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-[var(--color-surface)] text-xs font-bold shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35">
+                className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-[var(--color-surface)] text-xs font-bold shadow-sm ring-1 ring-[var(--color-border)] hover:bg-[var(--bg-hover)] disabled:opacity-35 disabled:cursor-not-allowed">
                 −
               </button>
               <span className={`flex-1 text-center text-[11px] font-bold tabular-nums ${soundOn ? 'text-theme-text-primary' : 'text-theme-text-muted'}`}>{voiceAuditRate.toFixed(1)}</span>
@@ -157,7 +157,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
                     return next;
                   });
                 }}
-                className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] text-xs font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35">
+                className="flex !h-8 !min-w-[2rem] items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-200)] to-[var(--primary-300)] text-xs font-bold text-[var(--primary-900)] shadow-sm ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_35%,transparent)] hover:brightness-[1.03] disabled:opacity-35 disabled:cursor-not-allowed">
                 +
               </button>
             </div>
@@ -195,7 +195,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
                 title="ลบจุดจำและเริ่มอ่านจากแถวแรกใหม่"
                 disabled={!voiceAuditMode || sheetGrouped.length === 0}
                 onClick={voiceAuditResetReading}
-                className="shrink-0 rounded-lg border border-[color-mix(in_srgb,var(--chart-primary)_25%,var(--color-border))] bg-[var(--color-surface)] px-2 py-1 text-[11px] font-bold text-[var(--chart-primary-dark)] shadow-sm transition-colors hover:bg-[color-mix(in_srgb,var(--primary-50)_80%,var(--color-surface))] disabled:opacity-35"
+                className="shrink-0 rounded-lg border border-[color-mix(in_srgb,var(--chart-primary)_25%,var(--color-border))] bg-[var(--color-surface)] px-2 py-1 text-[11px] font-bold text-[var(--chart-primary-dark)] shadow-sm transition-colors hover:bg-[color-mix(in_srgb,var(--primary-50)_80%,var(--color-surface))] disabled:opacity-35 disabled:cursor-not-allowed"
               >
                 เริ่มใหม่
               </button>
@@ -206,7 +206,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
                 title="แถวก่อนหน้า"
                 disabled={!soundOn || sheetGrouped.length === 0 || focusedIdx === 0}
                 onClick={voiceAuditGoPrev}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35 disabled:cursor-not-allowed"
                 aria-label="แถวก่อนหน้า"
               >
                 ◀
@@ -216,7 +216,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
                 title="หยุดชั่วคราว"
                 disabled={!soundOn || focusedIdx < 0 || voiceAuditPaused}
                 onClick={voiceAuditHitPause}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35 disabled:cursor-not-allowed"
                 aria-label="หยุดชั่วคราว"
               >
                 ⏸
@@ -226,7 +226,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
                 title="เล่นต่อหรือพูดแถวนี้ใหม่"
                 disabled={!soundOn || focusedIdx < 0 || !voiceAuditPaused}
                 onClick={voiceAuditHitPlay}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-500)] to-[var(--chart-primary)] text-base text-white shadow-md ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_45%,transparent)] transition hover:brightness-[1.07] disabled:opacity-35"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-b from-[var(--primary-500)] to-[var(--chart-primary)] text-base text-white shadow-md ring-1 ring-[color-mix(in_srgb,var(--chart-primary)_45%,transparent)] transition hover:brightness-[1.07] disabled:opacity-35 disabled:cursor-not-allowed"
                 aria-label="เล่นต่อ"
               >
                 ▶
@@ -240,7 +240,7 @@ export function BetVoiceAuditBar(props: BetVoiceAuditBarProps) {
                   (focusedIdx >= 0 && focusedIdx >= sheetGrouped.length - 1)
                 }
                 onClick={voiceAuditGoNext}
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--color-surface)] text-base font-bold text-theme-text-secondary shadow-sm ring-1 ring-[var(--color-border)] transition hover:bg-[var(--bg-hover)] disabled:opacity-35 disabled:cursor-not-allowed"
                 aria-label="แถวถัดไป"
               >
                 »

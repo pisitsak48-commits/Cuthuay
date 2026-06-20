@@ -183,12 +183,12 @@ export default function BetsSearchPage() {
                   <tr
                     key={i}
                     className={`border-t border-border/50 hover:bg-surface-200/30 transition-colors ${
-                      i % 2 === 1 ? 'bg-surface-100/60' : ''
-                    }`}
+ i % 2 === 1 ? 'bg-surface-100/60' : ''
+ }`}
                   >
                     <td className="px-3 py-1.5 text-theme-text-muted text-xs">{row.rank}</td>
                     <td className="px-3 py-1.5 tabular-nums tracking-tight text-base text-theme-text-primary font-bold tracking-widest">{row.number}</td>
-                    <td className="px-3 py-1.5 text-right  tracking-tight text-risk-medium font-semibold">{fNum(Number(row.total_amount))}</td>
+                    <td className="px-3 py-1.5 text-right tracking-tight text-risk-medium font-semibold">{fNum(Number(row.total_amount))}</td>
                     <td className="px-3 py-1.5 text-theme-text-secondary text-xs">{BET_TYPE_LABEL[row.bet_type] ?? row.bet_type}</td>
                     <td className="px-3 py-1.5 text-center text-theme-text-secondary text-xs">
                       {showLineDetail ? (row.sheet_no ?? '-') : (row.bet_count ?? '-')}
@@ -280,7 +280,7 @@ export default function BetsSearchPage() {
                 value={hasNum}
                 onChange={(e) => setHasNum(e.target.value.replace(/\D/g, ''))}
                 placeholder="ทั้งหมด"
-                className="flex-1 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1  tracking-tight focus:outline-none focus:border-[var(--color-accent)] placeholder:text-theme-text-muted"
+                className="flex-1 bg-surface-200 border border-border text-theme-text-primary text-sm rounded px-2 py-1 tracking-tight focus:outline-none focus:border-[var(--color-accent)] placeholder:text-theme-text-muted"
               />
             </div>
           </ModeCard>
@@ -354,8 +354,8 @@ function ModeCard({
   return (
     <div
       className={`bg-surface-100 border rounded-lg p-3 cursor-pointer transition-colors ${
-        active ? 'border-[var(--color-accent)]' : 'border-border hover:border-border'
-      }`}
+ active ? 'border-[var(--color-accent)]' : 'border-border hover:border-border'
+ }`}
       onClick={onActivate}
     >
       <label className="flex items-center gap-2 cursor-pointer mb-3 select-none">
@@ -369,8 +369,8 @@ function ModeCard({
       </label>
       <div
         className={`flex flex-col gap-2 transition-opacity ${
-          active ? 'opacity-100' : 'opacity-40 pointer-events-none'
-        }`}
+ active ? 'opacity-100' : 'opacity-40 pointer-events-none'
+ }`}
         onClick={(e) => e.stopPropagation()}
       >
         {children}
