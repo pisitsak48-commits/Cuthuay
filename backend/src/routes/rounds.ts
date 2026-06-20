@@ -689,30 +689,35 @@ router.post(
       );
       const bets = betsRes.rows;
 
-      let totalRevenue = 0;
-      let totalPayout  = 0;
+      // Use integer สตางค์ arithmetic to avoid floating point accumulation across many bets
+      let totalRevenueCents = 0;
+      let totalPayoutCents  = 0;
       const winningBets: {
         number: string; bet_type: string; amount: number; payout: number;
         customer_ref: string | null; customer_id: string | null; sheet_no: number;
       }[] = [];
 
       for (const bet of bets) {
-        const amt  = parseFloat(bet.amount);
-        const rate = parseFloat(bet.payout_rate);
-        totalRevenue += amt;
+        const amtCents = Math.round(parseFloat(bet.amount) * 100);
+        const rate     = parseFloat(bet.payout_rate);
+        totalRevenueCents += amtCents;
         const won = winSets[bet.bet_type]?.has(bet.number) ?? false;
         if (won) {
-          const payout = amt * rate;
-          totalPayout += payout;
+          const payoutCents = Math.round(amtCents * rate);
+          totalPayoutCents += payoutCents;
           winningBets.push({
-            number: bet.number, bet_type: bet.bet_type, amount: amt, payout,
+            number: bet.number, bet_type: bet.bet_type,
+            amount: amtCents / 100,
+            payout: payoutCents / 100,
             customer_ref: bet.customer_ref, customer_id: bet.customer_id,
             sheet_no: bet.sheet_no,
           });
         }
       }
 
-      const netPl = totalRevenue - totalPayout;
+      const totalRevenue = totalRevenueCents / 100;
+      const totalPayout  = totalPayoutCents / 100;
+      const netPl        = (totalRevenueCents - totalPayoutCents) / 100;
 
       // Store full result data
       const resultData = {

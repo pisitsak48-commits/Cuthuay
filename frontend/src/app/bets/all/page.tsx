@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
 import { Header } from '@/components/layout/Header';
 import { reportsApi } from '@/lib/api';
+import { showApiError } from '@/lib/apiErrorToast';
 import { useRoundsQuery } from '@/hooks/queries/useRoundsQuery';
 import { useAuthStore } from '@/store/useStore';
 import { buildPrintSlipBrandStrip, openPrintPreview } from '@/lib/printPreview';
@@ -293,6 +294,8 @@ function BetsAllInner() {
       const bt = tab === 'total' || activeBetType === 'all' ? undefined : activeBetType;
       const res = await reportsApi.betView(roundId, bt);
       setData(res.data);
+    } catch (err) {
+      showApiError(err, 'โหลดข้อมูลโพยไม่สำเร็จ');
     } finally {
       setLoading(false);
     }
