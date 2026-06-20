@@ -1,11 +1,12 @@
 'use client';
 import { useMemo } from 'react';
 
-// Recharts passes stroke as SVG presentation attributes; CSS custom properties don't resolve there.
-// These constants are the resolved values of --chart-primary, --chart-profit-line, --chart-pct-line.
-const CHART_SALES_COLOR  = '#4a90e2'; // --chart-primary
-const CHART_PROFIT_COLOR = '#4caf50'; // --chart-profit-line
-const CHART_PCT_COLOR    = '#a855f7'; // --chart-pct-line
+// Recharts SVG stroke/fill attributes don't accept CSS custom properties.
+// Read resolved values at render time so they follow theme changes.
+function readCssVar(name: string, fallback: string): string {
+  if (typeof document === 'undefined') return fallback;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
 import {
   ComposedChart,
   Area,
@@ -88,6 +89,10 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export function ProfitLossChart({ rounds, profitByRoundId = {}, loadingProfit }: Props) {
+  const chartSalesColor  = readCssVar('--chart-primary', '#4a90e2');
+  const chartProfitColor = readCssVar('--chart-profit-line', '#4caf50');
+  const chartPctColor    = readCssVar('--chart-pct-line', '#a855f7');
+
   const data = useMemo(() => {
     return rounds
       .slice()
@@ -171,9 +176,9 @@ export function ProfitLossChart({ rounds, profitByRoundId = {}, loadingProfit }:
             wrapperStyle={{ fontSize: 11, paddingTop: 4 }}
             iconType="square"
             payload={[
-              { value: 'ยอดขาย', type: 'square', id: 'sales', color: CHART_SALES_COLOR },
-              { value: 'กำไรสุทธิ', type: 'square', id: 'profit', color: CHART_PROFIT_COLOR },
-              { value: '% กำไร/ขาย', type: 'square', id: 'profitPct', color: CHART_PCT_COLOR },
+              { value: 'ยอดขาย', type: 'square', id: 'sales', color: chartSalesColor },
+              { value: 'กำไรสุทธิ', type: 'square', id: 'profit', color: chartProfitColor },
+              { value: '% กำไร/ขาย', type: 'square', id: 'profitPct', color: chartPctColor },
             ]}
           />
           <ReferenceLine yAxisId="left" y={0} stroke="var(--chart-ref-line)" />
@@ -182,7 +187,7 @@ export function ProfitLossChart({ rounds, profitByRoundId = {}, loadingProfit }:
             type="monotone"
             dataKey="sales"
             name="sales"
-            stroke={CHART_SALES_COLOR}
+            stroke={chartSalesColor}
             strokeWidth={2}
             fill="url(#dashSalesFill)"
             dot={false}
@@ -192,9 +197,9 @@ export function ProfitLossChart({ rounds, profitByRoundId = {}, loadingProfit }:
             type="monotone"
             dataKey="profit"
             name="profit"
-            stroke={CHART_PROFIT_COLOR}
+            stroke={chartProfitColor}
             strokeWidth={2.5}
-            dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: CHART_PROFIT_COLOR }}
+            dot={{ r: 4, strokeWidth: 2, fill: '#fff', stroke: chartProfitColor }}
             activeDot={{ r: 6 }}
             connectNulls={false}
           />
@@ -203,7 +208,7 @@ export function ProfitLossChart({ rounds, profitByRoundId = {}, loadingProfit }:
             type="monotone"
             dataKey="profitPct"
             name="profitPct"
-            stroke={CHART_PCT_COLOR}
+            stroke={chartPctColor}
             strokeWidth={2}
             strokeDasharray="5 5"
             dot={false}
