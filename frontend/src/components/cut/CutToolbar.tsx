@@ -93,7 +93,7 @@ export function CutToolbar(props: CutToolbarProps) {
           onChange={(e) => { setCutIncludeArchived(e.target.checked); }}
           className="rounded border-border bg-surface-100 accent"
         />
-        แสดมงวดเก่า / ซ่อนแล้ว (ทั้งหมด)
+        แสดงงวดเก่า / ซ่อนแล้ว (ทั้งหมด)
       </label>
     )}
   </div>
@@ -117,9 +117,9 @@ export function CutToolbar(props: CutToolbarProps) {
     return rate != null ? (
       <div className="flex h-9 items-center gap-2 px-3 rounded-lg bg-surface-50 border border-[var(--color-border)] shrink-0">
         <span className="text-[11px] font-medium text-risk-medium/85 whitespace-nowrap leading-none">อัตราจ่าย / %ลด</span>
-        <span className="text-sm  tracking-tight font-bold text-risk-medium ">{rate}</span>
+        <span className="text-sm tracking-tight font-bold text-risk-medium">{rate}</span>
         <span className="text-theme-text-muted text-xs">/</span>
-        <span className="text-sm  tracking-tight text-theme-text-secondary ">{pct ?? 0}%</span>
+        <span className="text-sm tracking-tight text-theme-text-secondary">{pct ?? 0}%</span>
       </div>
     ) : null;
   })()}
