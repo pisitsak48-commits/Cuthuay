@@ -64,7 +64,7 @@ export function SaveDealerModal({
               {betTypeLabel} · {cutItemsCount} รายการ · <span className=" tracking-tight text-[var(--color-accent-hover)]">{formatBaht(totalSend)}</span>
             </p>
           </div>
-          <button type="button" onClick={onClose} aria-label="ปิด" className="text-theme-text-muted hover:text-theme-text-secondary transition-colors text-lg leading-none">✕</button>
+          <button type="button" onClick={onClose} aria-label="ปิด" className="w-8 h-8 flex items-center justify-center rounded-lg text-theme-text-muted hover:text-theme-text-secondary hover:bg-surface-200 transition-colors">✕</button>
         </div>
 
         {/* Dealer list */}
@@ -135,7 +135,7 @@ export function SendBatchItemsModal({
               {BET_TYPE_LABELS[batch.bet_type]} · {batch.dealer_name ?? '—'} · {formatBaht(batch.total)}
             </p>
           </div>
-          <button onClick={onClose} className="w-7 h-7 rounded-lg hover:bg-surface-200 text-theme-text-secondary hover:text-theme-text-primary transition-colors">✕</button>
+          <button type="button" onClick={onClose} aria-label="ปิด" className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-surface-200 text-theme-text-secondary hover:text-theme-text-primary transition-colors">✕</button>
         </div>
 
         <div className="flex-1 overflow-auto">
